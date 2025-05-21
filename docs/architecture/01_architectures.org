@@ -1,0 +1,55 @@
+#+TITLE: Microservices Architecture with RPC Router
+#+AUTHOR: Dang Quang Vu
+#+EMAIL: jayden.dangvu@gmail.com
+
+* Table of Contents :toc:
+- [[#introduction][Introduction]]
+- [[#structure-workspace][Structure Workspace]]
+- [[#diagram][Diagram]]
+
+* Introduction
+- This documentation show a architecture workspace for microservices system using Rust with RPC router throught Kafka. This Architecture was designed to support scale ability, modular and effiency for distributed system
+
+* Structure Workspace
+- Workspace was organized by some major groups, include:
+#+begin_example
+├── crates
+│   ├── core                             # Core Application Components
+│   │   └── jd_core                        # DI & bootstrap
+│   ├── gateways                         # API Gateways & Routers
+│   │   ├── api_gateway                    # External API Gateways
+│   │   └── web_server                     # Server
+│   ├── infrastructure                   # Shared infrastructures
+│   │   ├── jd_infra                       # Common infrastructure components
+│   │   ├── jd_messaing                    # Messaging infrastructure
+│   │   ├── jd_storage                     # Storage infrastructure
+│   │   └── jd_tracing                     # Distributed tracing
+│   ├── services                         # Microservices
+│   │   └── user_service                   # User Services
+│   ├── shared                           # Shared Libraries
+│   │   ├── jd_contracts                   # API & Event Contracts
+│   │   ├── jd_domain                      # Core domain models
+│   │   ├── jd_rpc_core                    # RPC definitions & clients
+│   │   ├── jd_streams                     # Stream processing utilities
+│   │   └── jd_utils                       # Shared utils
+#  Communication
+│   ├── processors                       # Stream processors/event handlers
+│   │   ├── analytics_processor            # Notification stream processor
+│   │   └── notification_processor         # Ananlytics event processor
+│   └── testing
+├── deployment                           # Deployment Configuration
+│   ├── docker
+│   ├── kubernetes
+│   └── terraform
+├── docs                                 # Documentation
+│   ├── api
+│   └── architecture
+├── Makefile.toml
+├── scripts                              # Helper Scripts
+│   ├── ci
+│   └── dev
+└── tools                                # Support tools
+#+end_example
+
+* Diagram
+[[../assets/architecture.png]]
