@@ -1,3 +1,58 @@
 [workspace]
 resolver = "3"
-members = ["crates/core/jd_core", "crates/gateways/api_gateway", "crates/gateways/web_server", "crates/infrastructure/jd_infra", "crates/infrastructure/jd_messaing", "crates/infrastructure/jd_storage", "crates/infrastructure/jd_tracing", "crates/processors/analytics_processor", "crates/processors/notification_processor", "crates/services/user_service", "crates/shared/jd_contracts", "crates/shared/jd_domain", "crates/shared/jd_rpc_core", "crates/shared/jd_streams", "crates/shared/jd_utils"]
+members = [
+  # -- Core Configuration
+  "crates/core/jd_core",
+
+  # -- Gateways Application
+  "crates/gateways/api_gateway",
+  "crates/gateways/web_server",
+
+  # -- Infrastructure Applications
+  "crates/infrastructure/jd_infra",
+  "crates/infrastructure/jd_messaing",
+  "crates/infrastructure/jd_storage",
+  "crates/infrastructure/jd_tracing",
+
+  # -- Streaming Application
+  "crates/processors/analytics_processor",
+  "crates/processors/notification_processor",
+
+  # -- Services Application
+  "crates/services/user_service",
+
+  # -- Libraries Application
+  "crates/shared/jd_contracts",
+  "crates/shared/jd_domain",
+  "crates/shared/jd_rpc_core",
+  "crates/shared/jd_streams",
+  "crates/shared/jd_utils"
+]
+
+
+[workspace.dependencies]
+# -- Serde
+serde_with = {version = "3", features = ["time_0_3"] }
+serde = { version = "1", features = ["derive"] }
+
+# -- Data
+modql = { version = "0.4.1", features = ["with-sea-query"]}
+sqlx = { version = "0.8", features = [ "macros", "runtime-tokio", "postgres", "uuid" ] }
+sea-query = "0.32"
+sea-query-binder = { version = "0.7", features = ["sqlx-postgres", "with-uuid", "with-time" ] }
+
+# -- JSON-RPC
+rpc-router = { version = "=0.1.3" }
+
+# -- Web
+axum = {version = "0.8", features = ["macros"]}
+tower-http = { version = "0.6", features = ["fs"] }
+tower-cookies = "0.11"
+tokio = { version = "1.45.0", features = ["full"] }
+
+# -- Others
+time = {version = "0.3", features = ["formatting", "parsing", "serde"]}
+derive_more = {version = "2", features = ["from", "display"] }
+
+# -- Trace
+tracing = "0.1"
