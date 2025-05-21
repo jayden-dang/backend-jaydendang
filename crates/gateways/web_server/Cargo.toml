@@ -5,8 +5,13 @@ edition = "2024"
 
 [dependencies]
 axum.workspace = true
+dotenv = "0.15.0"
 serde.workspace = true
 tokio.workspace = true
 tracing.workspace = true
 
-tracing-subscriber = "0.3.19"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+
+# Members
+jd_core = { path = "../../core/jd_core" }
+jd_tracing = { path = "../../infrastructure/jd_tracing" }

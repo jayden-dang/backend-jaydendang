@@ -9,6 +9,14 @@ install_crate="cargo-watch"
 cwd = "./crates/gateways/web_server"
 command = "cargo"
 args = ["watch", "-x", "clippy", "-x", "run"]
+env = { RUST_LOG = "info" }
+
+[tasks.debug]
+install_crate="cargo-watch"
+cwd = "./crates/gateways/web_server"
+command = "cargo"
+args = ["watch", "-x", "clippy", "-x", "run"]
+env = { RUST_LOG = "debug" }
 
 [tasks.format]
 install_crate = "rustfmt"
