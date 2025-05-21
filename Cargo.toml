@@ -1,0 +1,3 @@
+[workspace]
+resolver = "3"
+members = ["crates/core/jd_core", "crates/gateways/api_gateway", "crates/gateways/web_server", "crates/infrastructure/jd_infra", "crates/infrastructure/jd_messaing", "crates/infrastructure/jd_storage", "crates/infrastructure/jd_tracing", "crates/processors/analytics_processor", "crates/processors/notification_processor", "crates/services/user_service", "crates/shared/jd_contracts", "crates/shared/jd_domain", "crates/shared/jd_rpc_core", "crates/shared/jd_streams", "crates/shared/jd_utils"]
