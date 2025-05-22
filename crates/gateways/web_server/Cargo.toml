@@ -15,3 +15,5 @@ tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 # Members
 jd_core = { path = "../../core/jd_core" }
 jd_tracing = { path = "../../infrastructure/jd_tracing" }
+jd_utils = { path = "../../shared/jd_utils" }
+api_gateway = { path = "../api_gateway" }

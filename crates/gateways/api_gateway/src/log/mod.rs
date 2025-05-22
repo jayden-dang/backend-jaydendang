@@ -1,4 +1,4 @@
-// use crate::ctx::Ctx;
+use jd_core::ctx::Ctx;
 // use crate::web::{self, ClientError};
 use crate::Result;
 use axum::http::{Method, Uri};
@@ -12,7 +12,7 @@ pub async fn log_request(
     uuid: Uuid,
     req_method: Method,
     uri: Uri,
-    // ctx: Option<Ctx>,
+    ctx: Option<Ctx>,
     // web_error: Option<&web::Error>,
     // client_error: Option<ClientError>,
 ) -> Result<()> {

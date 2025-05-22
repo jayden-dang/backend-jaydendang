@@ -4,3 +4,17 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+axum.workspace = true
+serde.workspace = true
+serde_with.workspace = true
+uuid.workspace = true
+chrono = { version = "0.4", features = ["serde"] }
+
+serde_json = "1.0.140"
+
+# Members
+jd_core = { path = "../../core/jd_core" }
+strum_macros = "0.27.1"
+tower = "0.5.2"
+tracing.workspace = true
+derive_more.workspace = true

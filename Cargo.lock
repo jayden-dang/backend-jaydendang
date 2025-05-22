@@ -54,6 +54,19 @@ dependencies = [
 [[package]]
 name = "api_gateway"
 version = "0.1.0"
+dependencies = [
+ "axum",
+ "chrono",
+ "derive_more",
+ "jd_core",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "strum_macros",
+ "tower",
+ "tracing",
+ "uuid",
+]
 
 [[package]]
 name = "arraydeque"
@@ -1070,7 +1083,7 @@ name = "jd_infra"
 version = "0.1.0"
 
 [[package]]
-name = "jd_messaing"
+name = "jd_messaging"
 version = "0.1.0"
 
 [[package]]
@@ -1104,6 +1117,12 @@ dependencies = [
 [[package]]
 name = "jd_utils"
 version = "0.1.0"
+dependencies = [
+ "config",
+ "derive_more",
+ "serde",
+ "serde_with",
+]
 
 [[package]]
 name = "js-sys"
@@ -2113,6 +2132,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
+name = "strum_macros"
+version = "0.27.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c77a8c5abcaf0f9ce05d62342b7d298c346515365c36b673df4ebe3ced01fde8"
+dependencies = [
+ "heck",
+ "proc-macro2",
+ "quote",
+ "rustversion",
+ "syn",
+]
+
+[[package]]
 name = "subtle"
 version = "2.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2617,10 +2649,12 @@ dependencies = [
 name = "web_server"
 version = "0.1.0"
 dependencies = [
+ "api_gateway",
  "axum",
  "dotenv",
  "jd_core",
  "jd_tracing",
+ "jd_utils",
  "serde",
  "tokio",
  "tracing",
