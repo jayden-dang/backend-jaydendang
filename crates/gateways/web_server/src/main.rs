@@ -12,6 +12,7 @@ async fn main() {
 
     let cfg = config::Config::from_env().expect("Loading env failed");
 
+    info!("Loading Environment Success...");
     let app = Router::new().route("/", get(root));
     info!("Server is running...");
 
