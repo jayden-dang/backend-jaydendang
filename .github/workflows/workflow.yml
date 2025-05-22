@@ -1,5 +1,5 @@
 # .github/workflows/workflow.yml
-name: CI
+name: Testing
 
 on:
   pull_request:
