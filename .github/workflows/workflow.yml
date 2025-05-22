@@ -1,0 +1,43 @@
+# .github/workflows/workflow.yml
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Install Rust toolchain
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      # Run sccache
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.7
+
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@cargo-nextest
+
+      # Run Clippy (linting)
+      - name: Run Clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      # Check code formatting
+      - name: Check formatting
+        run: cargo fmt --all --check
+
+      # Run tests with cargo-nextest
+      - name: Run Tests
+        run: cargo nextest run

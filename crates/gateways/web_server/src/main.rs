@@ -8,10 +8,9 @@ use jd_tracing::tracing_init;
 #[tokio::main]
 async fn main() {
     dotenv().ok();
+    let _ = tracing_init();
 
     let cfg = config::Config::from_env().expect("Loading env failed");
-
-    let _ = tracing_init();
 
     let app = Router::new().route("/", get(root));
     info!("Server is running...");

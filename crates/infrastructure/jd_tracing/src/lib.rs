@@ -1,3 +1,5 @@
+pub mod log;
+
 use color_eyre::eyre::Result;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
