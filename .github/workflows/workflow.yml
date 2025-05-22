@@ -55,7 +55,7 @@ jobs:
     name: Lint & Format Check
     runs-on: ubuntu-latest
     needs: changes
-    if: needs.changes.outputs.rust == 'true'
+    if: ${{ needs.changes.outputs.rust == 'true' || github.event_name == 'workflow_dispatch' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -86,7 +86,7 @@ jobs:
     name: Security Audit
     runs-on: ubuntu-latest
     needs: changes
-    if: needs.changes.outputs.cargo == 'true'
+    if: ${{ needs.changes.outputs.cargo == 'true' || github.event_name == 'workflow_dispatch' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -103,7 +103,7 @@ jobs:
   test:
     name: Test Suite
     needs: [changes, lint]
-    if: needs.changes.outputs.rust == 'true'
+    if: ${{ needs.changes.outputs.rust == 'true' || github.event_name == 'workflow_dispatch' }}
     strategy:
       fail-fast: false
       matrix:
@@ -163,7 +163,7 @@ jobs:
     name: Code Coverage
     runs-on: ubuntu-latest
     needs: [changes, lint]
-    if: needs.changes.outputs.rust == 'true'
+    if: ${{ needs.changes.outputs.rust == 'true' || github.event_name == 'workflow_dispatch' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
