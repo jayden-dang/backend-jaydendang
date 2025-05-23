@@ -1,5 +1,5 @@
 mod error;
-pub mod log;
+mod log;
 pub mod mw;
 
 pub type Result<T> = std::result::Result<T, error::Error>;

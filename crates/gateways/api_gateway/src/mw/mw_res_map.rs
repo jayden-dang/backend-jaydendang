@@ -1,16 +1,12 @@
-use crate::{error::Error, Result};
+use crate::{error::Error, log::log_request};
 use axum::{
     body::to_bytes,
     http::{Method, StatusCode, Uri},
     response::{IntoResponse, Response},
     Json,
 };
-use serde::Serialize;
 use serde_json::{json, to_value, Value};
-use serde_with::skip_serializing_none;
 use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
-use tracing::{debug, error, warn};
 use uuid::Uuid;
 
 pub async fn mw_map_response(uri: Uri, req_method: Method, res: Response) -> Response {
@@ -128,7 +124,6 @@ pub async fn mw_map_response(uri: Uri, req_method: Method, res: Response) -> Res
                         }
                     });
 
-
                     eprintln!("->> {:<12} - Server Log: {}", "MIDDLEWARE", server_log);
                     let _ = log_request(
                         uuid,
@@ -143,7 +138,10 @@ pub async fn mw_map_response(uri: Uri, req_method: Method, res: Response) -> Res
             };
 
             let body_string = String::from_utf8(body.to_vec()).unwrap_or_default();
-            let content_type = headers.get("content-type").and_then(|v| v.as_str()).unwrap_or("application/json");
+            let content_type = headers
+                .get("content-type")
+                .and_then(|v| v.as_str())
+                .unwrap_or("application/json");
             let pagination: Option<Value> = None; // TODO: Add pagination information
             let data: Value = match serde_json::from_str::<Value>(&body_string) {
                 Ok(data) => {
@@ -161,7 +159,7 @@ pub async fn mw_map_response(uri: Uri, req_method: Method, res: Response) -> Res
                             }
                         })
                     }
-                },
+                }
                 Err(_) => {
                     // If not JSON, return as plain text
                     json!({
@@ -223,46 +221,6 @@ pub async fn mw_map_response(uri: Uri, req_method: Method, res: Response) -> Res
     }
 }
 
-async fn log_request(uuid: Uuid, uri: Uri, req_method: Method, log_data: Value, status: u8) -> Result<()> {
-    let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
-    let now = chrono::Utc::now();
-
-    let log = RequestLogLine {
-        // Basic request identification
-        log_type: "request".to_string(),
-        timestamp: now.to_rfc3339(),
-        request_id: uuid.to_string(),
-
-        // Request details
-        http_path: uri.path().to_string(),
-        http_method: req_method.to_string(),
-        query_params: uri.query().map(|q| q.to_string()),
-        request_headers: None,
-
-        // Response details
-        status_code: status,
-        response_time_ms: log_data["response"]["time_ms"].as_u64().unwrap_or(0),
-        response_size_bytes: log_data["response"]["size_bytes"].as_u64().unwrap_or(0),
-        response_data: Some(log_data.clone()),
-
-        // Error tracking
-        error_type: if status == 0 { Some("error".to_string()) } else { None },
-        error_details: if status == 0 { Some(log_data) } else { None },
-        stack_trace: None,
-
-        // Environment info
-        environment: std::env::var("RUST_ENV").ok(),
-        service_version: env!("CARGO_PKG_VERSION").to_string(),
-    };
-
-    if status == 0 {
-        error!("Request Log: {}", json!(log));
-    } else {
-        debug!("Request Log: {}", json!(log));
-    }
-    Ok(())
-}
-
 fn get_request_headers(res: &Response) -> Value {
     let important_headers = [
         "content-type",
@@ -284,34 +242,4 @@ fn get_request_headers(res: &Response) -> Value {
         .map(|(name, value)| (name.to_string(), value.to_str().unwrap_or("").to_string()))
         .collect();
     json!(headers)
-}
-
-#[skip_serializing_none]
-#[derive(Serialize)]
-struct RequestLogLine {
-    // Basic request identification
-    log_type: String,
-    timestamp: String,
-    request_id: String,
-
-    // Request details
-    http_path: String,
-    http_method: String,
-    query_params: Option<String>,
-    request_headers: Option<Value>,
-
-    // Response details
-    status_code: u8,
-    response_time_ms: u64,
-    response_size_bytes: u64,
-    response_data: Option<Value>,
-
-    // Error tracking
-    error_type: Option<String>,
-    error_details: Option<Value>,
-    stack_trace: Option<String>,
-
-    // Environment info
-    environment: Option<String>,
-    service_version: String,
 }
