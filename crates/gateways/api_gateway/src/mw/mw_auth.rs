@@ -3,8 +3,8 @@ use jd_core::ctx::Ctx;
 use serde::Serialize;
 use tracing::debug;
 
-use crate::error::Error;
 use crate::Result;
+use crate::error::Error;
 
 // region:    --- Ctx Extractor
 #[derive(Debug, Clone)]

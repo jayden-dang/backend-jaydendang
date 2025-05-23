@@ -1,6 +1,6 @@
 use color_eyre::eyre::Result;
 use tracing_error::ErrorLayer;
-use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
+use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
 // TODO: telemetry -> Tracing microservices
 pub fn tracing_init() -> Result<()> {
