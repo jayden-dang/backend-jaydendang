@@ -1,6 +1,5 @@
 pub mod ctx;
 mod error;
-pub mod store;
 
 pub type Result<T> = std::result::Result<T, error::Error>;
 

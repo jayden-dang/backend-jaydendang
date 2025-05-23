@@ -4,3 +4,14 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+sqlx.workspace = true
+
+
+
+
+
+
+
+
+# Members
+jd_utils = { path = "../../shared/jd_utils" }

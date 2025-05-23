@@ -1,14 +1,13 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+use jd_utils::config::Config;
+use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub type Db = Pool<Postgres>;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+pub async fn new_db_pool() -> sqlx::Result<Db> {
+    let cfg = Config::from_env().expect("Cannot load env");
+
+    PgPoolOptions::new()
+        .max_connections(cfg.postgres.max_conns)
+        .connect(&cfg.postgres.dsn)
+        .await
 }

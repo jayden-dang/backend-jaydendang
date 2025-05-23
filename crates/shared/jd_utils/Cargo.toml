@@ -4,8 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-config = "0.15.11"
 derive_more.workspace = true
 serde.workspace = true
 serde_with.workspace = true
 time.workspace = true
+
+config = "0.15.11"

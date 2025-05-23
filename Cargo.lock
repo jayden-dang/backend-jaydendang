@@ -1107,6 +1107,7 @@ name = "jd_core"
 version = "0.1.0"
 dependencies = [
  "derive_more",
+ "jd_storage",
  "jd_utils",
  "serde",
  "serde_with",
@@ -1132,6 +1133,10 @@ version = "0.1.0"
 [[package]]
 name = "jd_storage"
 version = "0.1.0"
+dependencies = [
+ "jd_utils",
+ "sqlx",
+]
 
 [[package]]
 name = "jd_streams"

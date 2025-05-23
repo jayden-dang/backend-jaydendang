@@ -11,3 +11,4 @@ sqlx.workspace = true
 
 # Members
 jd_utils = { path = "../../shared/jd_utils" }
+jd_storage = { path = "../../infrastructure/jd_storage" }
