@@ -1,6 +1,6 @@
 use axum::{middleware, routing::get, Router};
 use dotenv::dotenv;
-use tracing::info;
+use tracing::{info, Level};
 
 use api_gateway::mw::mw_res_map;
 use jd_tracing::tracing_init;
@@ -11,7 +11,10 @@ mod error;
 #[tokio::main]
 async fn main() -> error::Result<()> {
     dotenv().ok();
+    
+    // Initialize tracing with debug level
     let _ = tracing_init();
+    tracing::info!("Tracing initialized");
 
     let cfg = config::Config::from_env().expect("Loading env failed");
 
