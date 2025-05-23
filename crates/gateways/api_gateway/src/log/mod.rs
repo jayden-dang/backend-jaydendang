@@ -2,27 +2,26 @@
 // use crate::web::{self, ClientError};
 // use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::{Result, mw::mw_res_timestamp::ReqStamp};
+use crate::{mw::mw_res_timestamp::ReqStamp, Result};
 use axum::http::{Method, Uri};
 use jd_utils::time::{format_time, now_utc};
 use serde::Serialize;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use serde_with::skip_serializing_none;
-use tracing::{debug, error};
+use time::Duration;
+use tracing::debug;
 
 // TODO: Add CTX & web Client Errro
 pub async fn log_request(
     uri: Uri,
     req_method: Method,
     req_stamp: ReqStamp,
-    log_data: Value,
-    status: u8,
+    log_data: Option<Value>,
     // ctx: Option<Ctx>,
     // web_error: Option<&Error>,
     // client_error: Option<ClientError>,
 ) -> Result<()> {
     // TODO: Add Ctx and Web Error
-    // let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
 
     // let error_type = web_error.map(|se| se.as_ref().to_string());
     // let error_data = serde_json::to_value(web_error)
@@ -30,6 +29,8 @@ pub async fn log_request(
     //     .and_then(|mut v| v.get_mut("data").map(|v| v.take()));
     let ReqStamp { uuid, time_in } = req_stamp;
     let now = now_utc();
+    let duration: Duration = now - time_in;
+    let duration_ms = (duration.as_seconds_f64() * 1_000_000.).floor() / 1_000.;
 
     let log = RequestLogLine {
         // Basic request identification
@@ -38,33 +39,19 @@ pub async fn log_request(
         time_in: format_time(time_in),
         request_id: uuid.to_string(),
 
+        duration_ms,
+
+        response_data: log_data,
+
         // Request details
         http_path: uri.path().to_string(),
         http_method: req_method.to_string(),
         query_params: uri.query().map(|q| q.to_string()),
         request_headers: None,
-
-        // Response details
-        status_code: status,
-        response_time_ms: log_data["response"]["time_ms"].as_u64().unwrap_or(0),
-        response_size_bytes: log_data["response"]["size_bytes"].as_u64().unwrap_or(0),
-        response_data: Some(log_data.clone()),
-
-        // Error tracking
-        error_type: if status == 0 { Some("error".to_string()) } else { None },
-        error_details: if status == 0 { Some(log_data) } else { None },
-        stack_trace: None,
-
-        // Environment info
-        environment: std::env::var("RUST_ENV").ok(),
-        service_version: env!("CARGO_PKG_VERSION").to_string(),
+        // -- error attributes
     };
 
-    if status == 0 {
-        error!("Error Request Log: {}", json!(log));
-    } else {
-        debug!("Request Log: {}", json!(log));
-    }
+    debug!("REQUEST LOG: \n {}", json!(log));
     Ok(())
 }
 
@@ -77,24 +64,17 @@ struct RequestLogLine {
     time_in: String,   // Rfc 3339
     request_id: String,
 
+    // Duration
+    duration_ms: f64,
+
     // Request details
     http_path: String,
     http_method: String,
     query_params: Option<String>,
     request_headers: Option<Value>,
 
-    // Response details
-    status_code: u8,
-    response_time_ms: u64,
-    response_size_bytes: u64,
     response_data: Option<Value>,
-
-    // Error tracking
-    error_type: Option<String>,
-    error_details: Option<Value>,
-    stack_trace: Option<String>,
-
-    // Environment info
-    environment: Option<String>,
-    service_version: String,
+    // TODO: More Information
+    // client_ip: String,
+    // headers: String
 }

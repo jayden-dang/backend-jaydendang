@@ -1,36 +1,31 @@
 use crate::{error::Error, log::log_request};
 use axum::{
-    Json,
     body::to_bytes,
     http::{Method, StatusCode, Uri},
     response::{IntoResponse, Response},
+    Json,
 };
-use jd_utils::time::now_utc;
-use serde_json::{Value, json, to_value};
+use jd_utils::time::format_time;
+use serde_json::{json, to_value, Value};
 use std::sync::Arc;
-use uuid::Uuid;
 
 use super::mw_res_timestamp::ReqStamp;
 
 pub async fn mw_map_response(uri: Uri, req_method: Method, req_stamp: ReqStamp, res: Response) -> Response {
-    eprintln!("->> {:<12} - mw_map_response - {} {}", "MIDDLEWARE", req_method, uri);
-    let start_time = std::time::Instant::now();
-    let uuid = Uuid::new_v4();
     let status = res.status();
     let headers = get_request_headers(&res);
-    let request_time = now_utc();
 
     // Handle error cases
     let web_error = res.extensions().get::<Arc<Error>>().map(Arc::as_ref);
     let client_status_error = web_error.map(|e| e.client_status_and_error());
+    let ReqStamp { uuid, time_in } = req_stamp;
+    let request_time = format_time(time_in);
 
     match client_status_error {
         Some((status_code, client_error)) => {
-            eprintln!("->> {:<12} - Error Response", "MIDDLEWARE");
             let client_error = to_value(client_error).ok();
             let message = client_error.as_ref().and_then(|v| v.get("message"));
             let details = client_error.as_ref().and_then(|v| v.get("details"));
-            let end_time = std::time::Instant::now();
 
             // Client response - minimal information
             let client_response = json!({
@@ -45,48 +40,14 @@ pub async fn mw_map_response(uri: Uri, req_method: Method, req_stamp: ReqStamp, 
                 }
             });
 
-            // Server log - detailed information
-            let server_log = json!({
-                "log_type": "request",
-                "timestamp": request_time,
-                "request_id": uuid.to_string(),
-                "request": {
-                    "method": req_method.to_string(),
-                    "path": uri.path().to_string(),
-                    "query": uri.query().map(|q| q.to_string()),
-                    "headers": headers,
-                    "client_ip": None::<String> // TODO: Add client IP
-                },
-                "response": {
-                    "status_code": status_code.as_u16(),
-                    "time_ms": end_time.duration_since(start_time).as_millis(),
-                    "size_bytes": 0
-                },
-                "server": {
-                    "version": env!("CARGO_PKG_VERSION"),
-                    "environment": std::env::var("RUST_ENV").unwrap_or_else(|_| "development".to_string()),
-                    "hostname": hostname::get().ok().and_then(|h| h.into_string().ok()),
-                    "started_at": std::time::SystemTime::now()
-                        .duration_since(std::time::UNIX_EPOCH)
-                        .unwrap()
-                        .as_secs()
-                }
-            });
-
-            eprintln!("->> {:<12} - Server Log: {}", "MIDDLEWARE", server_log);
-            let _ = log_request(uri, req_method, req_stamp, server_log, status_code.as_u16() as u8).await;
+            let _ = log_request(uri, req_method, req_stamp, None).await;
             (status_code, Json(client_response)).into_response()
         }
         None => {
-            eprintln!("->> {:<12} - Success Response", "MIDDLEWARE");
             // Handle successful responses
             let body = match to_bytes(res.into_body(), usize::MAX).await {
                 Ok(body) => body,
                 Err(e) => {
-                    eprintln!("->> {:<12} - Failed to read body: {}", "MIDDLEWARE", e);
-                    let end_time = std::time::Instant::now();
-
-                    // Client response - minimal information
                     let client_response = json!({
                         "request_id": uuid.to_string(),
                         "status": 0,
@@ -99,43 +60,7 @@ pub async fn mw_map_response(uri: Uri, req_method: Method, req_stamp: ReqStamp, 
                         }
                     });
 
-                    // Server log - detailed information
-                    let server_log = json!({
-                        "log_type": "request",
-                        "timestamp": request_time,
-                        "request_id": uuid.to_string(),
-                        "request": {
-                            "method": req_method.to_string(),
-                            "path": uri.path().to_string(),
-                            "query": uri.query().map(|q| q.to_string()),
-                            "headers": headers,
-                            "client_ip": None::<String> // TODO: Add client IP
-                        },
-                        "response": {
-                            "status_code": StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
-                            "time_ms": end_time.duration_since(start_time).as_millis(),
-                            "size_bytes": 0
-                        },
-                        "server": {
-                            "version": env!("CARGO_PKG_VERSION"),
-                            "environment": std::env::var("RUST_ENV").unwrap_or_else(|_| "development".to_string()),
-                            "hostname": hostname::get().ok().and_then(|h| h.into_string().ok()),
-                            "started_at": std::time::SystemTime::now()
-                                .duration_since(std::time::UNIX_EPOCH)
-                                .unwrap()
-                                .as_secs()
-                        }
-                    });
-
-                    eprintln!("->> {:<12} - Server Log: {}", "MIDDLEWARE", server_log);
-                    let _ = log_request(
-                        uri,
-                        req_method,
-                        req_stamp,
-                        server_log,
-                        StatusCode::INTERNAL_SERVER_ERROR.as_u16() as u8,
-                    )
-                    .await;
+                    let _ = log_request(uri, req_method, req_stamp, None).await;
                     return (StatusCode::INTERNAL_SERVER_ERROR, Json(client_response)).into_response();
                 }
             };
@@ -179,8 +104,6 @@ pub async fn mw_map_response(uri: Uri, req_method: Method, req_stamp: ReqStamp, 
                 }
             };
 
-            let end_time = std::time::Instant::now();
-
             // Client response - minimal information
             let client_response = json!({
                 "request_id": uuid.to_string(),
@@ -189,36 +112,16 @@ pub async fn mw_map_response(uri: Uri, req_method: Method, req_stamp: ReqStamp, 
                 "meta": data["meta"]
             });
 
-            // Server log - detailed information
             let server_log = json!({
-                "log_type": "request",
-                "timestamp": request_time,
-                "request_id": uuid.to_string(),
-                "request": {
-                    "method": req_method.to_string(),
-                    "path": uri.path().to_string(),
-                    "query": uri.query().map(|q| q.to_string()),
-                    "headers": headers,
-                    "client_ip": None::<String> // TODO: Add client IP
-                },
+                "data" : data,
+                "headers": headers,
                 "response": {
-                    "status_code": status.as_u16(),
-                    "time_ms": end_time.duration_since(start_time).as_millis(),
-                    "size_bytes": body_string.len()
-                },
-                "server": {
-                    "version": env!("CARGO_PKG_VERSION"),
-                    "environment": std::env::var("RUST_ENV").unwrap_or_else(|_| "development".to_string()),
-                    "hostname": hostname::get().ok().and_then(|h| h.into_string().ok()),
-                    "started_at": std::time::SystemTime::now()
-                        .duration_since(std::time::UNIX_EPOCH)
-                        .unwrap()
-                        .as_secs()
+                    "size_bytes" : body_string.len()
                 }
             });
 
-            eprintln!("->> {:<12} - Server Log: {}", "MIDDLEWARE", server_log);
-            let _ = log_request(uri, req_method, req_stamp, server_log, status.as_u16() as u8).await;
+            // Server log - detailed information
+            let _ = log_request(uri, req_method, req_stamp, Some(server_log)).await;
             (status, Json(client_response)).into_response()
         }
     }

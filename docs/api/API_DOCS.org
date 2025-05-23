@@ -3,7 +3,7 @@
 
 * Test
 #+begin_src restclient
-GET http://localhost:8080/
+GET http://localhost:8080/?order_by=id
 #+end_src
 
 #+RESULTS:
@@ -16,53 +16,47 @@ GET http://localhost:8080/
   "meta": {
     "content_type": "text/plain",
     "pagination": null,
-    "timestamp": [
-      2025,
-      143,
-      3,
-      36,
-      32,
-      697256000,
-      0,
-      0,
-      0
-    ]
+    "timestamp": "2025-05-23T05:10:49.815466Z"
   },
-  "request_id": "e97a974f-321e-44b0-80fe-47f66275855b",
+  "request_id": "2810e559-0443-41c9-be3e-3af7646b2171",
   "status": 1
 }
-// GET http://localhost:8080/
+// GET http://localhost:8080/?order_by=id
 // HTTP/1.1 200 OK
 // content-type: application/json
-// content-length: 229
-// date: Fri, 23 May 2025 03:36:32 GMT
-// Request duration: 0.005898s
+// content-length: 224
+// date: Fri, 23 May 2025 05:10:49 GMT
+// Request duration: 0.007995s
 #+END_SRC
 
 #+begin_src json
 {
-  "log_type": "request",
-  "request": {
-    "client_ip": null,
+  "duration_ms": 0.865,
+  "http_method": "GET",
+  "http_path": "/",
+  "query_params": "order_by=id",
+  "request_id": "2810e559-0443-41c9-be3e-3af7646b2171",
+  "response_data": {
+    "data": {
+      "data": {
+        "content": "Hello, World!",
+        "content_type": "text/plain"
+      },
+      "meta": {
+        "content_type": "text/plain",
+        "pagination": null,
+        "timestamp": "2025-05-23T05:10:49.815466Z"
+      }
+    },
     "headers": {
       "content-type": "text/plain; charset=utf-8"
     },
-    "method": "GET",
-    "path": "/",
-    "query": null
+    "response": {
+      "size_bytes": 13
+    }
   },
-  "request_id": "d288ee42-e997-4650-b056-89654a7e851f",
-  "response": {
-    "size_bytes": 13,
-    "status_code": 200,
-    "time_ms": 0
-  },
-  "server": {
-    "environment": "development",
-    "hostname": "192.168.0.89.non-exists.ptr.local",
-    "started_at": 1747966054,
-    "version": "0.1.0"
-  },
-  "timestamp": "2025-05-23T02:07:34.681261+00:00"
+  "time_in": "2025-05-23T05:10:49.815466Z",
+  "timestamp": "2025-05-23T05:10:49.816331Z",
+  "uuid": "2810e559-0443-41c9-be3e-3af7646b2171"
 }
 #+end_src

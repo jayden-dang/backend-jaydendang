@@ -1,5 +1,5 @@
 use api_gateway::mw::{mw_res_map, mw_res_timestamp};
-use axum::{Json, Router, http::StatusCode, middleware, response::IntoResponse, routing::get};
+use axum::{http::StatusCode, middleware, response::IntoResponse, routing::get, Json, Router};
 use dotenv::dotenv;
 use serde_json::json;
 use tracing::info;
