@@ -3,29 +3,140 @@
 
 * Test
 #+begin_src restclient
-GET http://localhost:8080
+GET http://localhost:8080/api/posts/paginated?order_by=likes&order_direction=desc
 #+end_src
 
 #+RESULTS:
 #+BEGIN_SRC js
 {
-  "data": {
-    "content": "Hello, World!",
-    "content_type": "text/plain"
-  },
+  "data": [
+    {
+      "author": "Author 1",
+      "category": "Category 3",
+      "content": "Content 50",
+      "created_at": "2025-05-23T02:43:00.786440+00:00",
+      "id": 50,
+      "likes": 500,
+      "title": "Post 50",
+      "views": 5000
+    },
+    {
+      "author": "Author 5",
+      "category": "Category 2",
+      "content": "Content 49",
+      "created_at": "2025-05-23T02:43:00.786434+00:00",
+      "id": 49,
+      "likes": 490,
+      "title": "Post 49",
+      "views": 4900
+    },
+    {
+      "author": "Author 4",
+      "category": "Category 1",
+      "content": "Content 48",
+      "created_at": "2025-05-23T02:43:00.786428+00:00",
+      "id": 48,
+      "likes": 480,
+      "title": "Post 48",
+      "views": 4800
+    },
+    {
+      "author": "Author 3",
+      "category": "Category 3",
+      "content": "Content 47",
+      "created_at": "2025-05-23T02:43:00.786422+00:00",
+      "id": 47,
+      "likes": 470,
+      "title": "Post 47",
+      "views": 4700
+    },
+    {
+      "author": "Author 2",
+      "category": "Category 2",
+      "content": "Content 46",
+      "created_at": "2025-05-23T02:43:00.786416+00:00",
+      "id": 46,
+      "likes": 460,
+      "title": "Post 46",
+      "views": 4600
+    },
+    {
+      "author": "Author 1",
+      "category": "Category 1",
+      "content": "Content 45",
+      "created_at": "2025-05-23T02:43:00.786410+00:00",
+      "id": 45,
+      "likes": 450,
+      "title": "Post 45",
+      "views": 4500
+    },
+    {
+      "author": "Author 5",
+      "category": "Category 3",
+      "content": "Content 44",
+      "created_at": "2025-05-23T02:43:00.786404+00:00",
+      "id": 44,
+      "likes": 440,
+      "title": "Post 44",
+      "views": 4400
+    },
+    {
+      "author": "Author 4",
+      "category": "Category 2",
+      "content": "Content 43",
+      "created_at": "2025-05-23T02:43:00.786398+00:00",
+      "id": 43,
+      "likes": 430,
+      "title": "Post 43",
+      "views": 4300
+    },
+    {
+      "author": "Author 3",
+      "category": "Category 1",
+      "content": "Content 42",
+      "created_at": "2025-05-23T02:43:00.786392+00:00",
+      "id": 42,
+      "likes": 420,
+      "title": "Post 42",
+      "views": 4200
+    },
+    {
+      "author": "Author 2",
+      "category": "Category 3",
+      "content": "Content 41",
+      "created_at": "2025-05-23T02:43:00.786386+00:00",
+      "id": 41,
+      "likes": 410,
+      "title": "Post 41",
+      "views": 4100
+    }
+  ],
   "meta": {
-    "content_type": "text/plain; charset=utf-8",
-    "timestamp": "2025-05-23T02:11:46.103772+00:00"
+    "content_type": "application/json",
+    "pagination": {
+      "order_by": "likes",
+      "order_direction": "desc",
+      "pagination_type": {
+        "current_page": 1,
+        "has_next": true,
+        "has_prev": false,
+        "per_page": 10,
+        "total_items": 50,
+        "total_pages": 5,
+        "type": "offset"
+      }
+    },
+    "timestamp": "2025-05-23T02:43:00.786609+00:00"
   },
-  "request_id": "40727c81-33e3-4e54-9417-96cd71659bfb",
+  "request_id": "a0c4a98a-f63c-45d4-8cdd-45a4c88ef8ce",
   "status": 1
 }
-// GET http://localhost:8080
+// GET http://localhost:8080/api/posts/paginated?order_by=likes&order_direction=desc
 // HTTP/1.1 200 OK
 // content-type: application/json
-// content-length: 226
-// date: Fri, 23 May 2025 02:11:46 GMT
-// Request duration: 0.009240s
+// content-length: 2035
+// date: Fri, 23 May 2025 02:43:00 GMT
+// Request duration: 0.002558s
 #+END_SRC
 
 #+begin_src json

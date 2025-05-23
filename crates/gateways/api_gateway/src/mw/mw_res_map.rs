@@ -81,7 +81,6 @@ pub async fn mw_map_response(uri: Uri, req_method: Method, res: Response) -> Res
         None => {
             eprintln!("->> {:<12} - Success Response", "MIDDLEWARE");
             // Handle successful responses
-            let content_type = headers.get("content-type").and_then(|v| v.as_str()).unwrap_or("application/json");
             let body = match to_bytes(res.into_body(), usize::MAX).await {
                 Ok(body) => body,
                 Err(e) => {
@@ -144,13 +143,37 @@ pub async fn mw_map_response(uri: Uri, req_method: Method, res: Response) -> Res
             };
 
             let body_string = String::from_utf8(body.to_vec()).unwrap_or_default();
-            let data: Value = match serde_json::from_str(&body_string) {
-                Ok(data) => data,
+            let content_type = headers.get("content-type").and_then(|v| v.as_str()).unwrap_or("application/json");
+            let pagination: Option<Value> = None; // TODO: Add pagination information
+            let data: Value = match serde_json::from_str::<Value>(&body_string) {
+                Ok(data) => {
+                    // If the response already has the expected format, use it directly
+                    if data.is_object() && data.get("data").is_some() && data.get("meta").is_some() {
+                        data
+                    } else {
+                        // Otherwise wrap it in the standard format
+                        json!({
+                            "data": data,
+                            "meta": {
+                                "timestamp": request_time.to_rfc3339(),
+                                "content_type": content_type,
+                                "pagination": pagination
+                            }
+                        })
+                    }
+                },
                 Err(_) => {
                     // If not JSON, return as plain text
                     json!({
-                        "content": body_string,
-                        "content_type": "text/plain"
+                        "data": {
+                            "content": body_string,
+                            "content_type": "text/plain"
+                        },
+                        "meta": {
+                            "timestamp": request_time.to_rfc3339(),
+                            "content_type": "text/plain",
+                            "pagination": pagination
+                        }
                     })
                 }
             };
@@ -161,11 +184,8 @@ pub async fn mw_map_response(uri: Uri, req_method: Method, res: Response) -> Res
             let client_response = json!({
                 "request_id": uuid.to_string(),
                 "status": 1,
-                "data": data,
-                "meta": {
-                    "timestamp": request_time.to_rfc3339(),
-                    "content_type": content_type
-                }
+                "data": data["data"],
+                "meta": data["meta"]
             });
 
             // Server log - detailed information
