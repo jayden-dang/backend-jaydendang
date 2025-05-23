@@ -1,4 +1,8 @@
-use api_gateway::mw::{mw_auth::mw_ctx_resolve, mw_res_map, mw_res_timestamp};
+use api_gateway::{
+    middleware::{mw_auth::mw_ctx_resolve, mw_res_map, mw_res_timestamp},
+    routes::route_login::routes,
+};
+
 use axum::{http::StatusCode, middleware, response::IntoResponse, routing::get, Json, Router};
 use dotenv::dotenv;
 use jd_core::ModelManager;
@@ -19,21 +23,20 @@ async fn main() -> error::Result<()> {
     dotenv().ok();
 
     let _ = tracing_init();
-    tracing::info!("Tracing initialized");
 
     let mm = ModelManager::new().await.expect("");
 
     let cfg = config::Config::from_env().expect("Loading env failed");
 
-    info!("Loading Environment Success...");
     let app = Router::new()
         .route("/", get(root))
+        .merge(routes())
         .layer(middleware::map_response(mw_res_map::mw_map_response))
-        .layer(middleware::from_fn(mw_res_timestamp::mw_req_stamp_resolver))
         .layer(middleware::from_fn_with_state(mm.clone(), mw_ctx_resolve))
         .layer(CookieManagerLayer::new())
+        .layer(middleware::from_fn(mw_res_timestamp::mw_req_stamp_resolver))
         .fallback(fallback_handler);
-    info!("Server is running...");
+    info!("Server is running... on port: {}", cfg.web.addr);
 
     let listener = tokio::net::TcpListener::bind(cfg.web.addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();

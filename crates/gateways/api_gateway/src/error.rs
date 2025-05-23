@@ -4,7 +4,7 @@ use derive_more::From;
 use serde::Serialize;
 use serde_with::serde_as;
 
-use crate::mw;
+use crate::middleware;
 
 #[serde_as]
 #[derive(Debug, Serialize, strum_macros::AsRefStr, Clone, From)]
@@ -21,7 +21,7 @@ pub enum Error {
     ReqStampNotInReqExt,
 
     #[from]
-    CtxExt(mw::mw_auth::CtxExtError),
+    CtxExt(middleware::mw_auth::CtxExtError),
 }
 
 // region:    --- Axum IntoResponse
@@ -30,7 +30,13 @@ impl IntoResponse for Error {
         println!("->> {:<12} - model::Error {self:?}", "INTO_RES");
 
         // Create a placeholder Axum reponse.
-        let mut response = StatusCode::INTERNAL_SERVER_ERROR.into_response();
+        let mut response = match self {
+            Error::LoginFail => StatusCode::UNAUTHORIZED.into_response(),
+            Error::CtxExt(_) => StatusCode::FORBIDDEN.into_response(),
+            Error::EntityNotFound { .. } => StatusCode::NOT_FOUND.into_response(),
+            Error::ReqStampNotInReqExt => StatusCode::BAD_REQUEST.into_response(),
+            _ => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        };
 
         // Insert the Error into the reponse.
         response.extensions_mut().insert(self);
@@ -57,23 +63,19 @@ impl Error {
     pub fn client_status_and_error(&self) -> (StatusCode, ClientError) {
         use Error::*;
 
-        #[allow(unreachable_patterns)]
         match self {
             // -- Login/Auth
-            // CtxExt(_) => (StatusCode::FORBIDDEN, ClientError::NO_AUTH),
-
-            // -- Fallback.
-            _ => (StatusCode::INTERNAL_SERVER_ERROR, ClientError::SERVICE_ERROR),
-            Error::EntityNotFound { entity, id } => {
-                (StatusCode::FORBIDDEN, ClientError::EntityNotFound { entity, id: *id })
-            }
-
+            LoginFail => (StatusCode::UNAUTHORIZED, ClientError::LOGIN_FAIL),
             CtxExt(_) => (StatusCode::FORBIDDEN, ClientError::NO_AUTH),
+            EntityNotFound { entity, id } => (StatusCode::NOT_FOUND, ClientError::EntityNotFound { entity, id: *id }),
+            ReqStampNotInReqExt => (StatusCode::BAD_REQUEST, ClientError::SERVICE_ERROR),
+            // -- Fallback
+            _ => (StatusCode::INTERNAL_SERVER_ERROR, ClientError::SERVICE_ERROR),
         }
     }
 }
 
-#[derive(Debug, strum_macros::AsRefStr, Serialize)]
+#[derive(Debug, strum_macros::AsRefStr, Serialize, Clone)]
 #[allow(non_camel_case_types)]
 pub enum ClientError {
     LOGIN_FAIL,

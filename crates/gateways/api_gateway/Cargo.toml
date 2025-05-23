@@ -5,21 +5,23 @@ edition = "2024"
 
 [dependencies]
 axum.workspace = true
+tower-cookies.workspace = true
 serde.workspace = true
-serde_with.workspace = true
-uuid.workspace = true
-chrono = { version = "0.4", features = ["serde"] }
-hostname = "0.3"
+tracing.workspace = true
+tokio.workspace = true
+hyper = { version = "1.0", features = ["full"] }
 
 serde_json = "1.0.140"
+derive_more = { version = "2", features = ["from", "display"] }
+strum = "0.26"
+strum_macros = "0.26"
+uuid = { version = "1", features = ["v4", "fast-rng"] }
+sys-info = "0.9.1"
 
 # Members
 jd_core = { path = "../../core/jd_core" }
 jd_utils = { path = "../../shared/jd_utils" }
-strum_macros = "0.27.1"
-tower = "0.5.2"
-tracing.workspace = true
-derive_more.workspace = true
-time.workspace = true
-tower-cookies.workspace = true
+
 async-trait = "0.1.88"
+serde_with.workspace = true
+time.workspace = true

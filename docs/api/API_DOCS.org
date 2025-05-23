@@ -2,61 +2,86 @@
 #+AUTHOR: Dang Quang Vu
 
 * Test
-#+begin_src restclient
-GET http://localhost:8080/?order_by=id
+#+name: host
+#+BEGIN_SRC elisp
+"http://localhost:8080"
+#+END_SRC
+
+#+name: headers
+#+BEGIN_SRC elisp
+"Content-Type: application/json
+User-Agent: Emacs30"
+#+END_SRC
+
+
+#+begin_src restclient :var host=host
+GET :host
+#+end_src
+
+* Api
+
+#+begin_src restclient :var host=host :var headers=headers
+POST :host/api/login
+:headers
+{
+  "username": "demo1",
+  "pwd": "welcome"
+}
 #+end_src
 
 #+RESULTS:
 #+BEGIN_SRC js
 {
-  "data": {
-    "content": "Hello, World!",
-    "content_type": "text/plain"
-  },
-  "meta": {
-    "content_type": "text/plain",
-    "pagination": null,
-    "timestamp": "2025-05-23T08:21:12.924019Z"
-  },
-  "request_id": "aa88b894-f6ff-410a-88ea-5850bf36508a",
-  "status": 1
+  "result": {
+    "success": true
+  }
 }
-// GET http://localhost:8080/?order_by=id
+// POST http://localhost:8080/api/login
 // HTTP/1.1 200 OK
 // content-type: application/json
-// content-length: 224
-// date: Fri, 23 May 2025 08:21:12 GMT
-// Request duration: 0.004500s
+// set-cookie: auth-token=user-1.exp.sign
+// content-length: 27
+// date: Fri, 23 May 2025 16:35:50 GMT
+// Request duration: 0.003789s
 #+END_SRC
 
-#+begin_src json
-{
-  "duration_ms": 0.865,
-  "http_method": "GET",
-  "http_path": "/",
-  "query_params": "order_by=id",
-  "request_id": "2810e559-0443-41c9-be3e-3af7646b2171",
-  "response_data": {
-    "data": {
-      "data": {
-        "content": "Hello, World!",
-        "content_type": "text/plain"
-      },
-      "meta": {
-        "content_type": "text/plain",
-        "pagination": null,
-        "timestamp": "2025-05-23T05:10:49.815466Z"
-      }
-    },
-    "headers": {
-      "content-type": "text/plain; charset=utf-8"
-    },
-    "response": {
-      "size_bytes": 13
+
+#+begin_src rust
+    match client_status_error {
+        Some((status_code, client_error)) => {
+            debug!("HANDLING ERROR CASE: status={}, error={:?}", status_code, client_error);
+            let client_error_body = json!({
+                "id": uuid.to_string(),
+                "status": "error",
+                "timestamp": format_time(now_utc()),
+                "error": {
+                    "type": client_error.as_ref(),
+                    "code": status_code.as_u16()
+                }
+            });
+            error!("CLIENT ERROR BODY: \n {client_error_body}");
+            (status_code, Json(client_error_body)).into_response()
+        }
+        None => {
+            debug!("HANDLING SUCCESS CASE: status={}", parts.status);
+            let status = parts.status;
+            let body = to_bytes(body, usize::MAX).await.unwrap_or_default();
+            let body_string = String::from_utf8(body.to_vec()).unwrap_or_default();
+            let data: Value = serde_json::from_str(&body_string).unwrap_or(Value::Null);
+
+            let success_body = json!({
+                "id": uuid.to_string(),
+                "status": if status.is_success() { "success" } else { "error" },
+                "data": data,
+                "meta": {
+                    "timestamp": format_time(now_utc()),
+                }
+            });
+
+            let client_error = client_status_error.unzip().1;
+
+            let _ = log_request(uri, req_method, req_stamp, ctx, web_error, client_error).await;
+            (status, Json(success_body)).into_response()
+        }
     }
-  },
-  "time_in": "2025-05-23T05:10:49.815466Z",
-  "timestamp": "2025-05-23T05:10:49.816331Z",
-  "uuid": "2810e559-0443-41c9-be3e-3af7646b2171"
-}
 #+end_src
