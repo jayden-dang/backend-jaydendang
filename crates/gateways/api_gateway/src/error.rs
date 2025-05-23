@@ -4,6 +4,8 @@ use derive_more::From;
 use serde::Serialize;
 use serde_with::serde_as;
 
+use crate::mw;
+
 #[serde_as]
 #[derive(Debug, Serialize, strum_macros::AsRefStr, Clone, From)]
 #[serde(tag = "type", content = "data")]
@@ -12,7 +14,14 @@ pub enum Error {
     LoginFail,
     // -- CtxExtError
     // CtxExt(web::mw_auth::CtxExtError),
-    EntityNotFound { entity: &'static str, id: i64 },
+    EntityNotFound {
+        entity: &'static str,
+        id: i64,
+    },
+    ReqStampNotInReqExt,
+
+    #[from]
+    CtxExt(mw::mw_auth::CtxExtError),
 }
 
 // region:    --- Axum IntoResponse
@@ -46,7 +55,7 @@ impl std::error::Error for Error {}
 /// From the root error to the http status code and ClientError
 impl Error {
     pub fn client_status_and_error(&self) -> (StatusCode, ClientError) {
-        // use web::Error::*;
+        use Error::*;
 
         #[allow(unreachable_patterns)]
         match self {
@@ -58,6 +67,8 @@ impl Error {
             Error::EntityNotFound { entity, id } => {
                 (StatusCode::FORBIDDEN, ClientError::EntityNotFound { entity, id: *id })
             }
+
+            CtxExt(_) => (StatusCode::FORBIDDEN, ClientError::NO_AUTH),
         }
     }
 }

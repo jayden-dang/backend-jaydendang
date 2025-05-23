@@ -2,23 +2,40 @@
 // use crate::web::{self, ClientError};
 // use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::Result;
+use crate::{mw::mw_res_timestamp::ReqStamp, Result};
 use axum::http::{Method, Uri};
+use jd_utils::time::{format_time, now_utc};
 use serde::Serialize;
 use serde_json::{json, Value};
 use serde_with::skip_serializing_none;
 use tracing::{debug, error};
-use uuid::Uuid;
 
 // TODO: Add CTX & web Client Errro
-pub async fn log_request(uuid: Uuid, uri: Uri, req_method: Method, log_data: Value, status: u8) -> Result<()> {
+pub async fn log_request(
+    uri: Uri,
+    req_method: Method,
+    req_stamp: ReqStamp,
+    log_data: Value,
+    status: u8,
+    // ctx: Option<Ctx>,
+    // web_error: Option<&Error>,
+    // client_error: Option<ClientError>,
+) -> Result<()> {
+    // TODO: Add Ctx and Web Error
     // let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
-    let now = chrono::Utc::now();
+
+    // let error_type = web_error.map(|se| se.as_ref().to_string());
+    // let error_data = serde_json::to_value(web_error)
+    //     .ok()
+    //     .and_then(|mut v| v.get_mut("data").map(|v| v.take()));
+    let ReqStamp { uuid, time_in } = req_stamp;
+    let now = now_utc();
 
     let log = RequestLogLine {
         // Basic request identification
-        log_type: "request".to_string(),
-        timestamp: now.to_rfc3339(),
+        uuid: uuid.to_string(),
+        timestamp: format_time(now),
+        time_in: format_time(time_in),
         request_id: uuid.to_string(),
 
         // Request details
@@ -55,8 +72,9 @@ pub async fn log_request(uuid: Uuid, uri: Uri, req_method: Method, log_data: Val
 #[derive(Serialize)]
 struct RequestLogLine {
     // Basic request identification
-    log_type: String,
-    timestamp: String,
+    uuid: String,      // uuid string formatted
+    timestamp: String, // Rfc 3339
+    time_in: String,   // Rfc 3339
     request_id: String,
 
     // Request details

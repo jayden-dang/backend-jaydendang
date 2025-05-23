@@ -5,17 +5,20 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
+use jd_utils::time::now_utc;
 use serde_json::{json, to_value, Value};
 use std::sync::Arc;
 use uuid::Uuid;
 
-pub async fn mw_map_response(uri: Uri, req_method: Method, res: Response) -> Response {
+use super::mw_res_timestamp::ReqStamp;
+
+pub async fn mw_map_response(uri: Uri, req_method: Method, req_stamp: ReqStamp, res: Response) -> Response {
     eprintln!("->> {:<12} - mw_map_response - {} {}", "MIDDLEWARE", req_method, uri);
     let start_time = std::time::Instant::now();
     let uuid = Uuid::new_v4();
     let status = res.status();
     let headers = get_request_headers(&res);
-    let request_time = chrono::Utc::now();
+    let request_time = now_utc();
 
     // Handle error cases
     let web_error = res.extensions().get::<Arc<Error>>().map(Arc::as_ref);
@@ -38,14 +41,14 @@ pub async fn mw_map_response(uri: Uri, req_method: Method, res: Response) -> Res
                     "details": details
                 },
                 "meta": {
-                    "timestamp": request_time.to_rfc3339()
+                    "timestamp": request_time,
                 }
             });
 
             // Server log - detailed information
             let server_log = json!({
                 "log_type": "request",
-                "timestamp": request_time.to_rfc3339(),
+                "timestamp": request_time,
                 "request_id": uuid.to_string(),
                 "request": {
                     "method": req_method.to_string(),
@@ -71,7 +74,7 @@ pub async fn mw_map_response(uri: Uri, req_method: Method, res: Response) -> Res
             });
 
             eprintln!("->> {:<12} - Server Log: {}", "MIDDLEWARE", server_log);
-            let _ = log_request(uuid, uri, req_method, server_log, status_code.as_u16() as u8).await;
+            let _ = log_request(uri, req_method, req_stamp, server_log, status_code.as_u16() as u8).await;
             (status_code, Json(client_response)).into_response()
         }
         None => {
@@ -92,14 +95,14 @@ pub async fn mw_map_response(uri: Uri, req_method: Method, res: Response) -> Res
                             "details": e.to_string()
                         },
                         "meta": {
-                            "timestamp": request_time.to_rfc3339()
+                            "timestamp": request_time,
                         }
                     });
 
                     // Server log - detailed information
                     let server_log = json!({
                         "log_type": "request",
-                        "timestamp": request_time.to_rfc3339(),
+                        "timestamp": request_time,
                         "request_id": uuid.to_string(),
                         "request": {
                             "method": req_method.to_string(),
@@ -126,9 +129,9 @@ pub async fn mw_map_response(uri: Uri, req_method: Method, res: Response) -> Res
 
                     eprintln!("->> {:<12} - Server Log: {}", "MIDDLEWARE", server_log);
                     let _ = log_request(
-                        uuid,
                         uri,
                         req_method,
+                        req_stamp,
                         server_log,
                         StatusCode::INTERNAL_SERVER_ERROR.as_u16() as u8,
                     )
@@ -153,7 +156,7 @@ pub async fn mw_map_response(uri: Uri, req_method: Method, res: Response) -> Res
                         json!({
                             "data": data,
                             "meta": {
-                                "timestamp": request_time.to_rfc3339(),
+                                "timestamp": request_time,
                                 "content_type": content_type,
                                 "pagination": pagination
                             }
@@ -168,7 +171,7 @@ pub async fn mw_map_response(uri: Uri, req_method: Method, res: Response) -> Res
                             "content_type": "text/plain"
                         },
                         "meta": {
-                            "timestamp": request_time.to_rfc3339(),
+                            "timestamp": request_time,
                             "content_type": "text/plain",
                             "pagination": pagination
                         }
@@ -189,7 +192,7 @@ pub async fn mw_map_response(uri: Uri, req_method: Method, res: Response) -> Res
             // Server log - detailed information
             let server_log = json!({
                 "log_type": "request",
-                "timestamp": request_time.to_rfc3339(),
+                "timestamp": request_time,
                 "request_id": uuid.to_string(),
                 "request": {
                     "method": req_method.to_string(),
@@ -215,7 +218,7 @@ pub async fn mw_map_response(uri: Uri, req_method: Method, res: Response) -> Res
             });
 
             eprintln!("->> {:<12} - Server Log: {}", "MIDDLEWARE", server_log);
-            let _ = log_request(uuid, uri, req_method, server_log, status.as_u16() as u8).await;
+            let _ = log_request(uri, req_method, req_stamp, server_log, status.as_u16() as u8).await;
             (status, Json(client_response)).into_response()
         }
     }

@@ -60,10 +60,12 @@ dependencies = [
  "derive_more",
  "hostname",
  "jd_core",
+ "jd_utils",
  "serde",
  "serde_json",
  "serde_with",
  "strum_macros",
+ "time",
  "tower",
  "tracing",
  "uuid",
@@ -1134,6 +1136,7 @@ dependencies = [
  "derive_more",
  "serde",
  "serde_with",
+ "time",
 ]
 
 [[package]]
