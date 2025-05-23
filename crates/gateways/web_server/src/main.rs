@@ -1,7 +1,9 @@
-use api_gateway::mw::{mw_res_map, mw_res_timestamp};
+use api_gateway::mw::{mw_auth::mw_ctx_resolve, mw_res_map, mw_res_timestamp};
 use axum::{http::StatusCode, middleware, response::IntoResponse, routing::get, Json, Router};
 use dotenv::dotenv;
+use jd_core::ModelManager;
 use serde_json::json;
+use tower_cookies::CookieManagerLayer;
 use tracing::info;
 
 use jd_tracing::tracing_init;
@@ -19,6 +21,8 @@ async fn main() -> error::Result<()> {
     let _ = tracing_init();
     tracing::info!("Tracing initialized");
 
+    let mm = ModelManager::new().await.expect("");
+
     let cfg = config::Config::from_env().expect("Loading env failed");
 
     info!("Loading Environment Success...");
@@ -26,6 +30,8 @@ async fn main() -> error::Result<()> {
         .route("/", get(root))
         .layer(middleware::map_response(mw_res_map::mw_map_response))
         .layer(middleware::from_fn(mw_res_timestamp::mw_req_stamp_resolver))
+        .layer(middleware::from_fn_with_state(mm.clone(), mw_ctx_resolve))
+        .layer(CookieManagerLayer::new())
         .fallback(fallback_handler);
     info!("Server is running...");
 

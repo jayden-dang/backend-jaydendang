@@ -55,6 +55,7 @@ dependencies = [
 name = "api_gateway"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "axum",
  "chrono",
  "derive_more",
@@ -67,6 +68,7 @@ dependencies = [
  "strum_macros",
  "time",
  "tower",
+ "tower-cookies",
  "tracing",
  "uuid",
 ]
@@ -356,6 +358,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec182b0ca2f35d8fc196cf3404988fd8b8c739a4d270ff118a398feb0cbec1ca"
 dependencies = [
  "unicode-segmentation",
+]
+
+[[package]]
+name = "cookie"
+version = "0.18.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4ddef33a339a91ea89fb53151bd0a4689cfce27055c291dfa69945475d22c747"
+dependencies = [
+ "percent-encoding",
+ "time",
+ "version_check",
 ]
 
 [[package]]
@@ -673,6 +686,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e5c1b78ca4aae1ac06c48a526a655760685149f0d465d21f37abfe57ce075c6"
 
 [[package]]
+name = "futures-macro"
+version = "0.3.31"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "162ee34ebcb7c64a8abebc059ce0fee27c2262618d7b60ed8faf72fef13c3650"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "futures-sink"
 version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -692,6 +716,7 @@ checksum = "9fa08315bb612088cc391249efdc3bc77536f16c91f6cf495e6fbe85b20a4a81"
 dependencies = [
  "futures-core",
  "futures-io",
+ "futures-macro",
  "futures-sink",
  "futures-task",
  "memchr",
@@ -1081,8 +1106,8 @@ version = "0.1.0"
 name = "jd_core"
 version = "0.1.0"
 dependencies = [
- "config",
  "derive_more",
+ "jd_utils",
  "serde",
  "serde_with",
  "sqlx",
@@ -2385,6 +2410,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "tower-cookies"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "151b5a3e3c45df17466454bb74e9ecedecc955269bdedbf4d150dfa393b55a36"
+dependencies = [
+ "axum-core",
+ "cookie",
+ "futures-util",
+ "http",
+ "parking_lot",
+ "pin-project-lite",
+ "tower-layer",
+ "tower-service",
+]
+
+[[package]]
 name = "tower-layer"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2680,6 +2721,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
+ "tower-cookies",
  "tracing",
  "tracing-subscriber",
 ]

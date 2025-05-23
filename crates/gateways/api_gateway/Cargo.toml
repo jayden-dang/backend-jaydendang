@@ -21,3 +21,5 @@ tower = "0.5.2"
 tracing.workspace = true
 derive_more.workspace = true
 time.workspace = true
+tower-cookies.workspace = true
+async-trait = "0.1.88"

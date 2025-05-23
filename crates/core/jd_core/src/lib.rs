@@ -4,6 +4,7 @@ pub mod store;
 
 pub type Result<T> = std::result::Result<T, error::Error>;
 
+#[derive(Clone)]
 pub struct ModelManager {}
 
 impl ModelManager {
