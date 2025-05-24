@@ -12,6 +12,13 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     CantCreateModelManagerProvider(String),
 
+    ListLimitOverMax {
+        max: i64,
+        actual: i64,
+    },
+
+    CountFail,
+
     #[from]
     Dbx(dbx::Error),
 
@@ -19,7 +26,15 @@ pub enum Error {
     SeaQuery(#[serde_as(as = "DisplayFromStr")] sea_query::error::Error),
 
     #[from]
+    ModqlIntoSea(#[serde_as(as = "DisplayFromStr")] modql::filter::IntoSeaError),
+
+    #[from]
     Sqlx(#[serde_as(as = "DisplayFromStr")] sqlx::error::Error),
+
+    EntityNotFound {
+        entity: &'static str,
+        id: i64,
+    },
 }
 
 impl Display for Error {
