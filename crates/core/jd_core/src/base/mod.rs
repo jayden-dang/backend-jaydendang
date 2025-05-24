@@ -1,8 +1,10 @@
+pub mod macros_utils;
+
 use crate::{error::Error, Result};
 mod utils;
 use modql::{
     field::HasSeaFields,
-    filter::{FilterGroup, FilterGroups, ListOptions},
+    filter::{FilterGroups, ListOptions},
     SIden,
 };
 use sea_query::{Condition, Expr, Iden, PostgresQueryBuilder, Query, SeaRc, TableRef};
@@ -155,7 +157,7 @@ where
     Ok(entity)
 }
 
-pub async fn frist<MC, O, F>(
+pub async fn first<MC, O, F>(
     ctx: &Ctx,
     mm: &ModelManager,
     filter: Option<F>,
@@ -184,21 +186,21 @@ where
         .map(|item| item.into_iter().next())
 }
 
-pub async fn list<MC, E, F>(
+pub async fn list<MC, O, F>(
     _ctx: &Ctx,
     mm: &ModelManager,
     filter: Option<F>,
     list_options: Option<ListOptions>,
-) -> Result<Vec<E>>
+) -> Result<Vec<O>>
 where
     MC: DMC,
     F: Into<FilterGroups>,
-    E: for<'r> FromRow<'r, PgRow> + Unpin + Send,
-    E: HasSeaFields,
+    O: for<'r> FromRow<'r, PgRow> + Unpin + Send,
+    O: HasSeaFields,
 {
     // -- Build the query
     let mut query = Query::select();
-    query.from(MC::table_ref()).columns(E::sea_column_refs());
+    query.from(MC::table_ref()).columns(O::sea_column_refs());
 
     // condition from filter
     if let Some(filter) = filter {
@@ -206,6 +208,7 @@ where
         let cond: Condition = filters.try_into()?;
         query.cond_where(cond);
     }
+
     // list options
     let list_options = compute_list_options(list_options)?;
     list_options.apply_to_sea_query(&mut query);
@@ -213,7 +216,7 @@ where
     // -- Execute the query
     let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
 
-    let sqlx_query = sqlx::query_as_with::<_, E, _>(&sql, values);
+    let sqlx_query = sqlx::query_as_with::<_, O, _>(&sql, values);
     let entities = mm.dbx().fetch_all(sqlx_query).await?;
 
     Ok(entities)

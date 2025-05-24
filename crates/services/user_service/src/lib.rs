@@ -1,4 +1,3 @@
-mod base;
 mod error;
 pub mod infra;
 

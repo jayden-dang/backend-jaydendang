@@ -9,11 +9,11 @@ tower-cookies.workspace = true
 serde.workspace = true
 tracing.workspace = true
 tokio.workspace = true
-async-trait = "0.1.88"
 serde_with.workspace = true
 time.workspace = true
 sqlx.workspace = true
 
+async-trait = "0.1.88"
 hyper = { version = "1.0", features = ["full"] }
 serde_json = "1.0.140"
 derive_more = { version = "2", features = ["from", "display"] }
@@ -24,4 +24,6 @@ uuid = { version = "1", features = ["v4", "fast-rng"] }
 # Members
 jd_core = { path = "../../core/jd_core" }
 jd_utils = { path = "../../shared/jd_utils" }
+jd_contracts = { path = "../../shared/jd_contracts" }
 
+user_service = { path = "../../services/user_service" }

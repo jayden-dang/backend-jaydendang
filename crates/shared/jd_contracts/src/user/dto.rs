@@ -1,9 +1,10 @@
 use modql::field::Fields;
 use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
 
-#[derive(Deserialize, Fields)]
+#[derive(Deserialize, Fields, FromRow)]
 pub struct CreateUserReq {
-    pub pk_user_id: i64,
+    pub id: i64,
     pub email: String,
     pub username: String,
     pub password: String,
@@ -11,9 +12,9 @@ pub struct CreateUserReq {
     pub last_name: Option<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Fields, FromRow)]
 pub struct CreateUserRes {
-    pub user_id: i64,
+    pub id: i64,
     pub username: String,
     pub first_name: Option<String>,
     pub last_name: Option<String>,

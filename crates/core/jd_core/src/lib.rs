@@ -2,12 +2,12 @@ use jd_storage::{dbx::Dbx, new_db_pool};
 
 pub mod ctx;
 mod error;
-use error::{Result, Error};
+pub use error::{Error, Result};
 pub mod base;
 
 #[derive(Clone)]
 pub struct ModelManager {
-    dbx: Dbx
+    dbx: Dbx,
 }
 
 impl ModelManager {

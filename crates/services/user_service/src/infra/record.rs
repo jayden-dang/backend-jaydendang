@@ -6,7 +6,7 @@ use serde_with::serde_as;
 use sqlx::{prelude::FromRow, types::time::OffsetDateTime};
 
 #[serde_as]
-#[derive(Serialize, FromRow, Fields)]
+#[derive(Serialize, FromRow, Fields, Clone, Debug)]
 pub struct UserRecord {
     pub user_id: i64,
     pub email: String,
