@@ -25,5 +25,6 @@ uuid = { version = "1", features = ["v4", "fast-rng"] }
 jd_core = { path = "../../core/jd_core" }
 jd_utils = { path = "../../shared/jd_utils" }
 jd_contracts = { path = "../../shared/jd_contracts" }
+jd_domain = { path = "../../shared/jd_domain" }
 
 user_service = { path = "../../services/user_service" }

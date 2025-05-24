@@ -22,3 +22,20 @@ POST :host/api/v1/login?order_by=id
   "pwd": "welcome"
 }
 #+end_src
+
+#+RESULTS:
+#+BEGIN_SRC js
+{
+  "code": 404,
+  "message": "Route not found",
+  "path": "The requested resource does not exist",
+  "status": "error",
+  "timestamp": "2025-05-24T12:57:56.284786Z"
+}
+// POST http://localhost:8080/api/v1/login?order_by=id
+// HTTP/1.1 404 Not Found
+// content-type: application/json
+// content-length: 146
+// date: Sat, 24 May 2025 12:57:56 GMT
+// Request duration: 0.008505s
+#+END_SRC

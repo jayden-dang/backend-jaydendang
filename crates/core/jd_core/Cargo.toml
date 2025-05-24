@@ -15,3 +15,7 @@ modql.workspace = true
 # Members
 jd_utils = { path = "../../shared/jd_utils" }
 jd_storage = { path = "../../infrastructure/jd_storage" }
+serde_json = "1.0.140"
+axum.workspace = true
+tracing.workspace = true
+strum_macros = "0.27.1"
