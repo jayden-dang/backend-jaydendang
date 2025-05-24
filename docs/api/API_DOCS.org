@@ -60,17 +60,18 @@ POST :host/api/login
       }
     }
   },
-  "id": "63ef1673-a6c3-4e56-ab59-4ff5493b8bce",
+  "id": "75e6da5c-baae-4327-9ad5-ecf81596b6c4",
   "meta": {
-    "timestamp": "2025-05-24T03:42:37.722784Z"
+    "timestamp": "2025-05-24T03:58:58.47433Z"
   },
-  "status": "success"
+  "status": 0,
+  "type": "success"
 }
 // POST http://localhost:8080/api/login
 // HTTP/1.1 200 OK
 // content-type: application/json
 // set-cookie: auth-token=user-1.exp.sign
-// content-length: 219
-// date: Sat, 24 May 2025 03:42:37 GMT
-// Request duration: 0.024746s
+// content-length: 227
+// date: Sat, 24 May 2025 03:58:58 GMT
+// Request duration: 0.022006s
 #+END_SRC

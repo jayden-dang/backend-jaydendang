@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use derive_more::From;
 use serde::Serialize;
-use serde_with::{serde_as, DisplayFromStr};
+use serde_with::serde_as;
 
 #[serde_as]
 #[derive(Debug, Serialize, From)]

@@ -29,16 +29,13 @@ impl IntoResponse for Error {
     fn into_response(self) -> Response {
         println!("->> {:<12} - model::Error {self:?}", "INTO_RES");
 
-        // Create a placeholder Axum reponse.
-        let mut response = match self {
-            Error::LoginFail => StatusCode::UNAUTHORIZED.into_response(),
-            Error::CtxExt(_) => StatusCode::FORBIDDEN.into_response(),
-            Error::EntityNotFound { .. } => StatusCode::NOT_FOUND.into_response(),
-            Error::ReqStampNotInReqExt => StatusCode::BAD_REQUEST.into_response(),
-            _ => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
-        };
+        // Get the status code and client error
+        let (status_code, _) = self.client_status_and_error();
 
-        // Insert the Error into the reponse.
+        // Create a placeholder Axum response
+        let mut response = status_code.into_response();
+
+        // Insert the Error into the response
         response.extensions_mut().insert(self);
 
         response
@@ -67,7 +64,10 @@ impl Error {
             // -- Login/Auth
             LoginFail => (StatusCode::UNAUTHORIZED, ClientError::LOGIN_FAIL),
             CtxExt(_) => (StatusCode::FORBIDDEN, ClientError::NO_AUTH),
-            EntityNotFound { entity, id } => (StatusCode::NOT_FOUND, ClientError::EntityNotFound { entity, id: *id }),
+            EntityNotFound { entity, id } => {
+                println!("Converting EntityNotFound: entity={}, id={}", entity, id);
+                (StatusCode::NOT_FOUND, ClientError::EntityNotFound { entity, id: *id })
+            },
             ReqStampNotInReqExt => (StatusCode::BAD_REQUEST, ClientError::SERVICE_ERROR),
             // -- Fallback
             _ => (StatusCode::INTERNAL_SERVER_ERROR, ClientError::SERVICE_ERROR),

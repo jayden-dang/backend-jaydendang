@@ -16,17 +16,27 @@ pub fn routes() -> Router {
 async fn api_login_handler(cookies: Cookies, payload: Json<LoginPayload>) -> Result<Json<Value>> {
     debug!("->> {:<12} - api_login_handler", "HANDLER");
 
-    // Test case 1: Empty username
+    // Test case 1: Empty username - Bad Request
     if payload.username.is_empty() {
-        return Err(Error::LoginFail);
+        return Err(Error::ReqStampNotInReqExt);
     }
 
-    // Test case 2: Empty password
+    // Test case 2: Empty password - Bad Request
     if payload.pwd.is_empty() {
-        return Err(Error::LoginFail);
+        return Err(Error::ReqStampNotInReqExt);
     }
 
-    // Test case 3: Invalid credentials
+    // Test case 3: User not found - Not Found
+    if payload.username == "notfound" {
+        let err = Error::EntityNotFound { 
+            entity: "user", 
+            id: 0 
+        };
+        debug!("Returning EntityNotFound error: {:?}", err);
+        return Err(err);
+    }
+
+    // Test case 4: Invalid credentials - Unauthorized
     if payload.username != "demo1" || payload.pwd != "welcome" {
         return Err(Error::LoginFail);
     }
