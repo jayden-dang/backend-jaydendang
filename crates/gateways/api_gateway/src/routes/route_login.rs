@@ -16,18 +16,33 @@ pub fn routes() -> Router {
 async fn api_login_handler(cookies: Cookies, payload: Json<LoginPayload>) -> Result<Json<Value>> {
     debug!("->> {:<12} - api_login_handler", "HANDLER");
 
-    // TODO: Implement real db/auth logic.
+    // Test case 1: Empty username
+    if payload.username.is_empty() {
+        return Err(Error::LoginFail);
+    }
+
+    // Test case 2: Empty password
+    if payload.pwd.is_empty() {
+        return Err(Error::LoginFail);
+    }
+
+    // Test case 3: Invalid credentials
     if payload.username != "demo1" || payload.pwd != "welcome" {
         return Err(Error::LoginFail);
     }
 
-    // FIXME: Implement real auth-token generation/signature.
+    // Success case
     cookies.add(Cookie::new(AUTH_TOKEN, "user-1.exp.sign"));
 
-    // Create the success body.
+    // Create the success body with more detailed response
     let body = Json(json!({
         "result": {
-            "success": true
+            "success": true,
+            "user": {
+                "username": payload.username,
+                "role": "admin"
+            },
+            "token": "user-1.exp.sign"
         }
     }));
 

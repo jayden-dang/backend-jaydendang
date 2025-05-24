@@ -18,6 +18,24 @@ User-Agent: Emacs30"
 GET :host
 #+end_src
 
+#+RESULTS:
+#+BEGIN_SRC js
+{
+  "data": null,
+  "id": "418924ac-1f15-4496-a9c8-c789264b3bf4",
+  "meta": {
+    "timestamp": "2025-05-24T03:30:38.513052Z"
+  },
+  "status": "success"
+}
+// GET http://localhost:8080
+// HTTP/1.1 200 OK
+// content-type: application/json
+// content-length: 127
+// date: Sat, 24 May 2025 03:30:38 GMT
+// Request duration: 0.008552s
+#+END_SRC
+
 * Api
 
 #+begin_src restclient :var host=host :var headers=headers
@@ -32,56 +50,27 @@ POST :host/api/login
 #+RESULTS:
 #+BEGIN_SRC js
 {
-  "result": {
-    "success": true
-  }
+  "data": {
+    "result": {
+      "success": true,
+      "token": "user-1.exp.sign",
+      "user": {
+        "role": "admin",
+        "username": "demo1"
+      }
+    }
+  },
+  "id": "63ef1673-a6c3-4e56-ab59-4ff5493b8bce",
+  "meta": {
+    "timestamp": "2025-05-24T03:42:37.722784Z"
+  },
+  "status": "success"
 }
 // POST http://localhost:8080/api/login
 // HTTP/1.1 200 OK
 // content-type: application/json
 // set-cookie: auth-token=user-1.exp.sign
-// content-length: 27
-// date: Fri, 23 May 2025 16:35:50 GMT
-// Request duration: 0.003789s
+// content-length: 219
+// date: Sat, 24 May 2025 03:42:37 GMT
+// Request duration: 0.024746s
 #+END_SRC
-
-
-#+begin_src rust
-    match client_status_error {
-        Some((status_code, client_error)) => {
-            debug!("HANDLING ERROR CASE: status={}, error={:?}", status_code, client_error);
-            let client_error_body = json!({
-                "id": uuid.to_string(),
-                "status": "error",
-                "timestamp": format_time(now_utc()),
-                "error": {
-                    "type": client_error.as_ref(),
-                    "code": status_code.as_u16()
-                }
-            });
-            error!("CLIENT ERROR BODY: \n {client_error_body}");
-            (status_code, Json(client_error_body)).into_response()
-        }
-        None => {
-            debug!("HANDLING SUCCESS CASE: status={}", parts.status);
-            let status = parts.status;
-            let body = to_bytes(body, usize::MAX).await.unwrap_or_default();
-            let body_string = String::from_utf8(body.to_vec()).unwrap_or_default();
-            let data: Value = serde_json::from_str(&body_string).unwrap_or(Value::Null);
-
-            let success_body = json!({
-                "id": uuid.to_string(),
-                "status": if status.is_success() { "success" } else { "error" },
-                "data": data,
-                "meta": {
-                    "timestamp": format_time(now_utc()),
-                }
-            });
-
-            let client_error = client_status_error.unzip().1;
-
-            let _ = log_request(uri, req_method, req_stamp, ctx, web_error, client_error).await;
-            (status, Json(success_body)).into_response()
-        }
-    }
-#+end_src
