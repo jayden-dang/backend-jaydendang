@@ -43,18 +43,14 @@ async fn api_login_handler(cookies: Cookies, payload: Json<LoginPayload>) -> Res
 
     // Create the success body with user info only
     let body = Json(json!({
-        "result": {
-            "success": true,
-            "user": {
-                "username": payload.username,
-                "role": "admin"
-            }
+        "user": {
+            "username": payload.username,
+            "role": "admin"
         }
     }));
 
     Ok(body)
 }
-
 
 #[derive(Debug, Deserialize)]
 struct LoginPayload {

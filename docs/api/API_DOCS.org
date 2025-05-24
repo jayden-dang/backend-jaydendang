@@ -13,94 +13,12 @@
 User-Agent: Emacs30"
 #+END_SRC
 
-
-#+begin_src restclient :var host=host
-GET :host
-#+end_src
-
-#+RESULTS:
-#+BEGIN_SRC js
-{
-  "data": {
-    "data": "Hello, World!"
-  },
-  "id": "8792ac9a-f15d-474c-9250-58aa76ea9581",
-  "meta": {
-    "timestamp": "2025-05-24T04:20:18.276446Z"
-  },
-  "status": 0,
-  "type": "success"
-}
-// GET http://localhost:8080
-// HTTP/1.1 200 OK
-// content-type: application/json
-// content-length: 156
-// date: Sat, 24 May 2025 04:20:18 GMT
-// Request duration: 0.004302s
-#+END_SRC
-
 * Api
-
 #+begin_src restclient :var host=host :var headers=headers
 POST :host/api/v1/login?order_by=id
 :headers
 {
   "username": "demo1",
   "pwd": "welcome"
-}
-#+end_src
-
-#+RESULTS:
-#+BEGIN_SRC js
-{
-  "data": {
-    "result": {
-      "success": true,
-      "user": {
-        "role": "admin",
-        "username": "demo1"
-      }
-    }
-  },
-  "id": "e677e4e0-37cf-4247-baa5-52378c8e13c2",
-  "meta": {
-    "timestamp": "2025-05-24T04:41:22.83232Z"
-  },
-  "status": 0,
-  "type": "success"
-}
-// POST http://localhost:8080/api/v1/login?order_by=id
-// HTTP/1.1 200 OK
-// content-type: application/json
-// set-cookie: auth-token=user-1.exp.sign
-// content-length: 201
-// date: Sat, 24 May 2025 04:41:22 GMT
-// Request duration: 0.022587s
-#+END_SRC
-
-#+begin_src json
-{
-  "duration_ms": 1.398,
-  "id": "8792ac9a-f15d-474c-9250-58aa76ea9581",
-  "request": {
-    "method": "GET",
-    "path": "/"
-  },
-  "response": {
-    "body": {
-      "data": {
-        "data": "Hello, World!"
-      },
-      "id": "8792ac9a-f15d-474c-9250-58aa76ea9581",
-      "meta": {
-        "timestamp": "2025-05-24T04:20:18.276446Z"
-      },
-      "status": 0,
-      "type": "success"
-    },
-    "size": 156,
-    "status": "success"
-  },
-  "timestamp": "2025-05-24T04:20:18.276508Z"
 }
 #+end_src

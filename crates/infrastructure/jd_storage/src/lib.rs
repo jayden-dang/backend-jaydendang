@@ -1,5 +1,7 @@
+pub mod dbx;
+
 use jd_utils::config::Config;
-use sqlx::{Pool, Postgres, postgres::PgPoolOptions};
+use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 
 pub type Db = Pool<Postgres>;
 

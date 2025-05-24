@@ -2,9 +2,6 @@ use modql::SIden;
 use sea_query::{Iden, SeaRc, TableRef};
 use serde::Serialize;
 
-const LIST_LIMIT_DEFAULT: i64 = 20;
-const LIST_LIMIT_MAX: i64 = 50;
-
 #[derive(Iden)]
 pub enum ComminId {
     UserId,

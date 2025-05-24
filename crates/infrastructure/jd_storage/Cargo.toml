@@ -5,13 +5,10 @@ edition = "2024"
 
 [dependencies]
 sqlx.workspace = true
-
-
-
-
-
-
-
+tokio.workspace = true
 
 # Members
 jd_utils = { path = "../../shared/jd_utils" }
+derive_more.workspace = true
+serde.workspace = true
+serde_with.workspace = true

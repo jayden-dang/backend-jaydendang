@@ -3,10 +3,10 @@ use api_gateway::{
     v1_routes,
 };
 
-use axum::{http::StatusCode, middleware, response::IntoResponse, routing::get, Json, Router};
+use axum::{http::StatusCode, middleware, response::IntoResponse, Json, Router};
 use dotenv::dotenv;
 use jd_core::ModelManager;
-use serde_json::{json, Value};
+use serde_json::json;
 use tower_cookies::CookieManagerLayer;
 use tracing::info;
 

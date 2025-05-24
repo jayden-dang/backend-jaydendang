@@ -1,13 +1,30 @@
+use jd_storage::{dbx::Dbx, new_db_pool};
+
 pub mod ctx;
 mod error;
-
-pub type Result<T> = std::result::Result<T, error::Error>;
+use error::{Result, Error};
+pub mod base;
 
 #[derive(Clone)]
-pub struct ModelManager {}
+pub struct ModelManager {
+    dbx: Dbx
+}
 
 impl ModelManager {
     pub async fn new() -> Result<Self> {
-        Ok(ModelManager {})
+        let db_pool = new_db_pool()
+            .await
+            .map_err(|ex| Error::CantCreateModelManagerProvider(ex.to_string()))?;
+        let dbx = Dbx::new(db_pool, false)?;
+        Ok(ModelManager { dbx })
+    }
+
+    pub fn new_with_txn(&self) -> Result<ModelManager> {
+        let dbx = Dbx::new(self.dbx.db().clone(), true)?;
+        Ok(ModelManager { dbx })
+    }
+
+    pub fn dbx(&self) -> &Dbx {
+        &self.dbx
     }
 }

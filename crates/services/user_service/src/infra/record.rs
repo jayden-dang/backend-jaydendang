@@ -8,7 +8,7 @@ use sqlx::{prelude::FromRow, types::time::OffsetDateTime};
 #[serde_as]
 #[derive(Serialize, FromRow, Fields)]
 pub struct UserRecord {
-    pub pk_user_id: i64,
+    pub user_id: i64,
     pub email: String,
     pub username: String,
     pub password: String,
@@ -25,7 +25,7 @@ pub struct UserRecord {
 impl From<UserRecord> for User {
     fn from(value: UserRecord) -> Self {
         User {
-            id: value.pk_user_id,
+            user_id: value.user_id,
             email: value.email,
             username: value.username,
             first_name: value.first_name,
