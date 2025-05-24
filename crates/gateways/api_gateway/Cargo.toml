@@ -9,19 +9,19 @@ tower-cookies.workspace = true
 serde.workspace = true
 tracing.workspace = true
 tokio.workspace = true
-hyper = { version = "1.0", features = ["full"] }
+async-trait = "0.1.88"
+serde_with.workspace = true
+time.workspace = true
+sqlx.workspace = true
 
+hyper = { version = "1.0", features = ["full"] }
 serde_json = "1.0.140"
 derive_more = { version = "2", features = ["from", "display"] }
 strum = "0.26"
 strum_macros = "0.26"
 uuid = { version = "1", features = ["v4", "fast-rng"] }
-sys-info = "0.9.1"
 
 # Members
 jd_core = { path = "../../core/jd_core" }
 jd_utils = { path = "../../shared/jd_utils" }
 
-async-trait = "0.1.88"
-serde_with.workspace = true
-time.workspace = true

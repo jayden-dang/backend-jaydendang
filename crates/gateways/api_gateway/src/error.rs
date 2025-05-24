@@ -4,7 +4,7 @@ use derive_more::From;
 use serde::Serialize;
 use serde_with::serde_as;
 
-use crate::middleware;
+use crate::middleware::{self};
 
 #[serde_as]
 #[derive(Debug, Serialize, strum_macros::AsRefStr, Clone, From)]
@@ -13,7 +13,6 @@ pub enum Error {
     // -- Login
     LoginFail,
     // -- CtxExtError
-    // CtxExt(web::mw_auth::CtxExtError),
     EntityNotFound {
         entity: &'static str,
         id: i64,
@@ -64,10 +63,7 @@ impl Error {
             // -- Login/Auth
             LoginFail => (StatusCode::UNAUTHORIZED, ClientError::LOGIN_FAIL),
             CtxExt(_) => (StatusCode::FORBIDDEN, ClientError::NO_AUTH),
-            EntityNotFound { entity, id } => {
-                println!("Converting EntityNotFound: entity={}, id={}", entity, id);
-                (StatusCode::NOT_FOUND, ClientError::EntityNotFound { entity, id: *id })
-            }
+            EntityNotFound { entity, id } => (StatusCode::NOT_FOUND, ClientError::EntityNotFound { entity, id: *id }),
             ReqStampNotInReqExt => (StatusCode::BAD_REQUEST, ClientError::SERVICE_ERROR),
             // -- Fallback
         }

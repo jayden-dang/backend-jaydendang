@@ -4,3 +4,12 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+modql.workspace = true
+sea-query.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_with.workspace = true
+sqlx.workspace = true
+
+
+# Members
+jd_utils = { path = "../jd_utils" }

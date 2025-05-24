@@ -9,8 +9,8 @@ use tracing::debug;
 
 const AUTH_TOKEN: &str = "auth-token";
 
-pub fn routes() -> Router {
-    Router::new().route("/api/login", post(api_login_handler))
+pub fn login_routes() -> Router {
+    Router::new().route("/login", post(api_login_handler))
 }
 
 async fn api_login_handler(cookies: Cookies, payload: Json<LoginPayload>) -> Result<Json<Value>> {
@@ -28,10 +28,7 @@ async fn api_login_handler(cookies: Cookies, payload: Json<LoginPayload>) -> Res
 
     // Test case 3: User not found - Not Found
     if payload.username == "notfound" {
-        let err = Error::EntityNotFound { 
-            entity: "user", 
-            id: 0 
-        };
+        let err = Error::EntityNotFound { entity: "user", id: 0 };
         debug!("Returning EntityNotFound error: {:?}", err);
         return Err(err);
     }
@@ -57,6 +54,7 @@ async fn api_login_handler(cookies: Cookies, payload: Json<LoginPayload>) -> Res
 
     Ok(body)
 }
+
 
 #[derive(Debug, Deserialize)]
 struct LoginPayload {
