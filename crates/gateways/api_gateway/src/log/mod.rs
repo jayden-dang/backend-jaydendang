@@ -9,18 +9,44 @@ use serde_with::skip_serializing_none;
 use time::Duration;
 use tracing::debug;
 
-// TODO: web Client Error
+// List of sensitive fields that should be masked
+const SENSITIVE_FIELDS: &[&str] = &[
+    "password", "pwd", "token", "secret", "key",
+    "credit_card", "card_number", "cvv",
+    "ssn", "social_security",
+    "phone", "email",
+];
+
+fn sanitize_value(value: &mut Value) {
+    match value {
+        Value::Object(map) => {
+            for (key, val) in map.iter_mut() {
+                if SENSITIVE_FIELDS.iter().any(|&field| key.to_lowercase().contains(field)) {
+                    *val = json!("[REDACTED]");
+                } else {
+                    sanitize_value(val);
+                }
+            }
+        }
+        Value::Array(arr) => {
+            for item in arr.iter_mut() {
+                sanitize_value(item);
+            }
+        }
+        _ => {}
+    }
+}
+
 pub async fn log_request(
     uri: Uri,
     req_method: Method,
     req_stamp: ReqStamp,
-    // log_data: Option<Value>,
     ctx: Option<Ctx>,
     web_error: Option<&Error>,
     client_error: Option<ClientError>,
+    request_body: Option<Value>,
+    response_body: Option<Value>,
 ) -> Result<()> {
-    // TODO: Add Ctx and Web Error
-
     let error_type = web_error.map(|se| se.as_ref().to_string());
     let error_data = serde_json::to_value(web_error)
         .ok()
@@ -31,9 +57,12 @@ pub async fn log_request(
     let duration: Duration = now - time_in;
     let duration_ms = (duration.as_seconds_f64() * 1_000_000.).floor() / 1_000.;
 
-    // Extract query parameters
+    // Calculate response size before using response_body
+    let response_size = response_body.as_ref().map(|b| b.to_string().len());
+
+    // Extract and sanitize query parameters
     let query_params: Option<Value> = uri.query().map(|q| {
-        let params: std::collections::HashMap<_, _> = q
+        let mut params: std::collections::HashMap<_, _> = q
             .split('&')
             .filter_map(|pair| {
                 let mut parts = pair.splitn(2, '=');
@@ -42,36 +71,50 @@ pub async fn log_request(
                 Some((key.to_string(), value.to_string()))
             })
             .collect();
-        json!(params)
+        let mut value = json!(params);
+        sanitize_value(&mut value);
+        value
     });
 
+    // Sanitize request body if present
+    let mut sanitized_request_body = request_body;
+    if let Some(ref mut body) = sanitized_request_body {
+        sanitize_value(body);
+    }
+
     let log = RequestLogLine {
-        // Basic request identification
-        uuid: uuid.to_string(),
+        // Request identification
+        id: uuid.to_string(),
         timestamp: format_time(now),
-        time_in: format_time(time_in),
-        request_id: uuid.to_string(),
-
-        // Performance metrics
         duration_ms,
-        user_id: ctx.map(|c| c.user_id()),
 
-        // Request details
-        http_path: uri.path().to_string(),
-        http_method: req_method.to_string(),
-        query_params,
-        request_headers: None,
+        // Request context
+        request: RequestContext {
+            method: req_method.to_string(),
+            path: uri.path().to_string(),
+            query: query_params,
+            headers: None,
+            body: sanitized_request_body,
+            user_id: ctx.map(|c| c.user_id()),
+        },
 
-        // Error information
-        client_error_type: client_error.map(|e| e.as_ref().to_string()),
-        error_data,
-        error_type,
+        // Response context
+        response: ResponseContext {
+            status: if web_error.is_some() { "error" } else { "success" }.to_string(),
+            body: response_body,
+            size: response_size,
+        },
 
-        // Additional context
-        status: if web_error.is_some() { "error" } else { "success" }.to_string(),
-        user_agent: None,    // TODO: Extract from headers
-        ip_address: None,    // TODO: Extract from request
-        response_size: None, // TODO: Calculate from response
+        // Error context (if any)
+        error: if web_error.is_some() {
+            Some(ErrorContext {
+                type_: error_type,
+                client_type: client_error.map(|e| e.as_ref().to_string()),
+                data: error_data,
+            })
+        } else {
+            None
+        },
     };
 
     debug!("REQUEST LOG: \n {}", json!(log));
@@ -81,34 +124,45 @@ pub async fn log_request(
 #[skip_serializing_none]
 #[derive(Serialize)]
 struct RequestLogLine {
-    // Basic request identification
-    uuid: String,      // uuid string formatted
-    timestamp: String, // Rfc 3339
-    time_in: String,   // Rfc 3339
-    request_id: String,
-
-    // Performance metrics
+    // Request identification
+    id: String,
+    timestamp: String,
     duration_ms: f64,
+
+    // Request context
+    request: RequestContext,
+
+    // Response context
+    response: ResponseContext,
+
+    // Error context (if any)
+    error: Option<ErrorContext>,
+}
+
+#[skip_serializing_none]
+#[derive(Serialize)]
+struct RequestContext {
+    method: String,
+    path: String,
+    query: Option<Value>,
+    headers: Option<Value>,
+    body: Option<Value>,
     user_id: Option<i64>,
+}
 
-    // Request details
-    http_path: String,
-    http_method: String,
-    query_params: Option<Value>,
-    request_headers: Option<Value>,
-
-    // response_data: Option<Value>,
-    // TODO: More Information
-    // client_ip: String,
-    // headers: String
-    // -- Errors attributes.
-    client_error_type: Option<String>,
-    error_type: Option<String>,
-    error_data: Option<Value>,
-
-    // Additional context
+#[skip_serializing_none]
+#[derive(Serialize)]
+struct ResponseContext {
     status: String,
-    user_agent: Option<String>,
-    ip_address: Option<String>,
-    response_size: Option<usize>,
+    body: Option<Value>,
+    size: Option<usize>,
+}
+
+#[skip_serializing_none]
+#[derive(Serialize)]
+struct ErrorContext {
+    #[serde(rename = "type")]
+    type_: Option<String>,
+    client_type: Option<String>,
+    data: Option<Value>,
 }

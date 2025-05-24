@@ -24,9 +24,9 @@ GET :host
   "data": {
     "data": "Hello, World!"
   },
-  "id": "92afe89d-9e8b-4278-8c80-d4e26a86a32f",
+  "id": "8792ac9a-f15d-474c-9250-58aa76ea9581",
   "meta": {
-    "timestamp": "2025-05-24T04:05:19.182727Z"
+    "timestamp": "2025-05-24T04:20:18.276446Z"
   },
   "status": 0,
   "type": "success"
@@ -35,14 +35,14 @@ GET :host
 // HTTP/1.1 200 OK
 // content-type: application/json
 // content-length: 156
-// date: Sat, 24 May 2025 04:05:19 GMT
-// Request duration: 0.007644s
+// date: Sat, 24 May 2025 04:20:18 GMT
+// Request duration: 0.004302s
 #+END_SRC
 
 * Api
 
 #+begin_src restclient :var host=host :var headers=headers
-POST :host/api/login
+POST :host/api/login?order_by=id
 :headers
 {
   "username": "demo1",
@@ -56,25 +56,51 @@ POST :host/api/login
   "data": {
     "result": {
       "success": true,
-      "token": "user-1.exp.sign",
       "user": {
         "role": "admin",
         "username": "demo1"
       }
     }
   },
-  "id": "75e6da5c-baae-4327-9ad5-ecf81596b6c4",
+  "id": "f92f1366-b30a-4922-a8c2-c0ddbf58abdc",
   "meta": {
-    "timestamp": "2025-05-24T03:58:58.47433Z"
+    "timestamp": "2025-05-24T04:19:35.49156Z"
   },
   "status": 0,
   "type": "success"
 }
-// POST http://localhost:8080/api/login
+// POST http://localhost:8080/api/login?order_by=id
 // HTTP/1.1 200 OK
 // content-type: application/json
 // set-cookie: auth-token=user-1.exp.sign
-// content-length: 227
-// date: Sat, 24 May 2025 03:58:58 GMT
-// Request duration: 0.022006s
+// content-length: 201
+// date: Sat, 24 May 2025 04:19:35 GMT
+// Request duration: 0.007811s
 #+END_SRC
+
+#+begin_src json
+{
+  "duration_ms": 1.398,
+  "id": "8792ac9a-f15d-474c-9250-58aa76ea9581",
+  "request": {
+    "method": "GET",
+    "path": "/"
+  },
+  "response": {
+    "body": {
+      "data": {
+        "data": "Hello, World!"
+      },
+      "id": "8792ac9a-f15d-474c-9250-58aa76ea9581",
+      "meta": {
+        "timestamp": "2025-05-24T04:20:18.276446Z"
+      },
+      "status": 0,
+      "type": "success"
+    },
+    "size": 156,
+    "status": "success"
+  },
+  "timestamp": "2025-05-24T04:20:18.276508Z"
+}
+#+end_src

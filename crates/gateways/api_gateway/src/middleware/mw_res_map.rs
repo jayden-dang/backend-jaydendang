@@ -9,7 +9,7 @@ use axum::{
 
 use jd_utils::time::{format_time, now_utc};
 use serde_json::{json, Value};
-use tracing::{debug, error};
+use tracing::{debug, error, info};
 
 use super::{mw_auth::CtxW, mw_res_timestamp::ReqStamp};
 
@@ -27,6 +27,9 @@ pub async fn mw_map_response(
     let (parts, body) = res.into_parts();
     let extension = parts.extensions.clone();
     let web_error = extension.get::<Error>();
+
+    // Get request body from extension if available
+    let request_body = extension.get::<Value>().cloned();
 
     // Check if the status code indicates success
     let is_success = parts.status.is_success();
@@ -46,8 +49,18 @@ pub async fn mw_map_response(
             }
         });
 
-        error!("CLIENT SUCCESS BODY: \n {success_body}");
-        let _ = log_request(uri, req_method, req_stamp, ctx, web_error, None).await;
+        // Log request details
+        info!("Request Completed Successfully: {} - {}", req_method, uri);
+        let _ = log_request(
+            uri, 
+            req_method, 
+            req_stamp, 
+            ctx, 
+            web_error, 
+            None,
+            request_body,
+            Some(success_body.clone())
+        ).await;
         (parts.status, Json(success_body)).into_response()
     } else {
         // If we have a web_error, use its status and error type
@@ -66,7 +79,26 @@ pub async fn mw_map_response(
                     "code": status_code.as_u16()
                 }
             });
-            error!("CLIENT ERROR BODY: \n {error_body}");
+            
+            error!(
+                "Request failed: {} {} - Status: {} - Error: {}",
+                req_method,
+                uri,
+                status_code,
+                client_error.as_ref()
+            );
+            
+            // Log request details with client error
+            let _ = log_request(
+                uri, 
+                req_method, 
+                req_stamp, 
+                ctx, 
+                web_error, 
+                Some(client_error),
+                request_body,
+                Some(error_body.clone())
+            ).await;
             return (status_code, Json(error_body)).into_response();
         }
 
@@ -80,7 +112,23 @@ pub async fn mw_map_response(
                 "code": parts.status.as_u16()
             }
         });
-        error!("CLIENT ERROR BODY: \n {error_body}");
+        
+        error!(
+            "Request failed with unknown error: {} {} - Status: {}",
+            req_method, uri, parts.status
+        );
+            
+        // Log request details with unknown error
+        let _ = log_request(
+            uri, 
+            req_method, 
+            req_stamp, 
+            ctx, 
+            web_error, 
+            None,
+            request_body,
+            Some(error_body.clone())
+        ).await;
         (parts.status, Json(error_body)).into_response()
     }
 }
