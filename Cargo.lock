@@ -59,18 +59,21 @@ dependencies = [
  "axum",
  "derive_more",
  "hyper",
+ "jd_contracts",
  "jd_core",
+ "jd_domain",
  "jd_utils",
  "serde",
  "serde_json",
  "serde_with",
  "sqlx",
  "strum",
- "strum_macros",
+ "strum_macros 0.26.4",
  "time",
  "tokio",
  "tower-cookies",
  "tracing",
+ "user_service",
  "uuid",
 ]
 
@@ -1136,9 +1139,9 @@ checksum = "4a5f13b858c8d314ee3e8f639011f7ccefe71f97f96e50151fb991f267928e2c"
 name = "jd_contracts"
 version = "0.1.0"
 dependencies = [
- "modql",
  "sea-query",
  "serde",
+ "sqlx",
  "time",
 ]
 
@@ -1146,6 +1149,7 @@ dependencies = [
 name = "jd_core"
 version = "0.1.0"
 dependencies = [
+ "axum",
  "derive_more",
  "jd_storage",
  "jd_utils",
@@ -1153,8 +1157,11 @@ dependencies = [
  "sea-query",
  "sea-query-binder",
  "serde",
+ "serde_json",
  "serde_with",
  "sqlx",
+ "strum_macros 0.27.1",
+ "tracing",
 ]
 
 [[package]]
@@ -2308,6 +2315,19 @@ name = "strum_macros"
 version = "0.26.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4c6bee85a5a24955dc440386795aa378cd9cf82acd5f764469152d2270e581be"
+dependencies = [
+ "heck 0.5.0",
+ "proc-macro2",
+ "quote",
+ "rustversion",
+ "syn",
+]
+
+[[package]]
+name = "strum_macros"
+version = "0.27.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c77a8c5abcaf0f9ce05d62342b7d298c346515365c36b673df4ebe3ced01fde8"
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",
