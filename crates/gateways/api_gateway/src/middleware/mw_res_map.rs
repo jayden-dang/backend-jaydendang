@@ -22,7 +22,7 @@ pub async fn mw_map_response(
 ) -> Response {
     debug!("->> {:<12} - mw_map_response", "RES_MAPPER");
     let ctx = ctx.map(|ctx| ctx.0).ok();
-    let ReqStamp { uuid, time_in } = req_stamp;
+    let ReqStamp { uuid, time_in: _ } = req_stamp;
 
     let (parts, body) = res.into_parts();
     let extension = parts.extensions.clone();
@@ -52,15 +52,16 @@ pub async fn mw_map_response(
         // Log request details
         info!("Request Completed Successfully: {} - {}", req_method, uri);
         let _ = log_request(
-            uri, 
-            req_method, 
-            req_stamp, 
-            ctx, 
-            web_error, 
+            uri,
+            req_method,
+            req_stamp,
+            ctx,
+            web_error,
             None,
             request_body,
-            Some(success_body.clone())
-        ).await;
+            Some(success_body.clone()),
+        )
+        .await;
         (parts.status, Json(success_body)).into_response()
     } else {
         // If we have a web_error, use its status and error type
@@ -79,7 +80,7 @@ pub async fn mw_map_response(
                     "code": status_code.as_u16()
                 }
             });
-            
+
             error!(
                 "Request failed: {} {} - Status: {} - Error: {}",
                 req_method,
@@ -87,18 +88,19 @@ pub async fn mw_map_response(
                 status_code,
                 client_error.as_ref()
             );
-            
+
             // Log request details with client error
             let _ = log_request(
-                uri, 
-                req_method, 
-                req_stamp, 
-                ctx, 
-                web_error, 
+                uri,
+                req_method,
+                req_stamp,
+                ctx,
+                web_error,
                 Some(client_error),
                 request_body,
-                Some(error_body.clone())
-            ).await;
+                Some(error_body.clone()),
+            )
+            .await;
             return (status_code, Json(error_body)).into_response();
         }
 
@@ -112,23 +114,24 @@ pub async fn mw_map_response(
                 "code": parts.status.as_u16()
             }
         });
-        
+
         error!(
             "Request failed with unknown error: {} {} - Status: {}",
             req_method, uri, parts.status
         );
-            
+
         // Log request details with unknown error
         let _ = log_request(
-            uri, 
-            req_method, 
-            req_stamp, 
-            ctx, 
-            web_error, 
+            uri,
+            req_method,
+            req_stamp,
+            ctx,
+            web_error,
             None,
             request_body,
-            Some(error_body.clone())
-        ).await;
+            Some(error_body.clone()),
+        )
+        .await;
         (parts.status, Json(error_body)).into_response()
     }
 }

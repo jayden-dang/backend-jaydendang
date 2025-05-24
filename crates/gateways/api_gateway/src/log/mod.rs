@@ -11,10 +11,18 @@ use tracing::debug;
 
 // List of sensitive fields that should be masked
 const SENSITIVE_FIELDS: &[&str] = &[
-    "password", "pwd", "token", "secret", "key",
-    "credit_card", "card_number", "cvv",
-    "ssn", "social_security",
-    "phone", "email",
+    "password",
+    "pwd",
+    "token",
+    "secret",
+    "key",
+    "credit_card",
+    "card_number",
+    "cvv",
+    "ssn",
+    "social_security",
+    "phone",
+    "email",
 ];
 
 fn sanitize_value(value: &mut Value) {
@@ -37,6 +45,7 @@ fn sanitize_value(value: &mut Value) {
     }
 }
 
+#[warn(clippy::too_many_arguments)]
 pub async fn log_request(
     uri: Uri,
     req_method: Method,
@@ -62,7 +71,7 @@ pub async fn log_request(
 
     // Extract and sanitize query parameters
     let query_params: Option<Value> = uri.query().map(|q| {
-        let mut params: std::collections::HashMap<_, _> = q
+        let params: std::collections::HashMap<_, _> = q
             .split('&')
             .filter_map(|pair| {
                 let mut parts = pair.splitn(2, '=');

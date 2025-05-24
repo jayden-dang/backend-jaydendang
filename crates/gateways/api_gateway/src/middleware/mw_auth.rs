@@ -12,8 +12,6 @@ use serde::Serialize;
 use tower_cookies::Cookies;
 use tracing::debug;
 
-const AUTH_TOKEN: &str = "auth-token";
-
 #[allow(dead_code)] // For now, until we have the rpc.
 pub async fn mw_ctx_require(ctx: Result<CtxW>, req: Request<Body>, next: Next) -> Result<Response> {
     debug!("->> {:<12} - mw_ctx_require - {ctx:?}", "MIDDLEWARE");
@@ -37,7 +35,7 @@ pub async fn mw_ctx_resolve(
     Ok(next.run(req).await)
 }
 
-async fn ctx_resolve(mm: ModelManager, cookies: &Cookies) -> CtxExtResult {
+async fn ctx_resolve(_mm: ModelManager, _cookies: &Cookies) -> CtxExtResult {
     Ctx::new(0i64)
         .map(CtxW)
         .map_err(|_| CtxExtError::CtxCreateFail("error".to_string()))

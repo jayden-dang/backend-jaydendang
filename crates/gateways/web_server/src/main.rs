@@ -3,13 +3,7 @@ use api_gateway::{
     routes::route_login::routes,
 };
 
-use axum::{
-    http::{Response, StatusCode},
-    middleware,
-    response::IntoResponse,
-    routing::get,
-    Json, Router,
-};
+use axum::{http::StatusCode, middleware, response::IntoResponse, routing::get, Json, Router};
 use dotenv::dotenv;
 use jd_core::ModelManager;
 use serde_json::{json, Value};

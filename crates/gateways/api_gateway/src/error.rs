@@ -67,10 +67,9 @@ impl Error {
             EntityNotFound { entity, id } => {
                 println!("Converting EntityNotFound: entity={}, id={}", entity, id);
                 (StatusCode::NOT_FOUND, ClientError::EntityNotFound { entity, id: *id })
-            },
+            }
             ReqStampNotInReqExt => (StatusCode::BAD_REQUEST, ClientError::SERVICE_ERROR),
             // -- Fallback
-            _ => (StatusCode::INTERNAL_SERVER_ERROR, ClientError::SERVICE_ERROR),
         }
     }
 }
