@@ -3,10 +3,16 @@ use api_gateway::{
     routes::route_login::routes,
 };
 
-use axum::{http::StatusCode, middleware, response::IntoResponse, routing::get, Json, Router};
+use axum::{
+    http::{Response, StatusCode},
+    middleware,
+    response::IntoResponse,
+    routing::get,
+    Json, Router,
+};
 use dotenv::dotenv;
 use jd_core::ModelManager;
-use serde_json::json;
+use serde_json::{json, Value};
 use tower_cookies::CookieManagerLayer;
 use tracing::info;
 
@@ -44,8 +50,10 @@ async fn main() -> error::Result<()> {
 }
 
 // basic handler that responds with a static string
-async fn root() -> &'static str {
-    "Hello, World!"
+async fn root() -> Json<Value> {
+    Json(json!({
+        "data": "Hello, World!"
+    }))
 }
 
 // Professional fallback handler for unmatched routes

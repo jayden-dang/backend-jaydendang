@@ -2,14 +2,13 @@ use crate::Result;
 use crate::{error::Error, log::log_request};
 use axum::body::to_bytes;
 use axum::{
-    http::{Method, StatusCode, Uri},
+    http::{Method, Uri},
     response::{IntoResponse, Response},
     Json,
 };
 
-use jd_utils::time::{self, format_time, now_utc};
-use serde_json::{json, to_value, Value};
-use std::sync::Arc;
+use jd_utils::time::{format_time, now_utc};
+use serde_json::{json, Value};
 use tracing::{debug, error};
 
 use super::{mw_auth::CtxW, mw_res_timestamp::ReqStamp};

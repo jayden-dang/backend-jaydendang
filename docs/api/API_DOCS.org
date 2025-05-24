@@ -21,19 +21,22 @@ GET :host
 #+RESULTS:
 #+BEGIN_SRC js
 {
-  "data": null,
-  "id": "418924ac-1f15-4496-a9c8-c789264b3bf4",
-  "meta": {
-    "timestamp": "2025-05-24T03:30:38.513052Z"
+  "data": {
+    "data": "Hello, World!"
   },
-  "status": "success"
+  "id": "92afe89d-9e8b-4278-8c80-d4e26a86a32f",
+  "meta": {
+    "timestamp": "2025-05-24T04:05:19.182727Z"
+  },
+  "status": 0,
+  "type": "success"
 }
 // GET http://localhost:8080
 // HTTP/1.1 200 OK
 // content-type: application/json
-// content-length: 127
-// date: Sat, 24 May 2025 03:30:38 GMT
-// Request duration: 0.008552s
+// content-length: 156
+// date: Sat, 24 May 2025 04:05:19 GMT
+// Request duration: 0.007644s
 #+END_SRC
 
 * Api

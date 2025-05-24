@@ -41,18 +41,17 @@ async fn api_login_handler(cookies: Cookies, payload: Json<LoginPayload>) -> Res
         return Err(Error::LoginFail);
     }
 
-    // Success case
+    // Success case - Set auth token in cookie
     cookies.add(Cookie::new(AUTH_TOKEN, "user-1.exp.sign"));
 
-    // Create the success body with more detailed response
+    // Create the success body with user info only
     let body = Json(json!({
         "result": {
             "success": true,
             "user": {
                 "username": payload.username,
                 "role": "admin"
-            },
-            "token": "user-1.exp.sign"
+            }
         }
     }));
 
