@@ -92,7 +92,10 @@ where
         .dbx()
         .fetch_optional(sqlx_query)
         .await?
-        .ok_or(Error::EntityNotFound { entity: MC::TABLE, id: 0 })?;
+        .ok_or(Error::EntityNotFound {
+            entity: MC::TABLE,
+            id: 0,
+        })?;
 
     Ok(entity)
 }

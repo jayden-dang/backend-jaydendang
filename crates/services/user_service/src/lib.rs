@@ -1,4 +1,4 @@
 mod error;
-pub mod infra;
+pub mod users;
 
 pub type Result<T> = std::result::Result<T, error::Error>;

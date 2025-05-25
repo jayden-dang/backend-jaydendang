@@ -49,35 +49,22 @@ POST :host/api/v1/login?order_by=id
 #+END_SRC
 
 #+begin_src restclient :var host=host :var headers=headers
-GET :host/api/v1/users?email=grace.ly@example.com
+GET :host/api/v1/users
 #+end_src
 
 #+RESULTS:
 #+BEGIN_SRC js
 {
-  "data": {
-    "created_at": "2025-05-25T05:17:34.332558Z",
-    "email": "grace.ly@example.com",
-    "email_verified": false,
-    "first_name": "Grace",
-    "is_active": false,
-    "last_name": "Ly",
-    "password_hash": "hashed_pw_444",
-    "updated_at": "2025-05-25T05:17:34.332558Z",
-    "user_id": "2da06fb8-4321-40c9-a5b9-4cd64a3f85c2",
-    "username": "gracely"
-  },
-  "id": "9f3d72de-cc7a-45e3-b3e5-2e099135f5b8",
-  "meta": {
-    "timestamp": "2025-05-25T05:37:34.702283Z"
-  },
-  "status": 0,
-  "type": "success"
+  "code": 404,
+  "message": "Route not found",
+  "path": "The requested resource does not exist",
+  "status": "error",
+  "timestamp": "2025-05-25T06:07:49.767722Z"
 }
-// GET http://localhost:8080/api/v1/users?email=grace.ly@example.com
-// HTTP/1.1 200 OK
+// GET http://localhost:8080/api/v1/users
+// HTTP/1.1 404 Not Found
 // content-type: application/json
-// content-length: 431
-// date: Sun, 25 May 2025 05:37:34 GMT
-// Request duration: 0.014175s
+// content-length: 146
+// date: Sun, 25 May 2025 06:07:49 GMT
+// Request duration: 0.007698s
 #+END_SRC
