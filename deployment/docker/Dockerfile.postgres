@@ -1,0 +1,25 @@
+# Dockerfile.postgres
+FROM postgres:16-alpine
+
+# Set environment variables
+ENV POSTGRES_USER=jayden
+ENV POSTGRES_PASSWORD=postgres
+ENV POSTGRES_DB=jayden-blog
+
+# Set timezone (optional)
+ENV TZ=Asia/Ho_Chi_Minh
+
+# Create directory for initialization scripts
+RUN mkdir -p /docker-entrypoint-initdb.d
+
+# Copy initialization scripts from project root
+COPY ../../sql/*.sql /docker-entrypoint-initdb.d/
+
+# Copy custom postgresql configuration (optional)
+# COPY ./postgresql.conf /etc/postgresql/postgresql.conf
+
+# Expose PostgreSQL port
+EXPOSE 5432
+
+# Set default command
+CMD ["postgres"]

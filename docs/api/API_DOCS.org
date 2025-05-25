@@ -49,35 +49,35 @@ POST :host/api/v1/login?order_by=id
 #+END_SRC
 
 #+begin_src restclient :var host=host :var headers=headers
-GET :host/api/v1/user/1a7ae5d1-e1d0-484b-a3eb-037b0ac4635d
+GET :host/api/v1/user/1f2d16a9-159f-4cee-97ac-1fc6d92b5aa5
 #+end_src
 
 #+RESULTS:
 #+BEGIN_SRC js
 {
   "data": {
-    "created_at": "2025-05-25T03:46:53.507465Z",
-    "email": "john.doe@example.com",
+    "created_at": "2025-05-25T05:17:34.332558Z",
+    "email": "bob.le@example.com",
     "email_verified": true,
-    "first_name": "John",
+    "first_name": "Bob",
     "is_active": true,
-    "last_name": "Doe",
-    "password_hash": "hashed_pw_123",
-    "updated_at": "2025-05-25T03:46:53.507465Z",
-    "user_id": "1a7ae5d1-e1d0-484b-a3eb-037b0ac4635d",
-    "username": "johndoe"
+    "last_name": "Le",
+    "password_hash": "hashed_pw_321",
+    "updated_at": "2025-05-25T05:17:34.332558Z",
+    "user_id": "1f2d16a9-159f-4cee-97ac-1fc6d92b5aa5",
+    "username": "boble"
   },
-  "id": "72ace119-fea7-4c19-bf50-a3b8561c6827",
+  "id": "83cdbd49-9f0d-40c2-8f75-14b9622164a4",
   "meta": {
-    "timestamp": "2025-05-25T03:47:37.771119Z"
+    "timestamp": "2025-05-25T05:18:17.93713Z"
   },
   "status": 0,
   "type": "success"
 }
-// GET http://localhost:8080/api/v1/user/1a7ae5d1-e1d0-484b-a3eb-037b0ac4635d
+// GET http://localhost:8080/api/v1/user/1f2d16a9-159f-4cee-97ac-1fc6d92b5aa5
 // HTTP/1.1 200 OK
 // content-type: application/json
-// content-length: 429
-// date: Sun, 25 May 2025 03:47:37 GMT
-// Request duration: 0.076037s
+// content-length: 422
+// date: Sun, 25 May 2025 05:18:17 GMT
+// Request duration: 0.019270s
 #+END_SRC

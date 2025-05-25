@@ -56,140 +56,49 @@ args = ["watch", "-x", "test"]
 # Database Management Tasks
 # ================================
 
-[tasks.db-build]
-description = "Build PostgreSQL Docker image"
-command = "docker"
-args = [
-    "build",
-    "-f", "deployment/docker/Dockerfile.postgres",
-    "-t", "jd-postgres:latest",
-    "."
-]
-
-[tasks.db-clean-existing]
-description = "Clean existing database container and volume (internal use)"
-script = '''
-docker stop ${CONTAINER_NAME} 2>/dev/null || true
-docker rm ${CONTAINER_NAME} 2>/dev/null || true
-'''
-
 [tasks.db-start]
 description = "Start PostgreSQL database container"
-dependencies = ["db-clean-existing", "db-build"]
-script = '''
-docker run \
-    --name "${CONTAINER_NAME}" \
-    -e "POSTGRES_USER=${POSTGRES_USER}" \
-    -e "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}" \
-    -e "POSTGRES_DB=${POSTGRES_DB}" \
-    -p "${POSTGRES_PORT}:5432" \
-    -v "${VOLUME_NAME}:/var/lib/postgresql/data" \
-    -d \
-    jd-postgres:latest
-'''
+command = "docker"
+args = ["compose","-f", "deployment/docker/docker-compose.postgres.yml","up", "-d", "--build"]
 
-[tasks.db-start-fresh]
-description = "Start database with fresh data (removes existing volume)"
-script = '''
-docker stop ${CONTAINER_NAME} 2>/dev/null || true
-docker rm ${CONTAINER_NAME} 2>/dev/null || true
-docker volume rm ${VOLUME_NAME} 2>/dev/null || true
-cargo make db-start
-'''
+[tasks.db-build]
+description = "Build PostgreSQL database image"
+command = "docker"
+args = ["compose", "-f", "deployment/docker/docker-compose.postgres.yml", "build"]
+
+[tasks.db-restart]
+description = "Rebuild and start PostgreSQL database container"
+command = "docker"
+args = ["compose", "-f", "deployment/docker/docker-compose.postgres.yml", "up", "-d", "--build"]
 
 [tasks.db-stop]
 description = "Stop PostgreSQL database container"
-script = '''
-docker stop "${CONTAINER_NAME}"
-'''
-
-[tasks.db-remove]
-description = "Remove PostgreSQL database container"
-dependencies = ["db-stop"]
-script = '''
-docker rm "${CONTAINER_NAME}"
-'''
-
-[tasks.db-restart]
-description = "Restart PostgreSQL database container"
-dependencies = ["db-stop", "db-start"]
+command = "docker"
+args = ["compose", "-f", "deployment/docker/docker-compose.postgres.yml", "down"]
 
 [tasks.db-logs]
 description = "View PostgreSQL database logs"
-script = '''
-docker logs -f "${CONTAINER_NAME}"
-'''
+command = "docker"
+args = ["compose", "-f", "deployment/docker/docker-compose.postgres.yml", "logs", "-f", "database"]
 
 [tasks.db-shell]
-description = "Connect to PostgreSQL shell"
-script = '''
-docker exec -it "${CONTAINER_NAME}" psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}"
-'''
-
-[tasks.db-status]
-description = "Check PostgreSQL container status"
-script = '''
-docker ps -f "name=${CONTAINER_NAME}"
-'''
-
-# ================================
-# Data Management Tasks
-# ================================
-
-[tasks.db-init]
-description = "Initialize database with SQL scripts (if container is running)"
-script = '''
-docker exec -i "${CONTAINER_NAME}" sh -c "for file in /docker-entrypoint-initdb.d/*.sql; do psql -U ${POSTGRES_USER} -d ${POSTGRES_DB} -f \"$file\"; done"
-'''
+description = "Connect to PostgreSQL database shell"
+command = "docker"
+args = ["compose", "-f", "deployment/docker/docker-compose.postgres.yml", "exec", "database", "psql", "-U", "jayden", "-d", "jayden-blog"]
 
 [tasks.db-reset]
-description = "Reset database (remove container and volume, then restart)"
-script = '''
-docker stop ${CONTAINER_NAME} 2>/dev/null || true
-docker rm ${CONTAINER_NAME} 2>/dev/null || true
-docker volume rm ${VOLUME_NAME} 2>/dev/null || true
-cargo make db-start
-'''
+description = "Reset PostgreSQL database completely"
+script = [
+    "docker compose -f deployment/docker/docker-compose.postgres.yml down -v",
+    "docker volume rm my_pgdata 2>/dev/null || true",
+    "docker compose -f deployment/docker/docker-compose.postgres.yml up -d --build"
+]
 
-[tasks.db-backup]
-description = "Backup database to sql file"
-script = '''
-BACKUP_FILE="backup_$(date +%Y%m%d_%H%M%S).sql"
-docker exec "${CONTAINER_NAME}" pg_dump -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" > "$BACKUP_FILE"
-echo "Database backed up to: $BACKUP_FILE"
-'''
-
-# ================================
-# Development Helpers
-# ================================
-
-[tasks.db-quick-start]
-description = "Quick start: stop existing container and start fresh"
-dependencies = ["db-start"]
-
-[tasks.db-dev-reset]
-description = "Development reset: completely fresh database with new data"
-dependencies = ["db-start-fresh"]
-
-[tasks.db-health]
-description = "Check database health"
-script = '''
-docker exec "${CONTAINER_NAME}" pg_isready -U "${POSTGRES_USER}" -d "${POSTGRES_DB}"
-'''
-
-# ================================
-# Composite Tasks
-# ================================
-
-[tasks.dev-setup]
-description = "Complete development setup: start database and run health check"
-dependencies = ["db-quick-start", "db-health"]
-
-[tasks.clean-all]
-description = "Clean all database resources (container, volume, image)"
-script = '''
-docker stop ${CONTAINER_NAME} 2>/dev/null || true
-docker rm ${CONTAINER_NAME} 2>/dev/null || true
-docker volume rm ${VOLUME_NAME} 2>/dev/null || true
-docker rmi jd-postgres:latest 2>/dev/null || true
-'''
+[tasks.db-fresh]
+description = "Fresh database setup"
+dependencies = ["db-reset"]
+script = [
+    "echo 'Database reset complete'",
+    "sleep 5",
+    "docker compose -f deployment/docker/docker-compose.postgres.yml logs database"
+]

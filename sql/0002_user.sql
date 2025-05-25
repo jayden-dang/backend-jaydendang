@@ -3,13 +3,16 @@ CREATE TYPE experience_level_enum AS ENUM ('beginner', 'intermediate', 'advanced
 CREATE TYPE subscription_tier_enum AS ENUM ('free', 'premium', 'enterprise', 'lifetime');
 CREATE TYPE education_level_enum AS ENUM ('high_school', 'bachelor', 'master', 'phd', 'bootcamp', 'self_taught', 'other');
 CREATE TYPE device_type_enum AS ENUM ('mobile', 'tablet', 'desktop');
+CREATE TYPE user_gender_enum AS ENUM ('male', 'female', 'non_binary', 'prefer_not_to_say', 'other');
+CREATE TYPE registration_source_enum AS ENUM ('organic', 'google', 'facebook', 'twitter', 'referral', 'paid_ad', 'blog', 'youtube', 'email', 'other');
 
+-- Create profile schema
+CREATE SCHEMA IF NOT EXISTS "profile";
 
 -- ===================================================================================================
 -- 1. CORE USERS TABLE - Authentication & Basic Info Only
 -- Principle: Single Responsibility - Authentication concerns only
 -- ===================================================================================================
-CREATE SCHEMA IF NOT EXISTS "profile";
 CREATE TABLE profile.users (
     user_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 
@@ -27,22 +30,22 @@ CREATE TABLE profile.users (
     email_verified BOOLEAN DEFAULT false,
 
     -- Timestamps (audit trail)
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Optimized indexes for authentication
-CREATE UNIQUE INDEX idx_users_email ON users(email);
-CREATE UNIQUE INDEX idx_users_username ON users(username);
-CREATE INDEX idx_users_active ON users(is_active) WHERE is_active = true;
+CREATE UNIQUE INDEX idx_users_email ON profile.users(email);
+CREATE UNIQUE INDEX idx_users_username ON profile.users(username);
+CREATE INDEX idx_users_active ON profile.users(is_active) WHERE is_active = true;
 
 -- ===================================================================================================
 -- 2. USER PROFILES - Demographics & Personal Info
 -- Principle: Separation of Concerns - Profile management separate from auth
 -- ===================================================================================================
-CREATE TABLE user_profiles (
+CREATE TABLE profile.user_profiles (
     profile_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID UNIQUE REFERENCES users(user_id) ON DELETE CASCADE,
+    user_id UUID UNIQUE REFERENCES profile.users(user_id) ON DELETE CASCADE,
 
     -- Demographics (for personalization)
     birth_year INTEGER,
@@ -64,29 +67,29 @@ CREATE TABLE user_profiles (
     profile_visibility VARCHAR(20) DEFAULT 'public', -- public, private, friends
     show_progress BOOLEAN DEFAULT true,
 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE UNIQUE INDEX idx_profiles_user_id ON user_profiles(user_id);
-CREATE INDEX idx_profiles_experience ON user_profiles(experience_level);
-CREATE INDEX idx_profiles_education ON user_profiles(education_level);
+CREATE UNIQUE INDEX idx_profiles_user_id ON profile.user_profiles(user_id);
+CREATE INDEX idx_profiles_experience ON profile.user_profiles(experience_level);
+CREATE INDEX idx_profiles_education ON profile.user_profiles(education_level);
 
 -- ===================================================================================================
 -- 3. USER SUBSCRIPTIONS - Billing & Subscription Management
 -- Principle: Business Logic Separation - Billing is complex domain
 -- ===================================================================================================
-CREATE TABLE user_subscriptions (
+CREATE TABLE profile.user_subscriptions (
     subscription_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID UNIQUE REFERENCES users(user_id) ON DELETE CASCADE,
+    user_id UUID UNIQUE REFERENCES profile.users(user_id) ON DELETE CASCADE,
 
     -- Current subscription
     tier subscription_tier_enum DEFAULT 'free',
     status VARCHAR(20) DEFAULT 'active', -- active, cancelled, expired, suspended
 
     -- Billing cycle
-    start_date TIMESTAMP,
-    end_date TIMESTAMP,
+    start_date TIMESTAMPTZ,
+    end_date TIMESTAMPTZ,
     auto_renew BOOLEAN DEFAULT true,
 
     -- Pricing info (for analytics)
@@ -103,21 +106,21 @@ CREATE TABLE user_subscriptions (
     promo_code VARCHAR(50),
     referral_credit DECIMAL(10,2) DEFAULT 0,
 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE UNIQUE INDEX idx_subscriptions_user_id ON user_subscriptions(user_id);
-CREATE INDEX idx_subscriptions_tier_status ON user_subscriptions(tier, status);
-CREATE INDEX idx_subscriptions_end_date ON user_subscriptions(end_date) WHERE status = 'active';
+CREATE UNIQUE INDEX idx_subscriptions_user_id ON profile.user_subscriptions(user_id);
+CREATE INDEX idx_subscriptions_tier_status ON profile.user_subscriptions(tier, status);
+CREATE INDEX idx_subscriptions_end_date ON profile.user_subscriptions(end_date) WHERE status = 'active';
 
 -- ===================================================================================================
 -- 4. USER ACQUISITION - Marketing & Registration Data
 -- Principle: Marketing Analytics Separation - Different access patterns
 -- ===================================================================================================
-CREATE TABLE user_acquisition (
+CREATE TABLE profile.user_acquisition (
     acquisition_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID UNIQUE REFERENCES users(user_id) ON DELETE CASCADE,
+    user_id UUID UNIQUE REFERENCES profile.users(user_id) ON DELETE CASCADE,
 
     -- Registration source tracking
     registration_source registration_source_enum,
@@ -135,28 +138,28 @@ CREATE TABLE user_acquisition (
     registration_user_agent TEXT,
 
     -- Referral system
-    referred_by_user_id UUID REFERENCES users(user_id),
+    referred_by_user_id UUID REFERENCES profile.users(user_id),
     referral_reward_given BOOLEAN DEFAULT false,
 
     -- Landing page analytics
     landing_page VARCHAR(500),
     entry_point VARCHAR(200), -- signup_button, trial_popup, etc.
 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE UNIQUE INDEX idx_acquisition_user_id ON user_acquisition(user_id);
-CREATE INDEX idx_acquisition_source ON user_acquisition(registration_source);
-CREATE INDEX idx_acquisition_campaign ON user_acquisition(utm_campaign, utm_source);
-CREATE INDEX idx_acquisition_referrer ON user_acquisition(referred_by_user_id);
+CREATE UNIQUE INDEX idx_acquisition_user_id ON profile.user_acquisition(user_id);
+CREATE INDEX idx_acquisition_source ON profile.user_acquisition(registration_source);
+CREATE INDEX idx_acquisition_campaign ON profile.user_acquisition(utm_campaign, utm_source);
+CREATE INDEX idx_acquisition_referrer ON profile.user_acquisition(referred_by_user_id);
 
 -- ===================================================================================================
 -- 5. USER DEVICE ANALYTICS - Technical & Behavioral Data
 -- Principle: Analytics Separation - High volume, different query patterns
 -- ===================================================================================================
-CREATE TABLE user_devices (
+CREATE TABLE profile.user_devices (
     device_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(user_id) ON DELETE CASCADE,
+    user_id UUID REFERENCES profile.users(user_id) ON DELETE CASCADE,
 
     -- Device fingerprinting
     device_type device_type_enum,
@@ -171,36 +174,36 @@ CREATE TABLE user_devices (
     device_name VARCHAR(100), -- User-defined name
 
     -- Security tracking
-    first_seen_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_seen_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    first_seen_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    last_seen_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     is_trusted BOOLEAN DEFAULT false,
 
     -- Usage analytics
     session_count INTEGER DEFAULT 0,
     total_time_spent INTEGER DEFAULT 0, -- minutes
 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_devices_user_id ON user_devices(user_id);
-CREATE INDEX idx_devices_type ON user_devices(device_type);
-CREATE INDEX idx_devices_primary ON user_devices(user_id, is_primary_device) WHERE is_primary_device = true;
-CREATE INDEX idx_devices_last_seen ON user_devices(last_seen_at);
+CREATE INDEX idx_devices_user_id ON profile.user_devices(user_id);
+CREATE INDEX idx_devices_type ON profile.user_devices(device_type);
+CREATE INDEX idx_devices_primary ON profile.user_devices(user_id, is_primary_device) WHERE is_primary_device = true;
+CREATE INDEX idx_devices_last_seen ON profile.user_devices(last_seen_at);
 
 -- ===================================================================================================
 -- 6. USER ENGAGEMENT METRICS - Aggregated Analytics
 -- Principle: Performance Optimization - Pre-computed metrics for dashboards
 -- ===================================================================================================
-CREATE TABLE user_engagement_metrics (
+CREATE TABLE profile.user_engagement_metrics (
     metric_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID UNIQUE REFERENCES users(user_id) ON DELETE CASCADE,
+    user_id UUID UNIQUE REFERENCES profile.users(user_id) ON DELETE CASCADE,
 
     -- Login patterns
     total_logins INTEGER DEFAULT 0,
     login_streak_current INTEGER DEFAULT 0,
     login_streak_longest INTEGER DEFAULT 0,
-    last_login_at TIMESTAMP,
+    last_login_at TIMESTAMPTZ,
 
     -- Time-based engagement
     total_time_spent INTEGER DEFAULT 0, -- minutes
@@ -222,23 +225,23 @@ CREATE TABLE user_engagement_metrics (
     learning_velocity_score DECIMAL(5,2) DEFAULT 0, -- Custom metric
 
     -- Computed daily (via scheduled job)
-    last_computed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_computed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE UNIQUE INDEX idx_engagement_user_id ON user_engagement_metrics(user_id);
-CREATE INDEX idx_engagement_login_streak ON user_engagement_metrics(login_streak_current);
-CREATE INDEX idx_engagement_completion_rate ON user_engagement_metrics(avg_completion_rate);
+CREATE UNIQUE INDEX idx_engagement_user_id ON profile.user_engagement_metrics(user_id);
+CREATE INDEX idx_engagement_login_streak ON profile.user_engagement_metrics(login_streak_current);
+CREATE INDEX idx_engagement_completion_rate ON profile.user_engagement_metrics(avg_completion_rate);
 
 -- ===================================================================================================
 -- 7. USER PREFERENCES - Settings & Personalization
 -- Principle: Configuration Management - User-controlled settings
 -- ===================================================================================================
-CREATE TABLE user_preferences (
+CREATE TABLE profile.user_preferences (
     preference_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID UNIQUE REFERENCES users(user_id) ON DELETE CASCADE,
+    user_id UUID UNIQUE REFERENCES profile.users(user_id) ON DELETE CASCADE,
 
     -- Learning preferences
     preferred_difficulty VARCHAR(20),
@@ -272,19 +275,19 @@ CREATE TABLE user_preferences (
     analytics_consent BOOLEAN DEFAULT true,
     marketing_consent BOOLEAN DEFAULT false,
     data_processing_consent BOOLEAN DEFAULT true,
-    consent_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    consent_date TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE UNIQUE INDEX idx_preferences_user_id ON user_preferences(user_id);
-CREATE INDEX idx_preferences_notifications ON user_preferences(email_notifications, push_notifications);
+CREATE UNIQUE INDEX idx_preferences_user_id ON profile.user_preferences(user_id);
+CREATE INDEX idx_preferences_notifications ON profile.user_preferences(email_notifications, push_notifications);
 
 -- ===================================================================================================
 -- COMPREHENSIVE VIEW - Joining normalized data efficiently
 -- ===================================================================================================
-CREATE VIEW user_complete_profile AS
+CREATE VIEW profile.user_complete_profile AS
 SELECT
     -- Core user data
     u.user_id,
@@ -329,22 +332,22 @@ SELECT
     d.device_type as primary_device_type,
     d.browser as primary_browser
 
-FROM users u
-LEFT JOIN user_profiles p ON u.user_id = p.user_id
-LEFT JOIN user_subscriptions s ON u.user_id = s.user_id
-LEFT JOIN user_acquisition a ON u.user_id = a.user_id
-LEFT JOIN user_engagement_metrics e ON u.user_id = e.user_id
-LEFT JOIN user_devices d ON u.user_id = d.user_id AND d.is_primary_device = true;
+FROM profile.users u
+LEFT JOIN profile.user_profiles p ON u.user_id = p.user_id
+LEFT JOIN profile.user_subscriptions s ON u.user_id = s.user_id
+LEFT JOIN profile.user_acquisition a ON u.user_id = a.user_id
+LEFT JOIN profile.user_engagement_metrics e ON u.user_id = e.user_id
+LEFT JOIN profile.user_devices d ON u.user_id = d.user_id AND d.is_primary_device = true;
 
 -- ===================================================================================================
 -- MAINTENANCE FUNCTIONS - Keeping data fresh and clean
 -- ===================================================================================================
 
 -- Function to update engagement metrics (run daily)
-CREATE OR REPLACE FUNCTION update_user_engagement_metrics(target_user_id UUID DEFAULT NULL)
+CREATE OR REPLACE FUNCTION profile.update_user_engagement_metrics(target_user_id UUID DEFAULT NULL)
 RETURNS void AS $$
 BEGIN
-    INSERT INTO user_engagement_metrics (
+    INSERT INTO profile.user_engagement_metrics (
         user_id, total_logins, sessions_count, total_time_spent,
         courses_enrolled, courses_completed, last_login_at, last_computed_at
     )
@@ -357,7 +360,7 @@ BEGIN
         COALESCE(enrollment_stats.completed_count, 0),
         session_stats.last_login,
         CURRENT_TIMESTAMP
-    FROM users u
+    FROM profile.users u
     LEFT JOIN (
         SELECT
             user_id,
@@ -365,7 +368,7 @@ BEGIN
             COUNT(*) as session_count,
             SUM(session_duration) / 60 as total_duration,
             MAX(session_start) as last_login
-        FROM user_sessions
+        FROM profile.user_sessions
         WHERE (target_user_id IS NULL OR user_id = target_user_id)
         GROUP BY user_id
     ) session_stats ON u.user_id = session_stats.user_id
@@ -374,7 +377,7 @@ BEGIN
             user_id,
             COUNT(*) as enrolled_count,
             COUNT(CASE WHEN completed_at IS NOT NULL THEN 1 END) as completed_count
-        FROM user_enrollments
+        FROM profile.user_enrollments
         WHERE (target_user_id IS NULL OR user_id = target_user_id)
         GROUP BY user_id
     ) enrollment_stats ON u.user_id = enrollment_stats.user_id
@@ -392,7 +395,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Function to sync device information
-CREATE OR REPLACE FUNCTION sync_user_device(
+CREATE OR REPLACE FUNCTION profile.sync_user_device(
     p_user_id UUID,
     p_device_type device_type_enum,
     p_browser VARCHAR(50),
@@ -405,7 +408,7 @@ DECLARE
 BEGIN
     -- Try to find existing device
     SELECT device_id INTO device_uuid
-    FROM user_devices
+    FROM profile.user_devices
     WHERE user_id = p_user_id
       AND device_type = p_device_type
       AND browser = p_browser
@@ -413,16 +416,16 @@ BEGIN
 
     IF device_uuid IS NULL THEN
         -- Create new device record
-        INSERT INTO user_devices (
+        INSERT INTO profile.user_devices (
             user_id, device_type, browser, operating_system,
             screen_resolution, is_primary_device
         ) VALUES (
             p_user_id, p_device_type, p_browser, p_os, p_screen_resolution,
-            NOT EXISTS(SELECT 1 FROM user_devices WHERE user_id = p_user_id)
+            NOT EXISTS(SELECT 1 FROM profile.user_devices WHERE user_id = p_user_id)
         ) RETURNING device_id INTO device_uuid;
     ELSE
         -- Update last seen
-        UPDATE user_devices
+        UPDATE profile.user_devices
         SET
             last_seen_at = CURRENT_TIMESTAMP,
             session_count = session_count + 1,
