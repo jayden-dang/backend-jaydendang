@@ -1,0 +1,440 @@
+#+TITLE: Makefile.toml Development Guide
+#+AUTHOR: Jayden
+#+EMAIL: jayden.dangvu@gmail.com
+
+* Table of Contents :toc:
+- [[#introduction][Introduction]]
+  - [[#prerequisites][Prerequisites]]
+- [[#configuration-overview][Configuration Overview]]
+  - [[#environment-variables][Environment Variables]]
+  - [[#workspace-configuration][Workspace Configuration]]
+- [[#development-tasks][Development Tasks]]
+  - [[#core-development-commands][Core Development Commands]]
+  - [[#code-quality-tasks][Code Quality Tasks]]
+  - [[#build-and-test-tasks][Build and Test Tasks]]
+- [[#database-management][Database Management]]
+  - [[#basic-database-operations][Basic Database Operations]]
+  - [[#database-monitoring-and-access][Database Monitoring and Access]]
+  - [[#data-management-tasks][Data Management Tasks]]
+  - [[#composite-database-tasks][Composite Database Tasks]]
+- [[#common-workflows][Common Workflows]]
+  - [[#starting-development][Starting Development]]
+  - [[#database-development-workflow][Database Development Workflow]]
+  - [[#code-quality-workflow][Code Quality Workflow]]
+  - [[#cleanup-workflow][Cleanup Workflow]]
+- [[#troubleshooting][Troubleshooting]]
+  - [[#common-issues][Common Issues]]
+  - [[#recovery-commands][Recovery Commands]]
+- [[#best-practices][Best Practices]]
+  - [[#development][Development]]
+  - [[#database-management-1][Database Management]]
+  - [[#cleanup][Cleanup]]
+- [[#advanced-usage][Advanced Usage]]
+  - [[#customizing-environment-variables][Customizing Environment Variables]]
+  - [[#adding-custom-tasks][Adding Custom Tasks]]
+- [[#conclusion][Conclusion]]
+
+* Introduction
+This document provides a comprehensive guide to using the =Makefile.toml= configuration for the Jayden Blog project. The Makefile uses =cargo-make= to provide convenient shortcuts for common development tasks including Rust development, database management, and project maintenance.
+
+** Prerequisites
+- [[https://github.com/sagiegurari/cargo-make][cargo-make]] installed: =cargo install cargo-make=
+- Docker installed and running
+- Rust toolchain with Cargo
+
+* Configuration Overview
+** Environment Variables
+The Makefile defines several environment variables used throughout the tasks:
+
+#+BEGIN_SRC toml
+[env]
+CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true  # Enable workspace context
+POSTGRES_USER = "jayden"                     # Database user
+POSTGRES_PASSWORD = "postgres"               # Database password
+POSTGRES_DB = "jayden-blog"                  # Database name
+POSTGRES_PORT = "5432"                       # Database port
+CONTAINER_NAME = "jd-database"               # Docker container name
+VOLUME_NAME = "my_pgdata"                    # Docker volume name
+#+END_SRC
+
+** Workspace Configuration
+#+BEGIN_SRC toml
+[config]
+default_to_workspace = false  # Tasks run in workspace context
+#+END_SRC
+
+* Development Tasks
+** Core Development Commands
+*** =cargo make dev=
+*Purpose:* Start development server with hot-reload and linting
+*Working Directory:* =./crates/gateways/web_server=
+*Features:*
+- Automatically installs =cargo-watch= if not present
+- Runs =clippy= linter on file changes
+- Restarts server on code changes
+- Debug logging enabled (=RUST_LOG=debug=)
+
+#+BEGIN_SRC bash
+cargo make dev
+#+END_SRC
+
+*** =cargo make debug=
+*Purpose:* Alias for =dev= task with same functionality
+*Usage:* Same as =dev= command
+
+#+BEGIN_SRC bash
+cargo make debug
+#+END_SRC
+
+** Code Quality Tasks
+*** =cargo make format=
+*Purpose:* Format all Rust code using =rustfmt=
+*Features:*
+- Automatically installs =rustfmt= if not present
+- Formats code and writes changes to files
+
+#+BEGIN_SRC bash
+cargo make format
+#+END_SRC
+
+*** =cargo make fix=
+*Purpose:* Automatically fix Rust compiler warnings
+*Features:*
+- Allows fixing code even with uncommitted changes
+- Uses =cargo fix --allow-dirty=
+
+#+BEGIN_SRC bash
+cargo make fix
+#+END_SRC
+
+*** =cargo make lint=
+*Purpose:* Run Clippy linter for code analysis
+
+#+BEGIN_SRC bash
+cargo make lint
+#+END_SRC
+
+*** =cargo make lint-staged=
+*Purpose:* Run lint-staged for Git pre-commit hooks
+*Requires:* Node.js and =lint-staged= package
+
+#+BEGIN_SRC bash
+cargo make lint-staged
+#+END_SRC
+
+** Build and Test Tasks
+*** =cargo make clean=
+*Purpose:* Clean build artifacts
+
+#+BEGIN_SRC bash
+cargo make clean
+#+END_SRC
+
+*** =cargo make build=
+*Purpose:* Build project in release mode
+
+#+BEGIN_SRC bash
+cargo make build
+#+END_SRC
+
+*** =cargo make test=
+*Purpose:* Run tests using =cargo-nextest=
+*Requires:* =cargo-nextest= installed
+
+#+BEGIN_SRC bash
+cargo make test
+#+END_SRC
+
+*** =cargo make test-watch=
+*Purpose:* Run tests with file watching
+*Features:*
+- Automatically installs =cargo-watch=
+- Reruns tests on file changes
+
+#+BEGIN_SRC bash
+cargo make test-watch
+#+END_SRC
+
+* Database Management
+** Basic Database Operations
+*** =cargo make db-build=
+*Purpose:* Build PostgreSQL Docker image
+*Image Name:* =jd-postgres:latest=
+*Dockerfile:* =deployment/docker/Dockerfile.postgres=
+
+#+BEGIN_SRC bash
+cargo make db-build
+#+END_SRC
+
+*** =cargo make db-start=
+*Purpose:* Start PostgreSQL database container
+*Dependencies:* Automatically builds image first
+*Features:*
+- Creates container with environment variables
+- Maps port 5432
+- Creates persistent volume
+- Runs in detached mode
+
+#+BEGIN_SRC bash
+cargo make db-start
+#+END_SRC
+
+*** =cargo make db-stop=
+*Purpose:* Stop running database container
+
+#+BEGIN_SRC bash
+cargo make db-stop
+#+END_SRC
+
+*** =cargo make db-remove=
+*Purpose:* Remove database container
+*Dependencies:* Stops container first
+
+#+BEGIN_SRC bash
+cargo make db-remove
+#+END_SRC
+
+*** =cargo make db-restart=
+*Purpose:* Restart database container
+*Dependencies:* Stops then starts container
+
+#+BEGIN_SRC bash
+cargo make db-restart
+#+END_SRC
+
+** Database Monitoring and Access
+*** =cargo make db-logs=
+*Purpose:* View database container logs in real-time
+*Features:* Follows log output (=-f= flag)
+
+#+BEGIN_SRC bash
+cargo make db-logs
+#+END_SRC
+
+*** =cargo make db-shell=
+*Purpose:* Connect to PostgreSQL interactive shell
+*Features:*
+- Opens =psql= in container
+- Pre-configured with user and database
+
+#+BEGIN_SRC bash
+cargo make db-shell
+#+END_SRC
+
+*** =cargo make db-status=
+*Purpose:* Check database container status
+
+#+BEGIN_SRC bash
+cargo make db-status
+#+END_SRC
+
+*** =cargo make db-health=
+*Purpose:* Check database connectivity and health
+*Uses:* =pg_isready= command
+
+#+BEGIN_SRC bash
+cargo make db-health
+#+END_SRC
+
+** Data Management Tasks
+*** =cargo make db-init=
+*Purpose:* Manually run SQL initialization scripts
+*Features:*
+- Executes all =.sql= files in initialization directory
+- Runs on existing container
+- Useful for re-running migrations
+
+#+BEGIN_SRC bash
+cargo make db-init
+#+END_SRC
+
+*** =cargo make db-reset=
+*Purpose:* Complete database reset
+*Actions:*
+1. Stop container (ignore errors)
+2. Remove container (ignore errors)
+3. Remove volume (ignore errors)
+4. Start fresh container
+
+#+BEGIN_SRC bash
+cargo make db-reset
+#+END_SRC
+
+*** =cargo make db-backup=
+*Purpose:* Create database backup
+*Output:* =backup_YYYYMMDD_HHMMSS.sql=
+*Uses:* =pg_dump= utility
+
+#+BEGIN_SRC bash
+cargo make db-backup
+#+END_SRC
+
+** Composite Database Tasks
+*** =cargo make db-quick-start=
+*Purpose:* Quick database setup
+*Dependencies:* Builds image and starts container
+
+#+BEGIN_SRC bash
+cargo make db-quick-start
+#+END_SRC
+
+*** =cargo make db-dev-reset=
+*Purpose:* Development environment reset
+*Dependencies:* Runs =db-reset= task
+
+#+BEGIN_SRC bash
+cargo make db-dev-reset
+#+END_SRC
+
+*** =cargo make dev-setup=
+*Purpose:* Complete development environment setup
+*Dependencies:*
+1. Quick-start database
+2. Run health check
+
+#+BEGIN_SRC bash
+cargo make dev-setup
+#+END_SRC
+
+*** =cargo make clean-all=
+*Purpose:* Clean all database resources
+*Actions:*
+1. Stop container
+2. Remove container
+3. Remove volume
+4. Remove Docker image
+
+#+BEGIN_SRC bash
+cargo make clean-all
+#+END_SRC
+
+* Common Workflows
+** Starting Development
+1. *Initial Setup:*
+   #+BEGIN_SRC bash
+   # Set up complete development environment
+   cargo make dev-setup
+   #+END_SRC
+
+2. *Start Development Server:*
+   #+BEGIN_SRC bash
+   # Start hot-reload development
+   cargo make dev
+   #+END_SRC
+
+** Database Development Workflow
+1. *First Time Setup:*
+   #+BEGIN_SRC bash
+   cargo make db-quick-start
+   cargo make db-health
+   #+END_SRC
+
+2. *Reset Database During Development:*
+   #+BEGIN_SRC bash
+   cargo make db-dev-reset
+   #+END_SRC
+
+3. *Check Database Status:*
+   #+BEGIN_SRC bash
+   cargo make db-status
+   cargo make db-health
+   #+END_SRC
+
+4. *Access Database:*
+   #+BEGIN_SRC bash
+   cargo make db-shell
+   #+END_SRC
+
+** Code Quality Workflow
+1. *Before Committing:*
+   #+BEGIN_SRC bash
+   cargo make format
+   cargo make fix
+   cargo make lint
+   cargo make test
+   #+END_SRC
+
+2. *Continuous Testing:*
+   #+BEGIN_SRC bash
+   cargo make test-watch
+   #+END_SRC
+
+** Cleanup Workflow
+1. *Clean Build Artifacts:*
+   #+BEGIN_SRC bash
+   cargo make clean
+   #+END_SRC
+
+2. *Complete Database Cleanup:*
+   #+BEGIN_SRC bash
+   cargo make clean-all
+   #+END_SRC
+
+* Troubleshooting
+** Common Issues
+*** Database Connection Issues
+- Check if container is running: =cargo make db-status=
+- Check database health: =cargo make db-health=
+- View container logs: =cargo make db-logs=
+
+*** Port Conflicts
+- If port 5432 is in use, stop the conflicting service
+- Or modify =POSTGRES_PORT= in environment variables
+
+*** Permission Issues
+- Ensure Docker daemon is running
+- Check Docker permissions for your user
+
+*** Build Issues
+- Clean build artifacts: =cargo make clean=
+- Rebuild database image: =cargo make db-build=
+
+** Recovery Commands
+*** Reset Everything
+#+BEGIN_SRC bash
+cargo make clean-all
+cargo make clean
+cargo make dev-setup
+#+END_SRC
+
+*** Database Recovery
+#+BEGIN_SRC bash
+cargo make db-reset
+cargo make db-health
+#+END_SRC
+
+* Best Practices
+** Development
+- Use =cargo make dev= for daily development with hot-reload
+- Run =cargo make format= and =cargo make lint= before commits
+- Use =cargo make test-watch= for continuous testing
+
+** Database Management
+- Use =cargo make db-quick-start= for initial setup
+- Use =cargo make db-dev-reset= when you need fresh data
+- Always check =cargo make db-health= after database operations
+
+** Cleanup
+- Regularly run =cargo make clean= to free disk space
+- Use =cargo make clean-all= when switching branches or major changes
+
+* Advanced Usage
+** Customizing Environment Variables
+You can override environment variables by setting them before running commands:
+#+BEGIN_SRC bash
+POSTGRES_PORT=5433 cargo make db-start
+#+END_SRC
+
+** Adding Custom Tasks
+
+The Makefile.toml can be extended with additional tasks following the same pattern:
+
+#+BEGIN_SRC toml
+[tasks.my-task]
+description = "My custom task"
+command = "echo"
+args = ["Hello World"]
+#+END_SRC
+
+* Conclusion
+This *Makefile.toml* provides a comprehensive development environment for the Jayden Blog project. It automates common tasks, ensures consistency across development environments, and provides easy-to-remember commands for all major operations.

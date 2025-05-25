@@ -46,6 +46,7 @@
 │   ├── ci
 │   └── dev
 └── tools                                # Support tools
+└── sql                                  # Support tools
 #+end_example
 
 * Diagram
