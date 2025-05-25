@@ -1,7 +1,6 @@
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
-use derive_more::From;
 use serde::Serialize;
 use serde_with::serde_as;
 use tracing::{error, info, warn};
@@ -149,52 +148,88 @@ impl Clone for Error {
                 source: Box::new(std::io::Error::new(std::io::ErrorKind::Other, "cloned error")),
             },
             Self::ReqStampNotInReqExt => Self::ReqStampNotInReqExt,
-            Self::InvalidRequestFormat { message } => Self::InvalidRequestFormat { message: message.clone() },
-            Self::RequestTooLarge { size, max_size } => Self::RequestTooLarge { size: *size, max_size: *max_size },
+            Self::InvalidRequestFormat { message } => Self::InvalidRequestFormat {
+                message: message.clone(),
+            },
+            Self::RequestTooLarge { size, max_size } => Self::RequestTooLarge {
+                size: *size,
+                max_size: *max_size,
+            },
             Self::MissingRequiredHeader { header } => Self::MissingRequiredHeader { header: header.clone() },
-            Self::InvalidHeaderValue { header, value } => Self::InvalidHeaderValue { header: header.clone(), value: value.clone() },
+            Self::InvalidHeaderValue { header, value } => Self::InvalidHeaderValue {
+                header: header.clone(),
+                value: value.clone(),
+            },
             Self::CtxExt(e) => Self::CtxExt(e.clone()),
             Self::ApiKeyAuthFailed { reason } => Self::ApiKeyAuthFailed { reason: reason.clone() },
             Self::JwtValidationFailed { reason } => Self::JwtValidationFailed { reason: reason.clone() },
-            Self::SessionExpired { expired_at } => Self::SessionExpired { expired_at: expired_at.clone() },
-            Self::InsufficientPermissions { resource } => Self::InsufficientPermissions { resource: resource.clone() },
-            Self::RateLimitExceeded { client_id, limit, window } => Self::RateLimitExceeded { 
-                client_id: client_id.clone(), 
-                limit: *limit, 
-                window: window.clone() 
+            Self::SessionExpired { expired_at } => Self::SessionExpired {
+                expired_at: expired_at.clone(),
             },
-            Self::ServiceUnavailable { service } => Self::ServiceUnavailable { service: service.clone() },
-            Self::ServiceTimeout { service, timeout_ms } => Self::ServiceTimeout { 
-                service: service.clone(), 
-                timeout_ms: *timeout_ms 
+            Self::InsufficientPermissions { resource } => Self::InsufficientPermissions {
+                resource: resource.clone(),
             },
-            Self::ServiceError { service, status_code, body } => Self::ServiceError { 
-                service: service.clone(), 
-                status_code: *status_code, 
-                body: body.clone() 
+            Self::RateLimitExceeded {
+                client_id,
+                limit,
+                window,
+            } => Self::RateLimitExceeded {
+                client_id: client_id.clone(),
+                limit: *limit,
+                window: window.clone(),
             },
-            Self::CircuitBreakerOpen { service } => Self::CircuitBreakerOpen { service: service.clone() },
-            Self::NoHealthyInstances { service } => Self::NoHealthyInstances { service: service.clone() },
-            Self::RouteNotFound { path, method } => Self::RouteNotFound { 
-                path: path.clone(), 
-                method: method.clone() 
+            Self::ServiceUnavailable { service } => Self::ServiceUnavailable {
+                service: service.clone(),
             },
-            Self::ServiceDiscoveryFailed { service } => Self::ServiceDiscoveryFailed { service: service.clone() },
+            Self::ServiceTimeout { service, timeout_ms } => Self::ServiceTimeout {
+                service: service.clone(),
+                timeout_ms: *timeout_ms,
+            },
+            Self::ServiceError {
+                service,
+                status_code,
+                body,
+            } => Self::ServiceError {
+                service: service.clone(),
+                status_code: *status_code,
+                body: body.clone(),
+            },
+            Self::CircuitBreakerOpen { service } => Self::CircuitBreakerOpen {
+                service: service.clone(),
+            },
+            Self::NoHealthyInstances { service } => Self::NoHealthyInstances {
+                service: service.clone(),
+            },
+            Self::RouteNotFound { path, method } => Self::RouteNotFound {
+                path: path.clone(),
+                method: method.clone(),
+            },
+            Self::ServiceDiscoveryFailed { service } => Self::ServiceDiscoveryFailed {
+                service: service.clone(),
+            },
             Self::RoutingFailed { reason } => Self::RoutingFailed { reason: reason.clone() },
-            Self::GatewayConfigError { config_key } => Self::GatewayConfigError { config_key: config_key.clone() },
+            Self::GatewayConfigError { config_key } => Self::GatewayConfigError {
+                config_key: config_key.clone(),
+            },
             Self::MissingCorrelationId => Self::MissingCorrelationId,
             Self::TracingContextLost => Self::TracingContextLost,
-            Self::MetricsCollectionFailed { metric_name } => Self::MetricsCollectionFailed { metric_name: metric_name.clone() },
+            Self::MetricsCollectionFailed { metric_name } => Self::MetricsCollectionFailed {
+                metric_name: metric_name.clone(),
+            },
             Self::CacheOperationFailed { key } => Self::CacheOperationFailed { key: key.clone() },
-            Self::LockAcquisitionFailed { resource } => Self::LockAcquisitionFailed { resource: resource.clone() },
+            Self::LockAcquisitionFailed { resource } => Self::LockAcquisitionFailed {
+                resource: resource.clone(),
+            },
             Self::DatabasePoolExhausted => Self::DatabasePoolExhausted,
-            Self::MessageQueueError { queue, operation } => Self::MessageQueueError { 
-                queue: queue.clone(), 
-                operation: operation.clone() 
+            Self::MessageQueueError { queue, operation } => Self::MessageQueueError {
+                queue: queue.clone(),
+                operation: operation.clone(),
             },
             Self::SuspiciousRequest { reason } => Self::SuspiciousRequest { reason: reason.clone() },
             Self::CorsViolation { origin } => Self::CorsViolation { origin: origin.clone() },
-            Self::CspViolation { directive } => Self::CspViolation { directive: directive.clone() },
+            Self::CspViolation { directive } => Self::CspViolation {
+                directive: directive.clone(),
+            },
             Self::SecurityPolicyViolation { policy } => Self::SecurityPolicyViolation { policy: policy.clone() },
         }
     }

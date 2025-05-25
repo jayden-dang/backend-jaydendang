@@ -21,7 +21,6 @@ pub async fn mw_map_response(
     req_stamp: ReqStamp,
     res: Response,
 ) -> Response {
-    debug!("->> {:<12} - mw_map_response", "RES_MAPPER");
     let ctx = ctx.map(|ctx| ctx.0).ok();
     let ReqStamp { uuid, time_in: _ } = req_stamp;
 
@@ -85,10 +84,7 @@ pub async fn mw_map_response(
 
             error!(
                 "Request failed: {} {} - Status: {} - Error: {}",
-                req_method,
-                uri,
-                status_code,
-                client_error.error_code
+                req_method, uri, status_code, client_error.error_code
             );
 
             // Log request details with client error

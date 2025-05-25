@@ -13,8 +13,6 @@ use tracing::debug;
 
 #[allow(dead_code)] // For now, until we have the rpc.
 pub async fn mw_ctx_require(ctx: Result<CtxW>, req: Request<Body>, next: Next) -> Result<Response> {
-    debug!("->> {:<12} - mw_ctx_require - {ctx:?}", "MIDDLEWARE");
-
     ctx?;
 
     Ok(next.run(req).await)
@@ -27,8 +25,6 @@ pub async fn mw_ctx_resolve(
     mut req: Request<Body>,
     next: Next,
 ) -> Result<Response> {
-    debug!("->> {:<12} - mw_ctx_resolve", "MIDDLEWARE");
-
     let ctx_ext_result = ctx_resolve(app_state, &cookies).await;
 
     Ok(next.run(req).await)
@@ -48,8 +44,6 @@ impl<S: Send + Sync> FromRequestParts<S> for CtxW {
     type Rejection = Error;
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self> {
-        debug!("{:<12} - Ctx", "EXTRACTOR");
-
         parts
             .extensions
             .get::<CtxExtResult>()

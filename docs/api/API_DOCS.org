@@ -13,6 +13,32 @@
 User-Agent: Emacs30"
 #+END_SRC
 
+#+begin_src restclient :var host=host :var headers=headers
+GET :host/api/v1
+#+end_src
+
+#+RESULTS:
+#+BEGIN_SRC js
+{
+  "data": {
+    "id": 1,
+    "username": "hello"
+  },
+  "id": "05424404-60c9-4e89-97e2-b7c5c0be14cf",
+  "meta": {
+    "timestamp": "2025-05-25T14:22:29.273424Z"
+  },
+  "status": 0,
+  "type": "success"
+}
+// GET http://localhost:8080/api/v1
+// HTTP/1.1 200 OK
+// content-type: application/json
+// content-length: 159
+// date: Sun, 25 May 2025 14:22:29 GMT
+// Request duration: 0.006228s
+#+END_SRC
+
 * Api
 #+begin_src restclient :var host=host :var headers=headers
 POST :host/api/v1/users
