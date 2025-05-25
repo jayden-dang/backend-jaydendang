@@ -26,16 +26,58 @@ POST :host/api/v1/login?order_by=id
 #+RESULTS:
 #+BEGIN_SRC js
 {
-  "code": 404,
-  "message": "Route not found",
-  "path": "The requested resource does not exist",
-  "status": "error",
-  "timestamp": "2025-05-24T12:57:56.284786Z"
+  "data": {
+    "user": {
+      "role": "admin",
+      "username": "demo1"
+    }
+  },
+  "id": "90932730-c81d-4c37-bd23-8dc03cafd69c",
+  "meta": {
+    "timestamp": "2025-05-25T03:16:40.61002Z"
+  },
+  "status": 0,
+  "type": "success"
 }
 // POST http://localhost:8080/api/v1/login?order_by=id
-// HTTP/1.1 404 Not Found
+// HTTP/1.1 200 OK
 // content-type: application/json
-// content-length: 146
-// date: Sat, 24 May 2025 12:57:56 GMT
-// Request duration: 0.008505s
+// set-cookie: auth-token=user-1.exp.sign
+// content-length: 175
+// date: Sun, 25 May 2025 03:16:40 GMT
+// Request duration: 0.022273s
+#+END_SRC
+
+#+begin_src restclient :var host=host :var headers=headers
+GET :host/api/v1/user/1a7ae5d1-e1d0-484b-a3eb-037b0ac4635d
+#+end_src
+
+#+RESULTS:
+#+BEGIN_SRC js
+{
+  "data": {
+    "created_at": "2025-05-25T03:46:53.507465Z",
+    "email": "john.doe@example.com",
+    "email_verified": true,
+    "first_name": "John",
+    "is_active": true,
+    "last_name": "Doe",
+    "password_hash": "hashed_pw_123",
+    "updated_at": "2025-05-25T03:46:53.507465Z",
+    "user_id": "1a7ae5d1-e1d0-484b-a3eb-037b0ac4635d",
+    "username": "johndoe"
+  },
+  "id": "72ace119-fea7-4c19-bf50-a3b8561c6827",
+  "meta": {
+    "timestamp": "2025-05-25T03:47:37.771119Z"
+  },
+  "status": 0,
+  "type": "success"
+}
+// GET http://localhost:8080/api/v1/user/1a7ae5d1-e1d0-484b-a3eb-037b0ac4635d
+// HTTP/1.1 200 OK
+// content-type: application/json
+// content-length: 429
+// date: Sun, 25 May 2025 03:47:37 GMT
+// Request duration: 0.076037s
 #+END_SRC

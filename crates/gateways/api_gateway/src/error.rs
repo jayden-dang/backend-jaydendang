@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use derive_more::From;
@@ -7,7 +9,7 @@ use serde_with::serde_as;
 use crate::middleware::{self};
 
 #[serde_as]
-#[derive(Debug, Serialize, strum_macros::AsRefStr, Clone, From)]
+#[derive(Debug, Serialize, strum_macros::AsRefStr, From, Clone)]
 #[serde(tag = "type", content = "data")]
 pub enum Error {
     // -- Login
@@ -21,6 +23,9 @@ pub enum Error {
 
     #[from]
     CtxExt(middleware::mw_auth::CtxExtError),
+
+    #[from]
+    CoreError(Arc<jd_core::Error>),
 }
 
 // region:    --- Axum IntoResponse
@@ -52,8 +57,6 @@ impl core::fmt::Display for Error {
 impl std::error::Error for Error {}
 // endregion: --- Error Boilerplate
 
-// region:    --- Client Error
-
 /// From the root error to the http status code and ClientError
 impl Error {
     pub fn client_status_and_error(&self) -> (StatusCode, ClientError) {
@@ -65,7 +68,24 @@ impl Error {
             CtxExt(_) => (StatusCode::FORBIDDEN, ClientError::NO_AUTH),
             EntityNotFound { entity, id } => (StatusCode::NOT_FOUND, ClientError::EntityNotFound { entity, id: *id }),
             ReqStampNotInReqExt => (StatusCode::BAD_REQUEST, ClientError::SERVICE_ERROR),
-            // -- Fallback
+            CoreError(core_err) => {
+                match core_err.as_ref() {
+                    jd_core::Error::CantCreateModelManagerProvider(_) => 
+                        (StatusCode::INTERNAL_SERVER_ERROR, ClientError::SERVICE_ERROR),
+                    jd_core::Error::ListLimitOverMax { max, actual } => 
+                        (StatusCode::BAD_REQUEST, ClientError::ListLimitOverMax { max: *max, actual: *actual }),
+                    jd_core::Error::UniqueViolation { table, constraint } => 
+                        (StatusCode::CONFLICT, ClientError::UniqueViolation { 
+                            table: table.clone(), 
+                            constraint: constraint.clone() 
+                        }),
+                    jd_core::Error::CountFail => 
+                        (StatusCode::INTERNAL_SERVER_ERROR, ClientError::SERVICE_ERROR),
+                    jd_core::Error::EntityNotFound { entity, id } => 
+                        (StatusCode::NOT_FOUND, ClientError::EntityNotFound { entity, id: *id }),
+                    _ => (StatusCode::INTERNAL_SERVER_ERROR, ClientError::SERVICE_ERROR),
+                }
+            }
         }
     }
 }
@@ -77,5 +97,7 @@ pub enum ClientError {
     NO_AUTH,
     SERVICE_ERROR,
     EntityNotFound { entity: &'static str, id: i64 },
+    ListLimitOverMax { max: i64, actual: i64 },
+    UniqueViolation { table: String, constraint: String },
 }
 // endregion: --- Client Error

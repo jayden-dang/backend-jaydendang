@@ -2,7 +2,7 @@
 /// Note: If custom functionality is required, use the code below as foundational
 ///       code for the custom implementations.
 #[macro_export]
-macro_rules! generate_common_bmc_fns {
+macro_rules! generate_rpc_bmc_fns {
     (
         DMC: $struct_name:ident,
         Entity: $entity:ty,
@@ -15,84 +15,84 @@ macro_rules! generate_common_bmc_fns {
 
         impl $struct_name {
             $(
-                pub async fn create(
+                pub async fn ctx_create(
                     ctx: &Ctx,
                     mm: &ModelManager,
                     Json(entity_c): Json<$req_create>,
                 ) -> Result<Json<$res_create>> {
-                    Ok(Json(base::create::<Self, _, _>(ctx, mm, entity_c).await?))
+                    Ok(Json(rpc::ctx_create::<Self, _, _>(ctx, mm, entity_c).await?))
                 }
 
-                pub async fn create_many(
+                pub async fn ctx_create_many(
                     ctx: &Ctx,
                     mm: &ModelManager,
                     Json(entity_c): Json<Vec<$req_create>>,
                 ) -> Result<Json<Vec<$res_create>>> {
-                    Ok(Json(base::create_many::<Self, _, _>(ctx, mm, entity_c).await?))
+                    Ok(Json(rpc::ctx_create_many::<Self, _, _>(ctx, mm, entity_c).await?))
                 }
             )?
 
-                pub async fn get(
+                pub async fn ctx_get(
                     ctx: &Ctx,
                     mm: &ModelManager,
                     Path(id): Path<i64>,
                 ) -> Result<Json<$entity>> {
-                    Ok(Json(base::get::<Self, _>(ctx, mm, id).await?))
+                    Ok(Json(rpc::ctx_get::<Self, _>(ctx, mm, id).await?))
                 }
 
             $(
-                pub async fn first(
+                pub async fn ctx_first(
                     ctx: &Ctx,
                     mm: &ModelManager,
                     Query(filter): Query<Option<Vec<$filter>>>,
                     Query(list_options): Query<Option<ListOptions>>,
                 ) -> Result<Json<Option<$entity>>> {
-                    Ok(Json(base::first::<Self, _, _>(ctx, mm, filter, list_options).await?))
+                    Ok(Json(rpc::ctx_first::<Self, _, _>(ctx, mm, filter, list_options).await?))
                 }
 
-                pub async fn list(
+                pub async fn ctx_list(
                     ctx: &Ctx,
                     mm: &ModelManager,
                     Query(filter): Query<Option<Vec<$filter>>>,
                     Query(list_options): Query<Option<ListOptions>>,
                 ) -> Result<Json<Vec<$entity>>> {
-                    Ok(Json(base::list::<Self, _, _>(ctx, mm, filter, list_options).await?))
+                    Ok(Json(rpc::ctx_list::<Self, _, _>(ctx, mm, filter, list_options).await?))
                 }
 
-                pub async fn count(
+                pub async fn ctx_count(
                     ctx: &Ctx,
                     mm: &ModelManager,
                     Query(filter): Query<Option<Vec<$filter>>>,
                 ) -> Result<Json<i64>> {
-                    Ok(Json(base::count::<Self, _>(ctx, mm, filter).await?))
+                    Ok(Json(rpc::ctx_count::<Self, _>(ctx, mm, filter).await?))
                 }
             )?
 
             $(
-                pub async fn update(
+                pub async fn ctx_update(
                     ctx: &Ctx,
                     mm: &ModelManager,
                     Path(id): Path<i64>,
                     Json(entity_u): Json<$req_update>,
                 ) -> Result<()> {
-                    base::update::<Self, _>(ctx, mm, id, entity_u).await
+                    rpc::ctx_update::<Self, _>(ctx, mm, id, entity_u).await
                 }
             )?
 
-                pub async fn delete(
+                pub async fn ctx_delete(
                     ctx: &Ctx,
                     mm: &ModelManager,
                     Path(id): Path<i64>,
                 ) -> Result<()> {
-                    base::delete::<Self>(ctx, mm, id).await
+                    rpc::ctx_delete::<Self>(ctx, mm, id).await
                 }
 
-                pub async fn delete_many(
+                pub async fn ctx_delete_many(
                     ctx: &Ctx,
                     mm: &ModelManager,
                     Path(ids): Path<Vec<i64>>,
                 ) -> Result<u64> {
-                    base::delete_many::<Self>(ctx, mm, ids).await
+                    rpc::ctx_delete_many::<Self>(ctx, mm, ids).await
                 }
         }
     };

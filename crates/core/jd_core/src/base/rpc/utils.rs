@@ -1,4 +1,6 @@
-use super::{CommonId, TimestampIden, DMC};
+use crate::base::TimestampIden;
+
+use super::{CommonId, DMC};
 use jd_utils::time::now_utc;
 use modql::field::{SeaField, SeaFields};
 

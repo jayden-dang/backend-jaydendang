@@ -1139,10 +1139,12 @@ checksum = "4a5f13b858c8d314ee3e8f639011f7ccefe71f97f96e50151fb991f267928e2c"
 name = "jd_contracts"
 version = "0.1.0"
 dependencies = [
+ "modql",
  "sea-query",
  "serde",
  "sqlx",
  "time",
+ "uuid",
 ]
 
 [[package]]
@@ -1162,6 +1164,7 @@ dependencies = [
  "sqlx",
  "strum_macros 0.27.1",
  "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -1174,6 +1177,7 @@ dependencies = [
  "serde",
  "serde_with",
  "sqlx",
+ "uuid",
 ]
 
 [[package]]
@@ -2759,6 +2763,8 @@ dependencies = [
 name = "user_service"
 version = "0.1.0"
 dependencies = [
+ "axum",
+ "derive_more",
  "jd_contracts",
  "jd_core",
  "jd_domain",
@@ -2767,8 +2773,11 @@ dependencies = [
  "sea-query",
  "sea-query-binder",
  "serde",
+ "serde_json",
  "serde_with",
  "sqlx",
+ "strum_macros 0.27.1",
+ "uuid",
 ]
 
 [[package]]
@@ -2785,6 +2794,7 @@ checksum = "458f7a779bf54acc9f347480ac654f68407d3aab21269a6e3c9f922acd9e2da9"
 dependencies = [
  "getrandom 0.3.3",
  "rand 0.9.1",
+ "serde",
 ]
 
 [[package]]

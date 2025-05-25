@@ -9,7 +9,8 @@ CREATE TYPE device_type_enum AS ENUM ('mobile', 'tablet', 'desktop');
 -- 1. CORE USERS TABLE - Authentication & Basic Info Only
 -- Principle: Single Responsibility - Authentication concerns only
 -- ===================================================================================================
-CREATE TABLE users (
+CREATE SCHEMA IF NOT EXISTS "profile";
+CREATE TABLE profile.users (
     user_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 
     -- Authentication data (hot data - accessed every request)

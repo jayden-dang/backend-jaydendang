@@ -8,3 +8,5 @@ sea-query.workspace = true
 time.workspace = true
 sqlx.workspace = true
 serde.workspace = true
+modql.workspace = true
+uuid = { workspace = true, features = ["serde"] }

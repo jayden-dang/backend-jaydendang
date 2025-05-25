@@ -13,3 +13,4 @@ sqlx.workspace = true
 
 # Members
 jd_utils = { path = "../jd_utils" }
+uuid = { workspace = true, features = ["serde"] }

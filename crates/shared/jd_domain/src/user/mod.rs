@@ -1,5 +1,7 @@
+use uuid::Uuid;
+
 pub struct User {
-    pub user_id: i64,
+    pub user_id: Uuid,
     pub email: String,
     pub username: String,
     pub first_name: Option<String>,

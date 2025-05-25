@@ -1,11 +1,14 @@
 use crate::infra::record::UserRecord;
-use jd_contracts::user::dto::{CreateUserReq, CreateUserRes};
-use jd_core::base;
-use jd_core::ctx::Ctx;
+use axum::{
+    extract::{Path, State},
+    Json,
+};
 use jd_core::ModelManager;
-use jd_core::Result;
-use jd_core::{base::DMC, generate_common_bmc_fns};
-use modql::filter::ListOptions;
+use jd_core::{
+    base::{rest, rpc, DMC},
+    ctx::Ctx,
+};
+use uuid::Uuid;
 
 use modql::{
     field::Fields,
@@ -13,31 +16,23 @@ use modql::{
 };
 use serde::Deserialize;
 
-pub(crate) mod record;
+pub mod record;
 
 pub struct UserDmc;
 
 impl DMC for UserDmc {
-    const SCHEMA: &'static str = "user";
-    const TABLE: &'static str = "profile";
+    const SCHEMA: &'static str = "profile";
+    const TABLE: &'static str = "users";
+    const ID: &'static str = "user_id";
 }
 
 #[derive(FilterNodes, Deserialize, Default, Debug)]
 pub struct UserFilter {
-    pub id: Option<i64>,
+    pub id: Option<Uuid>,
     pub username: Option<OpValsString>,
 }
 
 #[derive(Deserialize, Fields)]
 pub struct UpdateUserReq {
-    pub id: i64,
+    pub id: Uuid,
 }
-
-generate_common_bmc_fns!(
-    DMC: UserDmc,
-    Entity: UserRecord,
-    ReqCreate: CreateUserReq,
-    ResCreate: CreateUserRes,
-    ReqUpdate: UpdateUserReq,
-    Filter: UserFilter,
-);

@@ -28,8 +28,9 @@ async fn main() -> error::Result<()> {
 
     let cfg = config::Config::from_env().expect("Loading env failed");
 
+    // TODO: -- Convert to AppState Model
     let app = Router::new()
-        .merge(v1_routes())
+        .merge(v1_routes(mm.clone()))
         .layer(middleware::map_response(mw_res_map::mw_map_response))
         .layer(middleware::from_fn_with_state(mm.clone(), mw_ctx_resolve))
         .layer(CookieManagerLayer::new())

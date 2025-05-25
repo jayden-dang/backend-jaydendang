@@ -11,11 +11,12 @@ sqlx.workspace = true
 sea-query.workspace = true
 sea-query-binder.workspace = true
 modql.workspace = true
-axum.workspace = true
 tracing.workspace = true
+axum.workspace = true
 
 # Members
 jd_utils = { path = "../../shared/jd_utils" }
 jd_storage = { path = "../../infrastructure/jd_storage" }
 serde_json = "1"
 strum_macros = "0.27"
+uuid = { workspace = true, features = ["serde"] }

@@ -107,7 +107,8 @@ pub async fn mw_map_response(
         // Fallback for unknown errors
         let error_body = json!({
             "id": uuid.to_string(),
-            "status": "error",
+            "status": 0,
+            "type": "error",
             "timestamp": format_time(now_utc()),
             "error": {
                 "type": "UNKNOWN_ERROR",

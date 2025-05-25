@@ -4,14 +4,15 @@ use modql::field::Fields;
 use serde::Serialize;
 use serde_with::serde_as;
 use sqlx::{prelude::FromRow, types::time::OffsetDateTime};
+use uuid::Uuid;
 
 #[serde_as]
 #[derive(Serialize, FromRow, Fields, Clone, Debug)]
 pub struct UserRecord {
-    pub user_id: i64,
+    pub user_id: Uuid,
     pub email: String,
     pub username: String,
-    pub password: String,
+    pub password_hash: String,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
     pub is_active: bool,

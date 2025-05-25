@@ -1,7 +1,8 @@
 use crate::error::Error;
 use crate::Result;
-use axum::routing::post;
-use axum::{Json, Router};
+use axum::extract::State;
+use axum::Json;
+use jd_core::ModelManager;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use tower_cookies::{Cookie, Cookies};
@@ -9,11 +10,11 @@ use tracing::debug;
 
 const AUTH_TOKEN: &str = "auth-token";
 
-pub fn login_routes() -> Router {
-    Router::new().route("/login", post(api_login_handler))
-}
-
-async fn api_login_handler(cookies: Cookies, payload: Json<LoginPayload>) -> Result<Json<Value>> {
+pub async fn api_login_handler(
+    State(mm): State<ModelManager>,
+    cookies: Cookies,
+    Json(payload): Json<LoginPayload>,
+) -> Result<Json<Value>> {
     debug!("->> {:<12} - api_login_handler", "HANDLER");
 
     // Test case 1: Empty username - Bad Request
@@ -53,7 +54,7 @@ async fn api_login_handler(cookies: Cookies, payload: Json<LoginPayload>) -> Res
 }
 
 #[derive(Debug, Deserialize)]
-struct LoginPayload {
+pub struct LoginPayload {
     username: String,
     pwd: String,
 }
