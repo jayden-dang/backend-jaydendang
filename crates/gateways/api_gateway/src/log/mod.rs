@@ -118,7 +118,7 @@ pub async fn log_request(
         error: if web_error.is_some() {
             Some(ErrorContext {
                 type_: error_type,
-                client_type: client_error.map(|e| e.as_ref().to_string()),
+                client_type: client_error.map(|e| e.message.clone()),
                 data: error_data,
             })
         } else {

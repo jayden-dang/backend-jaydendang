@@ -12,6 +12,7 @@ use serde_json::{json, Value};
 use tracing::{debug, error, info};
 
 use super::{mw_auth::CtxW, mw_res_timestamp::ReqStamp};
+use crate::error::RequestContext;
 
 pub async fn mw_map_response(
     ctx: Result<CtxW>,
@@ -66,7 +67,8 @@ pub async fn mw_map_response(
     } else {
         // If we have a web_error, use its status and error type
         if let Some(err) = web_error {
-            let (status_code, client_error) = err.client_status_and_error();
+            let request_context = RequestContext::default();
+            let (status_code, client_error) = err.client_status_and_error(&request_context);
 
             let error_body = json!({
                 "id": uuid.to_string(),
@@ -76,7 +78,7 @@ pub async fn mw_map_response(
                     "timestamp": format_time(now_utc()),
                 },
                 "error": {
-                    "type": client_error.as_ref().to_string(),
+                    "type": client_error.error_code.clone(),
                     "code": status_code.as_u16()
                 }
             });
@@ -86,7 +88,7 @@ pub async fn mw_map_response(
                 req_method,
                 uri,
                 status_code,
-                client_error.as_ref()
+                client_error.error_code
             );
 
             // Log request details with client error

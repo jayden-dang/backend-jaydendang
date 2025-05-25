@@ -41,7 +41,6 @@ async fn ctx_resolve(_app_state: AppState, _cookies: &Cookies) -> CtxExtResult {
 }
 
 // region:    --- Ctx Extractor
-// region:    --- Ctx Extractor
 #[derive(Debug, Clone)]
 pub struct CtxW(pub Ctx);
 
@@ -77,4 +76,21 @@ pub enum CtxExtError {
     CtxNotInRequestExt,
     CtxCreateFail(String),
 }
+
+impl std::fmt::Display for CtxExtError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::TokenNotInCookie => write!(f, "Token not found in cookie"),
+            Self::TokenWrongFormat => write!(f, "Token has wrong format"),
+            Self::UserNotFound => write!(f, "User not found"),
+            Self::ModelAccessError(msg) => write!(f, "Model access error: {}", msg),
+            Self::FailValidate => write!(f, "Validation failed"),
+            Self::CannotSetTokenCookie => write!(f, "Cannot set token cookie"),
+            Self::CtxNotInRequestExt => write!(f, "Context not found in request extensions"),
+            Self::CtxCreateFail(msg) => write!(f, "Failed to create context: {}", msg),
+        }
+    }
+}
+
+impl std::error::Error for CtxExtError {}
 // endregion: --- Ctx Extractor Result/Error

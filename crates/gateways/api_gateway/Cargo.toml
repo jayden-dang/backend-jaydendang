@@ -20,6 +20,7 @@ hyper = { version = "1.0", features = ["full"] }
 serde_json = "1.0.140"
 strum = "0.26"
 strum_macros = "0.26"
+chrono = { version = "0.4", features = ["serde"] }
 
 # -- Libraries Members
 jd_core = { path = "../../core/jd_core" }
@@ -29,3 +30,6 @@ jd_domain = { path = "../../shared/jd_domain" }
 
 # -- Services
 user_service = { path = "../../services/user_service" }
+reqwest = "0.12.15"
+thiserror.workspace = true
+redis = "0.31.0"
