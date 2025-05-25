@@ -1236,12 +1236,14 @@ checksum = "4a5f13b858c8d314ee3e8f639011f7ccefe71f97f96e50151fb991f267928e2c"
 name = "jd_contracts"
 version = "0.1.0"
 dependencies = [
+ "jd_utils",
  "modql",
  "sea-query",
  "serde",
  "sqlx",
  "time",
  "uuid",
+ "validator",
 ]
 
 [[package]]

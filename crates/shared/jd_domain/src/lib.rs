@@ -10,7 +10,7 @@ pub mod user;
 
 pub type Result<T> = std::result::Result<T, error::Error>;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Id(String);
 
 impl Id {
@@ -37,5 +37,12 @@ impl Display for Id {
 impl From<Id> for Value {
     fn from(id: Id) -> Self {
         Value::String(Some(Box::new(id.0)))
+    }
+}
+
+// SQLx implementations
+impl sqlx::Type<sqlx::Postgres> for Id {
+    fn type_info() -> sqlx::postgres::PgTypeInfo {
+        <String as sqlx::Type<sqlx::Postgres>>::type_info()
     }
 }

@@ -1,7 +1,6 @@
 use std::fmt::Display;
 
 use jd_utils::regex::USERNAME_REGEX;
-use sea_query::Value;
 use serde::{Deserialize, Serialize};
 use validator::{Validate, ValidationError};
 
@@ -17,7 +16,7 @@ pub struct User {
     pub password_hash: HashedPassword,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
-    pub status: AccountStatus,
+    // pub status: AccountStatus,
     pub email_verified: bool,
 }
 

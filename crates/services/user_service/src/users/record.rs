@@ -36,7 +36,7 @@ pub struct UserRecord {
     #[validate(length(min = 1, max = 100, message = "Last name must be 1-100 characters"))]
     pub last_name: Option<String>,
 
-    pub status: AccountStatus,
+    // pub status: AccountStatus,
     pub email_verified: bool,
     #[serde_as(as = "Rfc3339")]
     pub created_at: OffsetDateTime,
@@ -53,7 +53,7 @@ impl From<User> for UserRecord {
             password_hash: value.password_hash.value,
             first_name: value.first_name,
             last_name: value.last_name,
-            status: value.status,
+            // status: value.status,
             email_verified: value.email_verified,
             created_at: now_utc(),
             updated_at: now_utc(),
@@ -76,7 +76,7 @@ impl TryFrom<UserRecord> for User {
             password_hash,
             first_name: value.first_name,
             last_name: value.last_name,
-            status: value.status,
+            // status: value.status,
             email_verified: value.email_verified,
         };
 

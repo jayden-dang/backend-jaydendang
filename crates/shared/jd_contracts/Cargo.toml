@@ -9,4 +9,7 @@ time.workspace = true
 sqlx.workspace = true
 serde.workspace = true
 modql.workspace = true
-uuid = { workspace = true, features = ["serde"] }
+uuid.workspace = true
+validator = { version = "0.20.0", features = ["derive"] }
+
+jd_utils = { path = "../jd_utils" }
