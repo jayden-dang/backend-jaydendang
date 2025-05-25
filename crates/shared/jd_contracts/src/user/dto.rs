@@ -1,4 +1,7 @@
-use modql::field::Fields;
+use modql::{
+    field::Fields,
+    filter::{FilterNodes, OpValsString},
+};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
@@ -19,4 +22,10 @@ pub struct CreateUserRes {
     pub username: String,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
+}
+
+#[derive(Deserialize, FilterNodes, Default, Debug)]
+pub struct UserFilter {
+    pub email: Option<OpValsString>,
+    pub username: Option<OpValsString>,
 }
