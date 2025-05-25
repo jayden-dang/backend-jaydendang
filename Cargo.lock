@@ -1245,6 +1245,7 @@ version = "0.1.0"
 dependencies = [
  "config",
  "derive_more",
+ "regex",
  "serde",
  "serde_with",
  "time",
@@ -2846,7 +2847,9 @@ dependencies = [
  "serde_with",
  "sqlx",
  "strum_macros 0.27.1",
+ "thiserror",
  "uuid",
+ "validator",
 ]
 
 [[package]]

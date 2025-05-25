@@ -41,8 +41,8 @@ sqlx = { version = "0.8", features = [ "macros", "runtime-tokio", "postgres", "u
 sea-query = "0.32"
 sea-query-binder = { version = "0.7", features = ["sqlx-postgres", "with-uuid", "with-time" ] }
 
-# -- JSON-RPC
-rpc-router = { version = "=0.1.3" }
+# -- Error Handling
+thiserror = "2"
 
 # -- Web
 axum = {version = "0.8", features = ["macros"]}

@@ -1,5 +1,5 @@
 use sea_query::Value;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
 pub mod profile;
@@ -116,7 +116,7 @@ impl std::fmt::Display for SubscriptionTier {
 // <<<-- Region:: END    <<<---  Subscription Tier
 
 // -->>> Region:: START  --->>>  Account Status
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum AccountStatus {
     Active,
     Inactive,
