@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 sqlx.workspace = true
 tokio.workspace = true
+tracing.workspace = true
 
 # Members
 jd_utils = { path = "../../shared/jd_utils" }

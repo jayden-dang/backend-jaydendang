@@ -102,3 +102,24 @@ script = [
     "sleep 5",
     "docker compose -f deployment/docker/docker-compose.postgres.yml logs database"
 ]
+
+
+# ================================
+# Redis Management Tasks
+# ================================
+
+[tasks.redis-up]
+description = "Start Redis with Docker Compose"
+cwd = "./deployment/docker"
+command = "docker-compose"
+args = ["up", "-d", "redis"]
+
+[tasks.redis-down]
+description = "Stop Redis container"
+cwd = "./deployment/docker"
+command = "docker-compose"
+args = ["stop", "redis"]
+
+[tasks.redis-restart]
+description = "Restart Redis container"
+dependencies = ["redis-down", "redis-up"]

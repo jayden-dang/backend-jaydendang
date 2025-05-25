@@ -10,7 +10,7 @@ pub struct CreateUserRequest {
     // Required fields
     pub email: String,
     pub username: String,
-    pub password: String,
+    pub password_hash: String,
 
     // Optional basic info
     pub first_name: Option<String>,

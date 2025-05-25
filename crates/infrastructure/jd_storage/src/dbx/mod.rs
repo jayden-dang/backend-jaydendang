@@ -3,6 +3,7 @@ use std::{
     sync::Arc,
 };
 use tokio::sync::Mutex;
+use tracing::{debug, warn};
 
 use sqlx::{
     prelude::FromRow,
@@ -16,6 +17,8 @@ mod error;
 
 pub use error::{Error, Result};
 
+/// A database transaction wrapper that supports nested transactions
+/// through a counter mechanism.
 #[derive(Debug, Clone)]
 pub struct Dbx {
     db_pool: Db,
@@ -24,6 +27,16 @@ pub struct Dbx {
 }
 
 impl Dbx {
+    /// Creates a new Dbx instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `db_pool` - The database connection pool
+    /// * `with_txn` - Whether to enable transaction support
+    ///
+    /// # Returns
+    ///
+    /// A new Dbx instance
     pub fn new(db_pool: Db, with_txn: bool) -> Result<Self> {
         Ok(Dbx {
             db_pool,
@@ -37,11 +50,16 @@ impl Dbx {
 struct TxnHolder {
     txn: Transaction<'static, Postgres>,
     counter: i32,
+    is_committed: bool,
 }
 
 impl TxnHolder {
     fn new(txn: Transaction<'static, Postgres>) -> Self {
-        TxnHolder { txn, counter: 1 }
+        TxnHolder { 
+            txn, 
+            counter: 1,
+            is_committed: false,
+        }
     }
 
     fn inc(&mut self) {
@@ -51,6 +69,10 @@ impl TxnHolder {
     fn dec(&mut self) -> i32 {
         self.counter -= 1;
         self.counter
+    }
+
+    fn is_active(&self) -> bool {
+        !self.is_committed && self.counter > 0
     }
 }
 
@@ -69,6 +91,12 @@ impl DerefMut for TxnHolder {
 }
 
 impl Dbx {
+    /// Begins a new transaction or increments the counter if a transaction already exists.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` if the transaction was started successfully
+    /// * `Err(Error::CannotBeginTxnWithTxnFalse)` if transaction support is disabled
     pub async fn begin_txn(&self) -> Result<()> {
         if !self.with_txn {
             return Err(Error::CannotBeginTxnWithTxnFalse);
@@ -77,28 +105,38 @@ impl Dbx {
         let mut txh_g = self.txn_holder.lock().await;
         // If we already have a tx holder, then, we increment
         if let Some(txh) = txh_g.as_mut() {
+            if !txh.is_active() {
+                return Err(Error::TxnAlreadyCommitted);
+            }
             txh.inc();
+            debug!("Transaction counter incremented to {}", txh.counter);
         }
         // If not, we create one with a new transaction
         else {
             let transaction = self.db_pool.begin().await?;
             let _ = txh_g.insert(TxnHolder::new(transaction));
+            debug!("New transaction started");
         }
 
         Ok(())
     }
 
+    /// Rolls back the current transaction if it's the last one in the stack.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` if the transaction was rolled back successfully
+    /// * `Err(Error::NoTxn)` if no transaction exists
     pub async fn rollback_txn(&self) -> Result<()> {
         let mut txh_g = self.txn_holder.lock().await;
         if let Some(mut txn_holder) = txh_g.take() {
-            // Take the TxnHolder out of the Option
             if txn_holder.counter > 1 {
                 txn_holder.counter -= 1;
-                let _ = txh_g.replace(txn_holder); // Put it back if not the last reference
+                debug!("Transaction counter decremented to {}", txn_holder.counter);
+                let _ = txh_g.replace(txn_holder);
             } else {
-                // Perform the actual rollback
+                debug!("Rolling back transaction");
                 txn_holder.txn.rollback().await?;
-                // No need to replace, as we want to leave it as None
             }
             Ok(())
         } else {
@@ -106,6 +144,14 @@ impl Dbx {
         }
     }
 
+    /// Commits the current transaction if it's the last one in the stack.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` if the transaction was committed successfully
+    /// * `Err(Error::CannotCommitTxnWithTxnFalse)` if transaction support is disabled
+    /// * `Err(Error::TxnCantCommitNoOpenTxn)` if no transaction exists
+    /// * `Err(Error::TxnAlreadyCommitted)` if the transaction was already committed
     pub async fn commit_txn(&self) -> Result<()> {
         if !self.with_txn {
             return Err(Error::CannotCommitTxnWithTxnFalse);
@@ -113,24 +159,34 @@ impl Dbx {
 
         let mut txh_g = self.txn_holder.lock().await;
         if let Some(txh) = txh_g.as_mut() {
+            if !txh.is_active() {
+                return Err(Error::TxnAlreadyCommitted);
+            }
+
             let counter = txh.dec();
-            // If 0, then, it should be matching commit for the first first begin_txn
-            // so we can commit.
+            debug!("Transaction counter decremented to {}", counter);
+
             if counter == 0 {
-                // here we take the txh out of the option
-                if let Some(txn) = txh_g.take() {
+                if let Some(mut txn) = txh_g.take() {
+                    debug!("Committing transaction");
                     txn.txn.commit().await?;
-                } // TODO: Might want to add a warning on the else.
-            } // TODO: Might want to add a warning on the else.
+                    txn.is_committed = true;
+                } else {
+                    warn!("Transaction holder was unexpectedly None after counter reached 0");
+                    return Err(Error::TxnCantCommitNoOpenTxn);
+                }
+            } else if counter < 0 {
+                warn!("Transaction counter went negative: {}", counter);
+                return Err(Error::TxnCantCommitNoOpenTxn);
+            }
 
             Ok(())
-        }
-        // Ohterwise, we have an error
-        else {
+        } else {
             Err(Error::TxnCantCommitNoOpenTxn)
         }
     }
 
+    /// Returns a reference to the underlying database pool.
     pub fn db(&self) -> &Pool<Postgres> {
         &self.db_pool
     }

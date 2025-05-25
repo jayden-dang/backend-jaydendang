@@ -5,7 +5,7 @@ use api_gateway::{
 
 use axum::{http::StatusCode, middleware, response::IntoResponse, Json, Router};
 use dotenv::dotenv;
-use jd_core::ModelManager;
+use jd_core::AppState;
 use serde_json::json;
 use tower_cookies::CookieManagerLayer;
 use tracing::info;
@@ -24,15 +24,14 @@ async fn main() -> error::Result<()> {
 
     let _ = tracing_init();
 
-    let mm = ModelManager::new().await.expect("");
+    let app_state = AppState::new().await.expect("Failed to create app state");
 
     let cfg = config::Config::from_env().expect("Loading env failed");
 
-    // TODO: -- Convert to AppState Model
     let app = Router::new()
-        .merge(v1_routes(mm.clone()))
+        .merge(v1_routes(app_state.clone()))
         .layer(middleware::map_response(mw_res_map::mw_map_response))
-        .layer(middleware::from_fn_with_state(mm.clone(), mw_ctx_resolve))
+        .layer(middleware::from_fn_with_state(app_state.clone(), mw_ctx_resolve))
         .layer(CookieManagerLayer::new())
         .layer(middleware::from_fn(mw_res_timestamp::mw_req_stamp_resolver))
         .fallback(fallback_handler);

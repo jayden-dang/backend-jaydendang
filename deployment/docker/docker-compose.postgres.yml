@@ -19,5 +19,15 @@ services:
       timeout: 10s
       retries: 3
 
+  redis:
+    container_name: jd-redis
+    image: redis:7
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
 volumes:
   my_pgdata:
+  redis-data:

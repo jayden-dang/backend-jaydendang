@@ -6,9 +6,6 @@ ENV POSTGRES_USER=jayden
 ENV POSTGRES_PASSWORD=postgres
 ENV POSTGRES_DB=jayden-blog
 
-# Set timezone (optional)
-ENV TZ=Asia/Ho_Chi_Minh
-
 # Create directory for initialization scripts
 RUN mkdir -p /docker-entrypoint-initdb.d
 

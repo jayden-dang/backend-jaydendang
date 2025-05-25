@@ -11,6 +11,7 @@ pub enum Error {
     CannotBeginTxnWithTxnFalse,
     CannotCommitTxnWithTxnFalse,
     NoTxn,
+    TxnAlreadyCommitted,
 
     // -- Externals
     #[from]

@@ -41,6 +41,9 @@ pub enum Error {
         entity: &'static str,
         id: i64,
     },
+
+    #[from]
+    Redis(#[serde_as(as = "DisplayFromStr")] redis::RedisError),
 }
 
 impl Error {

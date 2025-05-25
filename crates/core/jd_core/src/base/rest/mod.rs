@@ -36,9 +36,14 @@ where
     let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
 
     let sqlx_query = sqlx::query_as_with::<_, O, _>(&sql, values);
-    let entity = db.dbx().fetch_one(sqlx_query).await?;
 
-    Ok(entity)
+    match db.dbx().fetch_one(sqlx_query).await {
+        Ok(entity) => Ok(entity),
+        Err(e) => {
+            eprintln!("Database error: {:?}", e);
+            Err(e.into())
+        }
+    }
 }
 
 pub async fn create_many<MC, I, O>(db: &ModelManager, input: Vec<I>) -> Result<Vec<O>>
