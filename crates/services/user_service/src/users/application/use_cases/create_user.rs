@@ -19,6 +19,6 @@ impl<R: UserRepository> CreateUserUseCase<R> {
     pub async fn execute(&self, Json(request): Json<CreateUserRequest>) -> Result<Json<UserRecord>> {
         request.validate()?;
 
-        self.repository.create(Json(request)).await
+        self.repository.create(request).await
     }
 }

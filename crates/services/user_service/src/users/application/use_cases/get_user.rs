@@ -1,5 +1,7 @@
+use axum::Json;
+use jd_contracts::user::dto::UserFilter;
+
 use crate::{
-    error::Error,
     users::{domain::repository::UserRepository, record::UserRecord},
     Result,
 };
@@ -17,11 +19,37 @@ impl<R: UserRepository> GetUserUseCase<R> {
         todo!()
     }
 
-    pub async fn execute_by_username(&self, username: &str) -> Result<UserRecord> {
-        todo!()
+    pub async fn execute_by_username(&self, username: String) -> Result<Json<UserRecord>> {
+        self.repository
+            .find_by_wow(UserFilter {
+                email: None,
+                username: Some(username.into()),
+                is_active: None,
+            })
+            .await
     }
 
-    pub async fn execute_by_email(&self, email: &str) -> Result<UserRecord> {
-        todo!()
+    pub async fn execute_by_email(&self, email: String) -> Result<Json<UserRecord>> {
+        self.repository
+            .find_by_wow(UserFilter {
+                email: Some(email.into()),
+                username: None,
+                is_active: None,
+            })
+            .await
+    }
+
+    pub async fn execute_by_is_active(&self, is_active: bool) -> Result<Json<UserRecord>> {
+        self.repository
+            .find_by_wow(UserFilter {
+                email: None,
+                username: None,
+                is_active: Some(is_active.into()),
+            })
+            .await
+    }
+
+    pub async fn execute_by_wow(&self, user_filer: UserFilter) -> Result<Json<UserRecord>> {
+        self.repository.find_by_wow(user_filer).await
     }
 }

@@ -24,18 +24,9 @@ impl UserRepositoryImpl {
 
 #[async_trait]
 impl UserRepository for UserRepositoryImpl {
-    async fn create(&self, Json(req): Json<CreateUserRequest>) -> Result<Json<UserRecord>> {
+    async fn create(&self, req: CreateUserRequest) -> Result<Json<UserRecord>> {
         // Check if user exists with same username or email
-        let exists = base::rest::exists::<UsersDmc, _>(
-            &self.app_state.mm,
-            Some(UserFilter {
-                username: Some(req.username.clone().into()),
-                email: Some(req.email.clone().into()),
-                is_active: None,
-            }),
-        )
-        .await
-        .map_error()?;
+        let exists = self.exists(&req).await.unwrap();
 
         ensure!(
             !exists,
@@ -49,19 +40,26 @@ impl UserRepository for UserRepositoryImpl {
         Ok(Json(record))
     }
 
-    async fn find_by_id(&self, id: &str) -> Result<Option<UserRecord>> {
-        todo!()
+    async fn find_by_wow(&self, req: UserFilter) -> Result<Json<UserRecord>> {
+        let record = base::rest::get_by_sth::<UsersDmc, _, _>(&self.app_state.mm, Some(req))
+            .await
+            .map_err(|e| Error::EntityNotFound {
+                entity: e.to_string(),
+                id: 0,
+            })?;
+        Ok(Json(record))
     }
 
-    async fn find_by_username(&self, username: &str) -> Result<Option<UserRecord>> {
-        todo!()
-    }
-
-    async fn find_by_email(&self, email: &str) -> Result<Option<UserRecord>> {
-        todo!()
-    }
-
-    async fn exists(&self, username: &str, email: &str) -> Result<bool> {
-        todo!()
+    async fn exists(&self, req: &CreateUserRequest) -> Result<bool> {
+        base::rest::exists::<UsersDmc, _>(
+            &self.app_state.mm,
+            Some(UserFilter {
+                username: Some(req.username.clone().into()),
+                email: Some(req.email.clone().into()),
+                is_active: None,
+            }),
+        )
+        .await
+        .map_error()
     }
 }

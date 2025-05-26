@@ -45,7 +45,7 @@ pub enum Error {
     AccessDenied { resource: String },
 
     #[error("Entity '{entity}' with id {id} not found")]
-    EntityNotFound { entity: &'static str, id: i64 },
+    EntityNotFound { entity: String, id: i64 },
 
     #[error("Validation failed")]
     ValidationFailed {
@@ -97,7 +97,7 @@ impl Clone for Error {
                 resource: resource.clone(),
             },
             Self::EntityNotFound { entity, id } => Self::EntityNotFound {
-                entity: *entity,
+                entity: entity.to_string(),
                 id: *id,
             },
             Self::ValidationFailed { details } => Self::ValidationFailed {
@@ -201,7 +201,7 @@ impl Error {
         }
     }
 
-    pub fn not_found(entity: &'static str, id: i64) -> Self {
+    pub fn not_found(entity: String, id: i64) -> Self {
         Self::EntityNotFound { entity, id }
     }
 

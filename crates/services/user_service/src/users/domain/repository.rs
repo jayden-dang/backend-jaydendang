@@ -1,13 +1,11 @@
 use crate::{users::record::UserRecord, Result};
 use async_trait::async_trait;
 use axum::Json;
-use jd_contracts::user::dto::CreateUserRequest;
+use jd_contracts::user::dto::{CreateUserRequest, UserFilter};
 
 #[async_trait]
 pub trait UserRepository: Send + Sync {
-    async fn create(&self, Json(request): Json<CreateUserRequest>) -> Result<Json<UserRecord>>;
-    async fn find_by_id(&self, id: &str) -> Result<Option<UserRecord>>;
-    async fn find_by_username(&self, username: &str) -> Result<Option<UserRecord>>;
-    async fn find_by_email(&self, email: &str) -> Result<Option<UserRecord>>;
-    async fn exists(&self, username: &str, email: &str) -> Result<bool>;
+    async fn create(&self, request: CreateUserRequest) -> Result<Json<UserRecord>>;
+    async fn find_by_wow(&self, req: UserFilter) -> Result<Json<UserRecord>>;
+    async fn exists(&self, req: &CreateUserRequest) -> Result<bool>;
 }
