@@ -13,4 +13,4 @@ serde_with.workspace = true
 tracing.workspace = true
 tracing-error = "0.2.1"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt", "json"] }
-uuid = { version = "1.16.0", features = ["v4", "fast-rng"] }
+uuid = { version = "1.17.0", features = ["v4", "fast-rng"] }
