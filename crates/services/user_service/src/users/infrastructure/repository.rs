@@ -1,6 +1,7 @@
 use crate::{
+    error::ErrorMapper,
     users::{domain::repository::UserRepository, record::UserRecord, UsersDmc},
-    Error, Result, error::ErrorMapper,
+    Error, Result,
 };
 use async_trait::async_trait;
 use axum::Json;

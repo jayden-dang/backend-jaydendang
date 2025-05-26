@@ -1,7 +1,7 @@
 pub mod application;
 pub mod domain;
 pub mod infrastructure;
-pub(crate) mod record;
+pub mod record;
 
 use jd_core::base::DMC;
 

@@ -19,14 +19,6 @@ impl<R: UserRepository> CreateUserUseCase<R> {
     pub async fn execute(&self, Json(request): Json<CreateUserRequest>) -> Result<Json<UserRecord>> {
         request.validate()?;
 
-        // Check if user exists
-        // let exists = self.repository.exists(&request.username, &request.email).await?;
-
-        // if exists {
-        //     return Err(Error::conflict("User with this username or email already exists"));
-        // }
-
-        // Create user
         self.repository.create(Json(request)).await
     }
 }

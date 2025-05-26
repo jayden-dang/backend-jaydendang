@@ -1,0 +1,269 @@
+#+TITLE: User Service Documentation
+#+DESCRIPTION: A microservice for managing user-related operations in the JD Blog system.
+#+AUTHOR: Dang Quang Vu
+#+EMAIL: jayden.dangvu@gmail.com
+
+* Table of Contents :toc:
+- [[#architecture-overview][Architecture Overview]]
+  - [[#request-flow][Request Flow]]
+- [[#project-structure][Project Structure]]
+- [[#implementation-guide][Implementation Guide]]
+  - [[#1-domain-layer-implementation][1. Domain Layer Implementation]]
+  - [[#2-repository-implementation][2. Repository Implementation]]
+  - [[#3-service-layer-implementation][3. Service Layer Implementation]]
+  - [[#4-use-case-implementation][4. Use Case Implementation]]
+  - [[#5-api-handler-implementation][5. API Handler Implementation]]
+  - [[#6-router-configuration][6. Router Configuration]]
+- [[#api-documentation][API Documentation]]
+  - [[#endpoints][Endpoints]]
+  - [[#testing][Testing]]
+  - [[#best-practices][Best Practices]]
+
+* Architecture Overview
+The user service follows Clean Architecture principles with the following layers:
+
+1. **Domain Layer**: Core business logic and entities
+2. **Application Layer**: Use cases and application services
+3. **Infrastructure Layer**: External interfaces and implementations
+4. **API Layer**: HTTP endpoints and request handling
+
+** Request Flow
+```
+Request -> Router -> Handler -> UseCase -> Service -> Repository -> Database
+```
+
+* Project Structure
+#+begin_src sh
+user_service/
+├── src/
+│   ├── lib.rs           # Main library entry point
+│   ├── error.rs         # Error handling
+│   └── users/           # User-related functionality
+│       ├── mod.rs       # Module declarations
+│       ├── record.rs    # Data structures
+│       ├── domain/      # Business logic and entities
+│       ├── application/ # Use cases and application logic
+│       └── infrastructure/ # External interfaces and implementations
+└── Cargo.toml          # Dependencies and package configuration
+#+end_src
+
+* Implementation Guide
+** 1. Domain Layer Implementation
+
+#+begin_src rust
+// src/users/domain/user.rs
+use validator::Validate;
+use serde::{Serialize, Deserialize};
+
+pub struct UserRecord {
+    pub user_id: Id,
+    #[validate(email(message = "Invalid email format in database record"))]
+    pub email: String,
+    #[validate(
+        length(min = 3, max = 50, message = "Username must be 3-50 characters"),
+        regex(path = "USERNAME_REGEX", message = "Username contains invalid characters")
+    )]
+    pub username: String,
+
+    #[validate(length(min = 8, message = "Password hash too short"))]
+    pub password_hash: String,
+
+    #[validate(length(min = 1, max = 100, message = "First name must be 1-100 characters"))]
+    pub first_name: Option<String>,
+
+    #[validate(length(min = 1, max = 100, message = "Last name must be 1-100 characters"))]
+    pub last_name: Option<String>,
+
+    // pub status: AccountStatus,
+    pub email_verified: bool,
+    #[serde_as(as = "Rfc3339")]
+    pub created_at: OffsetDateTime,
+    #[serde_as(as = "Rfc3339")]
+    pub updated_at: OffsetDateTime,
+}
+
+
+#[async_trait]
+pub trait UserRepository: Send + Sync {
+    async fn create(&self, Json(request): Json<CreateUserRequest>) -> Result<Json<UserRecord>>;
+    async fn find_by_id(&self, id: &str) -> Result<Option<UserRecord>>;
+    async fn find_by_username(&self, username: &str) -> Result<Option<UserRecord>>;
+    async fn find_by_email(&self, email: &str) -> Result<Option<UserRecord>>;
+    async fn exists(&self, username: &str, email: &str) -> Result<bool>;
+}
+#+end_src
+
+** 2. Repository Implementation
+#+begin_src rust
+// src/users/infrastructure/repository.rs
+pub struct UserRepositoryImpl {
+    app_state: AppState,
+}
+
+impl UserRepositoryImpl {
+    pub fn new(app_state: AppState) -> Self {
+        Self { app_state }
+    }
+}
+
+#[async_trait]
+impl UserRepository for UserRepositoryImpl {
+    async fn create(&self, Json(req): Json<CreateUserRequest>) -> Result<Json<UserRecord>> {
+        // Check if user exists with same username or email
+        let exists = base::rest::exists::<UsersDmc, _>(
+            &self.app_state.mm,
+            Some(UserFilter {
+                username: Some(req.username.clone().into()),
+                email: Some(req.email.clone().into()),
+                is_active: None,
+            }),
+        )
+        .await
+        .map_error()?;
+
+        ensure!(
+            !exists,
+            Error::conflict("User with this username or email already exists")
+        );
+
+        let record = base::rest::create::<UsersDmc, _, _>(&self.app_state.mm, req)
+            .await
+            .map_error()?;
+
+        Ok(Json(record))
+    }
+}
+#+end_src
+
+** 3. Service Layer Implementation
+#+begin_src rust
+// src/users/application/services/user_service.rs
+pub struct UserService {
+    repository: Box<dyn UserRepository>,
+}
+
+impl UserService {
+    pub fn new(repository: Box<dyn UserRepository>) -> Self {
+        Self { repository }
+    }
+
+    pub async fn get_user(&self, id: Uuid) -> Result<User> {
+        self.repository.find_by_id(id)
+            .await?
+            .ok_or(Error::UserNotFound)
+    }
+}
+#+end_src
+
+** 4. Use Case Implementation
+#+begin_src rust
+// src/users/application/use_cases/get_user.rs
+pub struct CreateUserUseCase<R: UserRepository> {
+    repository: R,
+}
+
+impl<R: UserRepository> CreateUserUseCase<R> {
+    pub fn new(repository: R) -> Self {
+        Self { repository }
+    }
+
+    pub async fn execute(&self, Json(request): Json<CreateUserRequest>) -> Result<Json<UserRecord>> {
+        request.validate()?;
+
+        self.repository.create(Json(request)).await
+    }
+}
+#+end_src
+
+** 5. API Handler Implementation
+#+begin_src rust
+// src/users/application/handlers/user_handler.rs
+pub struct UserHandler<R: UserRepository> {
+    pub create_user: CreateUserUseCase<R>,
+}
+
+impl<R: UserRepository> UserHandler<R> {
+    pub fn new(create_user: CreateUserUseCase<R>) -> Self {
+        Self { create_user }
+    }
+
+    pub async fn create_user(
+        State(state): State<AppState>,
+        Json(request): Json<CreateUserRequest>,
+    ) -> Result<Json<UserRecord>> {
+        let repository = UserRepositoryImpl::new(state);
+        let use_case = CreateUserUseCase::new(repository);
+        Ok(use_case.execute(Json(request)).await.unwrap())
+    }
+}
+#+end_src
+
+** 6. Router Configuration
+#+begin_src rust
+// src/users/application/router.rs
+pub fn create_router(
+    user_repository: Box<dyn UserRepository>,
+) -> Router {
+    let user_service = UserService::new(user_repository);
+    let get_user_use_case = GetUserUseCase::new(user_service);
+    let user_handler = UserHandler::new(get_user_use_case);
+
+    Router::new()
+        .route("/users/:id", get(handler::get_user))
+        .with_state(user_handler)
+}
+#+end_src
+
+* API Documentation
+** Endpoints
+*** GET /users/:id
+- **Description**: Retrieve a user by ID
+- **Parameters**:
+  - `id`: UUID of the user
+- **Response**: User object
+- **Error Codes**:
+  - 404: User not found
+  - 500: Internal server error
+
+** Testing
+*** Unit Tests
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_get_user() {
+        let mock_repository = MockUserRepository::new();
+        let user_service = UserService::new(Box::new(mock_repository));
+        let use_case = GetUserUseCase::new(user_service);
+        let handler = UserHandler::new(use_case);
+
+        let result = handler.get_user(Path(test_id)).await;
+        assert!(result.is_ok());
+    }
+}
+```
+
+** Best Practices
+
+1. **Dependency Injection**
+   - Use constructor injection
+   - Easy to test and swap implementations
+
+2. **Error Handling**
+   - Use custom Error type
+   - Proper error conversion at each layer
+
+3. **Validation**
+   - Validate at domain level
+   - Validate input at API level
+
+4. **Logging**
+   - Log at each layer
+   - Use tracing for debugging
+
+5. **Testing**
+   - Write unit tests for each layer
+   - Use mocks for external dependencies
+   - Test error cases
