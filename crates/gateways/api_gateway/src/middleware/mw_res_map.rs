@@ -2,7 +2,7 @@ use crate::Result;
 use crate::{error::Error, log::log_request};
 use axum::body::to_bytes;
 use axum::{
-    http::{Method, Uri},
+    http::{Method, StatusCode, Uri},
     response::{IntoResponse, Response},
     Json,
 };
@@ -108,7 +108,7 @@ pub async fn mw_map_response(
         let body = to_bytes(body, usize::MAX).await.unwrap_or_default();
         let body_string = String::from_utf8(body.to_vec()).unwrap_or_default();
         if let Ok(error_data) = serde_json::from_str::<Value>(&body_string) {
-            // TODO: Error append in here
+            // If not a conflict error, use the original error data
             let error_body = json!({
                 "id": uuid.to_string(),
                 "status": 1,
@@ -153,11 +153,6 @@ pub async fn mw_map_response(
                 "message": "An unexpected error occurred"
             }
         });
-
-        error!(
-            "Request failed with unknown error: {} {} - Status: {}",
-            req_method, uri, parts.status
-        );
 
         // Log request details with unknown error
         let _ = log_request(

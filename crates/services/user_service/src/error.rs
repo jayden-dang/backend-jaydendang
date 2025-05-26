@@ -11,6 +11,30 @@ use tracing::{error, warn};
 // Error Types
 // ============================================================================
 
+pub trait ErrorMapper<T> {
+    fn map_error(self) -> Result<T, Error>;
+}
+
+impl<T> ErrorMapper<T> for Result<T, jd_core::Error> {
+    fn map_error(self) -> Result<T, Error> {
+        match self {
+            Ok(value) => Ok(value),
+            Err(e) => {
+                match &e {
+                    jd_core::Error::UniqueViolation { table, constraint } => {
+                        match (table.as_str(), constraint.as_str()) {
+                            ("users", "users_email_key") => Err(Error::conflict("Email already exists")),
+                            ("users", "users_username_key") => Err(Error::conflict("Username already exists")),
+                            _ => Err(Error::CoreError(Arc::new(e)))
+                        }
+                    }
+                    _ => Err(Error::CoreError(Arc::new(e)))
+                }
+            }
+        }
+    }
+}
+
 #[serde_as]
 #[derive(Debug, Serialize, strum_macros::AsRefStr, thiserror::Error)]
 #[serde(tag = "type", content = "data")]
@@ -463,12 +487,6 @@ impl IntoResponse for Error {
 // ============================================================================
 // Convenience From Implementations
 // ============================================================================
-
-impl From<sqlx::Error> for Error {
-    fn from(err: sqlx::Error) -> Self {
-        Self::database_error(err)
-    }
-}
 
 impl From<serde_json::Error> for Error {
     fn from(err: serde_json::Error) -> Self {

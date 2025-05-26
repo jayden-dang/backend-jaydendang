@@ -40,8 +40,20 @@ where
     match db.dbx().fetch_one(sqlx_query).await {
         Ok(entity) => Ok(entity),
         Err(e) => {
-            eprintln!("Database error: {:?}", e);
-            Err(e.into())
+            match e {
+                jd_storage::dbx::Error::Sqlx(sqlx_err) => {
+                    if let Some(db_err) = sqlx_err.as_database_error() {
+                        if db_err.code().map(|code| code == "23505").unwrap_or(false) {
+                            return Err(Error::UniqueViolation {
+                                table: db_err.table().unwrap_or("unknown").to_string(),
+                                constraint: db_err.constraint().unwrap_or("unknown").to_string(),
+                            });
+                        }
+                    }
+                    Err(Error::Sqlx(sqlx_err))
+                }
+                _ => Err(Error::Dbx(e))
+            }
         }
     }
 }
