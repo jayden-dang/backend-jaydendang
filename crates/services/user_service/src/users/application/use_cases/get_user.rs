@@ -31,11 +31,7 @@ impl<R: UserRepository> GetUserUseCase<R> {
 
     pub async fn execute_by_email(&self, email: String) -> Result<Json<UserRecord>> {
         self.repository
-            .find_by_wow(UserFilter {
-                email: Some(email.into()),
-                username: None,
-                is_active: None,
-            })
+            .find_by_wow(UserFilter { email: Some(email.into()), username: None, is_active: None })
             .await
     }
 

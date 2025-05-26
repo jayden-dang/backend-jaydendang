@@ -117,9 +117,9 @@ GET :host/api/v1/users?email=john.doe@example.com
     "user_id": "f08f8c2b-44b1-43ca-bbef-c837b3fcdb4c",
     "username": "johndoe"
   },
-  "id": "8a458070-1f31-444d-b552-be81a74addf5",
+  "id": "f4465b0d-e3fd-4fdc-bc60-d20b872027aa",
   "meta": {
-    "timestamp": "2025-05-26T05:36:37.816281Z"
+    "timestamp": "2025-05-26T06:07:52.538416Z"
   },
   "status": 0,
   "type": "success"
@@ -128,6 +128,6 @@ GET :host/api/v1/users?email=john.doe@example.com
 // HTTP/1.1 200 OK
 // content-type: application/json
 // content-length: 412
-// date: Mon, 26 May 2025 05:36:37 GMT
-// Request duration: 0.008228s
+// date: Mon, 26 May 2025 06:07:52 GMT
+// Request duration: 0.056443s
 #+END_SRC

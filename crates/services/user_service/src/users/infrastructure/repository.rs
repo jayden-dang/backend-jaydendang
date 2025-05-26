@@ -28,10 +28,7 @@ impl UserRepository for UserRepositoryImpl {
         // Check if user exists with same username or email
         let exists = self.exists(&req).await.unwrap();
 
-        ensure!(
-            !exists,
-            Error::conflict("User with this username or email already exists")
-        );
+        ensure!(!exists, Error::conflict("User with this username or email already exists"));
 
         let record = base::rest::create::<UsersDmc, _, _>(&self.app_state.mm, req)
             .await
@@ -43,10 +40,7 @@ impl UserRepository for UserRepositoryImpl {
     async fn find_by_wow(&self, req: UserFilter) -> Result<Json<UserRecord>> {
         let record = base::rest::get_by_sth::<UsersDmc, _, _>(&self.app_state.mm, Some(req))
             .await
-            .map_err(|e| Error::EntityNotFound {
-                entity: e.to_string(),
-                id: 0,
-            })?;
+            .map_err(|e| Error::EntityNotFound { entity: e.to_string(), id: 0 })?;
         Ok(Json(record))
     }
 
