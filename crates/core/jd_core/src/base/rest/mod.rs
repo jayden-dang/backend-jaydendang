@@ -39,7 +39,10 @@ where
 
     // Step 2: Build the INSERT query
     let mut query = Query::insert();
-    query.into_table(MC::table_ref()).columns(columns).values(sea_values)?;
+    query
+        .into_table(MC::table_ref())
+        .columns(columns)
+        .values(sea_values)?;
 
     // Step 3: Add RETURNING clause to get the created record
     let o_fields = O::sea_column_refs();
@@ -101,7 +104,10 @@ where
         // Extract fields and prepare values for each record
         let fields = item.not_none_sea_fields();
         let (columns, sea_values) = fields.for_sea_insert();
-        query.into_table(MC::table_ref()).columns(columns).values(sea_values)?;
+        query
+            .into_table(MC::table_ref())
+            .columns(columns)
+            .values(sea_values)?;
     }
 
     // Step 3: Add RETURNING clause to get all created records
@@ -153,10 +159,7 @@ where
         .dbx()
         .fetch_optional(sqlx_query)
         .await?
-        .ok_or(Error::EntityNotFound {
-            entity: MC::TABLE,
-            id: 0,
-        })?;
+        .ok_or(Error::EntityNotFound { entity: MC::TABLE, id: 0 })?;
 
     Ok(entity)
 }
@@ -194,7 +197,9 @@ where
             list_options.limit = Some(1);
 
             // Set default ordering if not provided
-            list_options.order_bys = list_options.order_bys.or_else(|| Some(MC::ID.to_string().into()));
+            list_options.order_bys = list_options
+                .order_bys
+                .or_else(|| Some(MC::ID.to_string().into()));
 
             list_options
         }
@@ -251,10 +256,7 @@ where
         .dbx()
         .fetch_optional(sqlx_query)
         .await?
-        .ok_or(Error::EntityNotFound {
-            entity: MC::TABLE,
-            id: 0000,
-        })?;
+        .ok_or(Error::EntityNotFound { entity: MC::TABLE, id: 0000 })?;
 
     Ok(entity)
 }
@@ -312,12 +314,7 @@ where
     let total_items = entities.len() as u64;
     let total_pages = (total_items as f64 / per_page as f64).ceil() as u64;
 
-    let metadata = PaginationMetadata {
-        current_page: page,
-        per_page,
-        total_items,
-        total_pages,
-    };
+    let metadata = PaginationMetadata { current_page: page, per_page, total_items, total_pages };
 
     Ok((entities, metadata))
 }
@@ -404,10 +401,7 @@ where
     let result = db.dbx().execute(sqlx_query).await?;
 
     if result == 0 {
-        Err(Error::EntityNotFound {
-            entity: MC::TABLE,
-            id: 0,
-        })
+        Err(Error::EntityNotFound { entity: MC::TABLE, id: 0 })
     } else {
         Ok(())
     }
@@ -432,7 +426,9 @@ where
 {
     // Step 1: Build DELETE query with ID condition
     let mut query = Query::delete();
-    query.from_table(MC::table_ref()).and_where(Expr::col(MC::ID).eq(id));
+    query
+        .from_table(MC::table_ref())
+        .and_where(Expr::col(MC::ID).eq(id));
 
     // Step 2: Execute query and check if any record was deleted
     let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
@@ -440,10 +436,7 @@ where
     let result = db.dbx().execute(sqlx_query).await?;
 
     if result == 0 {
-        Err(Error::EntityNotFound {
-            entity: MC::TABLE,
-            id: 0,
-        })
+        Err(Error::EntityNotFound { entity: MC::TABLE, id: 0 })
     } else {
         Ok(())
     }
@@ -481,10 +474,7 @@ pub async fn delete_many<MC: DMC>(db: &ModelManager, ids: Vec<Uuid>) -> Result<(
     let result = db.dbx().execute(sqlx_query).await?;
 
     if result == 0 {
-        Err(Error::EntityNotFound {
-            entity: MC::TABLE,
-            id: 0,
-        })
+        Err(Error::EntityNotFound { entity: MC::TABLE, id: 0 })
     } else {
         Ok(())
     }
@@ -503,22 +493,23 @@ pub async fn delete_many<MC: DMC>(db: &ModelManager, ids: Vec<Uuid>) -> Result<(
 /// let list_options = ListOptions { limit: Some(10), offset: Some(20), ..Default::default() };
 /// let (computed_options, page) = compute_list_options::<UserModel>(Some(list_options))?;
 /// ```
-pub fn compute_list_options<MC: DMC>(list_options: Option<ListOptions>) -> Result<(ListOptions, u64)> {
+pub fn compute_list_options<MC: DMC>(
+    list_options: Option<ListOptions>,
+) -> Result<(ListOptions, u64)> {
     // Step 1: Get list options or use defaults
     let mut list_options = list_options.unwrap_or_default();
 
     // Step 2: Set and validate limit
-    let limit = list_options.limit.unwrap_or(LIST_LIMIT_DEFAULT).min(LIST_LIMIT_MAX);
+    let limit = list_options
+        .limit
+        .unwrap_or(LIST_LIMIT_DEFAULT)
+        .min(LIST_LIMIT_MAX);
     list_options.limit = Some(limit);
 
     // Step 3: Calculate current page based on offset and limit
     let offset = list_options.offset.unwrap_or(0).max(0);
     let limit = list_options.limit.unwrap_or(LIST_LIMIT_DEFAULT) as f64;
-    let page = if offset == 0 {
-        1
-    } else {
-        ((offset as f64) / limit).ceil() as u64 + 1
-    };
+    let page = if offset == 0 { 1 } else { ((offset as f64) / limit).ceil() as u64 + 1 };
 
     Ok((list_options, page))
 }
@@ -561,10 +552,7 @@ where
     let result = db.dbx().execute(sqlx_query).await?;
 
     if result == 0 {
-        Err(Error::EntityNotFound {
-            entity: MC::TABLE,
-            id: 0,
-        })
+        Err(Error::EntityNotFound { entity: MC::TABLE, id: 0 })
     } else {
         Ok(())
     }

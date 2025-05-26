@@ -31,7 +31,10 @@ where
     // -- Build Query
     let (columns, sea_values) = fields.for_sea_insert();
     let mut query = Query::insert();
-    query.into_table(MC::table_ref()).columns(columns).values(sea_values)?;
+    query
+        .into_table(MC::table_ref())
+        .columns(columns)
+        .values(sea_values)?;
 
     // -- Build Returning
     let o_fields = O::sea_column_refs();
@@ -46,7 +49,11 @@ where
     Ok(entity)
 }
 
-pub async fn ctx_create_many<MC, I, O>(ctx: &Ctx, mm: &ModelManager, input: Vec<I>) -> Result<Vec<O>>
+pub async fn ctx_create_many<MC, I, O>(
+    ctx: &Ctx,
+    mm: &ModelManager,
+    input: Vec<I>,
+) -> Result<Vec<O>>
 where
     MC: DMC,
     I: HasSeaFields,
@@ -124,11 +131,7 @@ where
             list_options.order_bys = list_options.order_bys.or_else(|| Some("id".into()));
             list_options
         }
-        None => ListOptions {
-            limit: Some(1),
-            offset: None,
-            order_bys: Some("id".into()),
-        },
+        None => ListOptions { limit: Some(1), offset: None, order_bys: Some("id".into()) },
     };
     ctx_list::<MC, O, F>(ctx, mm, filter, Some(list_options))
         .await
@@ -290,10 +293,7 @@ pub fn compute_list_options(list_options: Option<ListOptions>) -> Result<ListOpt
         // Validate the limit.
         if let Some(limit) = list_options.limit {
             if limit > LIST_LIMIT_MAX {
-                return Err(Error::ListLimitOverMax {
-                    max: LIST_LIMIT_MAX,
-                    actual: limit,
-                });
+                return Err(Error::ListLimitOverMax { max: LIST_LIMIT_MAX, actual: limit });
             }
         }
         // Set the default limit if no limit

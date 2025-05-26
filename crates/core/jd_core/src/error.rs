@@ -6,6 +6,7 @@ use serde_with::{serde_as, DisplayFromStr};
 use sqlx::error::DatabaseError;
 
 pub type Result<T> = std::result::Result<T, Error>;
+
 #[serde_as]
 #[derive(Debug, Serialize, strum_macros::AsRefStr, thiserror::Error)]
 #[serde(tag = "type", content = "data")]
@@ -68,10 +69,7 @@ impl Error {
     }
 
     pub fn unique_violation(table: impl Into<String>, constraint: impl Into<String>) -> Self {
-        Self::UniqueViolation {
-            table: table.into(),
-            constraint: constraint.into(),
-        }
+        Self::UniqueViolation { table: table.into(), constraint: constraint.into() }
     }
 
     pub fn count_fail() -> Self {

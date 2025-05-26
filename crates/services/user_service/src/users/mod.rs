@@ -14,3 +14,11 @@ impl DMC for UsersDmc {
 }
 
 pub use application::use_cases::*;
+
+pub struct ProfileDmc;
+
+impl DMC for ProfileDmc {
+    const SCHEMA: &'static str = "profile";
+    const TABLE: &'static str = "user_profiles";
+    const ID: &'static str = "profile_id";
+}

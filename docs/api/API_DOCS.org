@@ -45,8 +45,8 @@ GET :host/api/v1
 POST :host/api/v1/users
 :headers
 {
-  "email": "j1ayden.danagvu111@gmail.com",
-  "username": "j1aydendaang111",
+  "email": "j1aydeu111@gmail.com",
+  "username": "j1aaayd122endaang111",
   "password_hash": "passawordasdflkaj",
   "first_name": "first_naame",
   "last_name": "last_namae"
@@ -61,11 +61,11 @@ POST :host/api/v1/users
     "error_code": "UNKNOWN_CORE_ERROR",
     "message": "Unknown core error occurred",
     "request_id": null,
-    "timestamp": "2025-05-26T08:04:03.289501+00:00"
+    "timestamp": "2025-05-26T10:31:28.237374+00:00"
   },
-  "id": "ab588f69-5669-4a35-9b1f-8c3353e1ed97",
+  "id": "fc38a911-12a1-4266-8730-8bcac74830b6",
   "meta": {
-    "timestamp": "2025-05-26T08:04:03.289641Z"
+    "timestamp": "2025-05-26T10:31:28.237514Z"
   },
   "status": 1,
   "type": "error"
@@ -74,8 +74,8 @@ POST :host/api/v1/users
 // HTTP/1.1 500 Internal Server Error
 // content-type: application/json
 // content-length: 286
-// date: Mon, 26 May 2025 08:04:03 GMT
-// Request duration: 0.090988s
+// date: Mon, 26 May 2025 10:31:28 GMT
+// Request duration: 0.094923s
 #+END_SRC
 
 #+begin_src restclient :var host=host :var headers=headers

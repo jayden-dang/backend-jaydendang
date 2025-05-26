@@ -2,7 +2,6 @@ use crate::Id;
 
 use super::{AccountStatus, EducationLevel, ExperienceLevel, ProfileVisibility, UserGender};
 
-
 pub struct UserProfile {
     pub user_id: Id,
     pub birth_year: Option<i32>,

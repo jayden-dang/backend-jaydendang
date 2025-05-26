@@ -1,6 +1,4 @@
-use jd_domain::user_domain::{
-    AccountStatus, EducationLevel, ExperienceLevel, ProfileVisibility, UserGender,
-};
+use jd_domain::Id;
 use jd_utils::regex::USERNAME_REGEX;
 use modql::{
     field::Fields,
@@ -8,7 +6,6 @@ use modql::{
 };
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::FromRow;
-use uuid::Uuid;
 use validator::Validate;
 
 #[derive(Fields, Debug, Deserialize, Validate)]
@@ -37,22 +34,4 @@ pub struct UserFilter {
     pub email: Option<OpValsString>,
     pub username: Option<OpValsString>,
     pub is_active: Option<OpValsBool>,
-}
-
-#[derive(Fields, Clone, FromRow, Validate, Serialize)]
-pub struct CreateUserProfileRequest {
-    pub user_id: Uuid,
-    pub birth_year: Option<i32>,
-    pub gender: Option<UserGender>,
-    pub occupation: Option<String>,
-    pub education_level: Option<EducationLevel>,
-    pub experience_level: Option<ExperienceLevel>,
-    pub timezone: Option<String>,
-    pub country_code: Option<String>,
-    pub account_status: AccountStatus,
-    pub language: String,
-    #[validate(length(min = 1, max = 1000, message = "Last name must be 1-100 characters"))]
-    pub bio: Option<String>,
-    pub visibility: ProfileVisibility,
-    pub show_progress: bool,
 }

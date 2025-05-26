@@ -10,13 +10,13 @@ use jd_utils::{
     time::{now_utc, Rfc3339},
 };
 use modql::field::Fields;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use sqlx::{prelude::FromRow, types::time::OffsetDateTime};
 use validator::{Validate, ValidationError};
 
 #[serde_as]
-#[derive(Serialize, FromRow, Fields, Clone, Debug, Validate)]
+#[derive(Serialize, FromRow, Fields, Clone, Debug, Validate, Deserialize)]
 pub struct UserRecord {
     pub user_id: Id,
     #[validate(email(message = "Invalid email format in database record"))]
@@ -46,19 +46,21 @@ pub struct UserRecord {
 #[serde_as]
 #[derive(Serialize, FromRow, Fields, Clone, Debug, Validate)]
 pub struct UserProfileRecord {
+    pub profile_id: Id, // Add missing profile_id
     pub user_id: Id,
     pub birth_year: Option<i32>,
     pub gender: Option<UserGender>,
     pub occupation: Option<String>,
     pub education_level: Option<EducationLevel>,
     pub experience_level: Option<ExperienceLevel>,
+    pub account_status: AccountStatus,
     pub timezone: Option<String>,
     pub country_code: Option<String>,
-    pub account_status: AccountStatus,
-    pub language: String,
-    #[validate(length(min = 1, max = 1000, message = "Last name must be 1-100 characters"))]
+    pub language_preference: String, // ✅ Match DB field name
+    pub avatar_url: Option<String>,
+    #[validate(length(min = 1, max = 1000, message = "Bio must be 1-1000 characters"))]
     pub bio: Option<String>,
-    pub visibility: ProfileVisibility,
+    pub profile_visibility: ProfileVisibility, // ✅ Match DB field name
     pub show_progress: bool,
     #[serde_as(as = "Rfc3339")]
     pub created_at: OffsetDateTime,
@@ -103,4 +105,236 @@ impl TryFrom<UserRecord> for User {
         user.validate_domain()?;
         Ok(user)
     }
+}
+
+// -->>> Region:: START  --->>>  Create User Profile Request
+#[derive(Debug, Clone, Serialize, Validate, Deserialize, Fields)]
+pub struct CreateUserProfileRequest {
+    pub user_id: Id, // FK to users table
+
+    // Demographics (match DB exactly)
+    #[validate(range(
+        min = 1900,
+        max = 2024,
+        message = "Birth year must be between 1900 and 2024"
+    ))]
+    pub birth_year: Option<i32>,
+
+    pub gender: Option<UserGender>,
+
+    #[validate(length(min = 1, max = 100, message = "Occupation must be 1-100 characters"))]
+    pub occupation: Option<String>,
+
+    pub education_level: Option<EducationLevel>,
+    pub experience_level: Option<ExperienceLevel>,
+    pub account_status: Option<AccountStatus>,
+
+    // Location & preferences (match DB field names)
+    #[validate(length(min = 1, max = 50, message = "Timezone must be 1-50 characters"))]
+    pub timezone: Option<String>,
+
+    #[validate(length(min = 2, max = 2, message = "Country code must be exactly 2 characters"))]
+    pub country_code: Option<String>,
+
+    #[validate(length(
+        min = 2,
+        max = 10,
+        message = "Language preference must be 2-10 characters"
+    ))]
+    pub language_preference: Option<String>, // ✅ Match DB: language_preference
+
+    // Profile metadata
+    #[validate(url(message = "Invalid avatar URL"))]
+    pub avatar_url: Option<String>,
+
+    #[validate(length(min = 1, max = 1000, message = "Bio must be 1-1000 characters"))]
+    pub bio: Option<String>,
+
+    // Privacy settings (match DB field names)
+    pub profile_visibility: Option<ProfileVisibility>, // ✅ Match DB: profile_visibility
+    pub show_progress: Option<bool>,
+}
+
+impl CreateUserProfileRequest {
+    pub fn new(user_id: Id) -> Self {
+        Self {
+            user_id,
+            birth_year: None,
+            gender: None,
+            occupation: None,
+            education_level: None,
+            experience_level: None,
+            account_status: None,
+            timezone: None,
+            country_code: None,
+            language_preference: None, // ✅ Correct field name
+            avatar_url: None,
+            bio: None,
+            profile_visibility: None, // ✅ Correct field name
+            show_progress: None,
+        }
+    }
+
+    pub fn with_defaults(user_id: Id) -> Self {
+        Self {
+            user_id,
+            birth_year: None,
+            gender: None,
+            occupation: None,
+            education_level: Some(EducationLevel::default()),
+            experience_level: Some(ExperienceLevel::default()),
+            account_status: Some(AccountStatus::default()),
+            timezone: None,
+            country_code: None,
+            language_preference: Some("en".to_string()), // ✅ Correct field name
+            avatar_url: None,
+            bio: None,
+            profile_visibility: Some(ProfileVisibility::default()), // ✅ Correct field name
+            show_progress: Some(true),
+        }
+    }
+}
+// <<<-- Region:: END    <<<---  Create User Profile Request
+
+// -->>> Region:: START  --->>>  Create User Profile Response
+#[serde_as]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow, Fields)]
+pub struct CreateUserProfileResponse {
+    pub profile_id: Id, // Generated by DB
+    pub user_id: Id,
+    pub birth_year: Option<i32>,
+    pub gender: Option<UserGender>,
+    pub occupation: Option<String>,
+    pub education_level: Option<EducationLevel>,
+    pub experience_level: Option<ExperienceLevel>,
+    pub timezone: Option<String>,
+    pub country_code: Option<String>,
+    pub account_status: AccountStatus,
+    pub language: String,
+    pub bio: Option<String>,
+    pub visibility: ProfileVisibility,
+    pub show_progress: bool,
+    #[serde_as(as = "Rfc3339")]
+    pub created_at: OffsetDateTime,
+    #[serde_as(as = "Rfc3339")]
+    pub updated_at: OffsetDateTime,
+}
+
+// Conversion from UserProfileRecord to Response
+impl From<UserProfileRecord> for CreateUserProfileResponse {
+    fn from(record: UserProfileRecord) -> Self {
+        Self {
+            profile_id: record.profile_id,
+            user_id: record.user_id,
+            birth_year: record.birth_year,
+            gender: record.gender,
+            occupation: record.occupation,
+            education_level: record.education_level,
+            experience_level: record.experience_level,
+            timezone: record.timezone,
+            country_code: record.country_code,
+            account_status: record.account_status,
+            language: record.language_preference,
+            bio: record.bio,
+            visibility: record.profile_visibility,
+            show_progress: record.show_progress,
+            created_at: record.created_at,
+            updated_at: record.updated_at,
+        }
+    }
+}
+// <<<-- Region:: END    <<<---  Create User Profile Response
+
+// -->>> Region:: START  --->>>  Enhanced User Creation (User + Profile)
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+pub struct CreateUserWithProfileRequest {
+    // User fields
+    #[validate(email(message = "Invalid email format"))]
+    pub email: String,
+
+    #[validate(
+        length(min = 3, max = 50, message = "Username must be 3-50 characters"),
+        regex(path = "USERNAME_REGEX", message = "Username contains invalid characters")
+    )]
+    pub username: String,
+
+    #[validate(length(min = 8, message = "Password must be at least 8 characters"))]
+    pub password: String,
+
+    #[validate(length(min = 1, max = 100, message = "First name must be 1-100 characters"))]
+    pub first_name: Option<String>,
+
+    #[validate(length(min = 1, max = 100, message = "Last name must be 1-100 characters"))]
+    pub last_name: Option<String>,
+
+    // Profile fields (optional)
+    pub profile: Option<CreateUserProfileRequest>,
+}
+
+#[serde_as]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateUserWithProfileResponse {
+    pub user: UserRecord,
+    pub profile: CreateUserProfileResponse,
+}
+// <<<-- Region:: END    <<<---  Enhanced User Creation
+
+// -->>> Region:: START  --->>>  Repository Data Transfer Objects
+// For internal use between service and repository layers
+#[derive(Debug, Clone)]
+pub struct CreateUserProfileData {
+    pub user_id: Id,
+    pub birth_year: Option<i32>,
+    pub gender: Option<UserGender>,
+    pub occupation: Option<String>,
+    pub education_level: Option<EducationLevel>,
+    pub experience_level: Option<ExperienceLevel>,
+    pub timezone: Option<String>,
+    pub country_code: Option<String>,
+    pub account_status: AccountStatus,
+    pub language: String,
+    pub bio: Option<String>,
+    pub visibility: ProfileVisibility,
+    pub show_progress: bool,
+}
+
+impl From<CreateUserProfileRequest> for CreateUserProfileData {
+    fn from(request: CreateUserProfileRequest) -> Self {
+        Self {
+            user_id: request.user_id,
+            birth_year: request.birth_year,
+            gender: request.gender,
+            occupation: request.occupation,
+            education_level: request.education_level,
+            experience_level: request.experience_level,
+            timezone: request.timezone,
+            country_code: request.country_code,
+            account_status: request.account_status.unwrap_or_default(), // Active
+            language: request
+                .language_preference
+                .unwrap_or_else(|| "en".to_string()),
+            bio: request.bio,
+            visibility: request.profile_visibility.unwrap_or_default(), // Public
+            show_progress: request.show_progress.unwrap_or(true),
+        }
+    }
+}
+
+// For server-generated UUID approach
+#[derive(Debug, Clone)]
+pub struct CreateUserProfileDataWithId {
+    pub profile_id: Id,
+    pub user_id: Id,
+    pub birth_year: Option<i32>,
+    pub gender: Option<UserGender>,
+    pub occupation: Option<String>,
+    pub education_level: Option<EducationLevel>,
+    pub experience_level: Option<ExperienceLevel>,
+    pub timezone: Option<String>,
+    pub country_code: Option<String>,
+    pub account_status: AccountStatus,
+    pub language: String,
+    pub bio: Option<String>,
+    pub visibility: ProfileVisibility,
+    pub show_progress: bool,
 }

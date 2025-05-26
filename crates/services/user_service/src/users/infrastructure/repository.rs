@@ -1,6 +1,10 @@
 use crate::{
     error::ErrorMapper,
-    users::{domain::repository::UserRepository, record::UserRecord, UsersDmc},
+    users::{
+        domain::repository::UserRepository,
+        record::{CreateUserProfileRequest, CreateUserProfileResponse, UserRecord},
+        ProfileDmc, UsersDmc,
+    },
     Error, Result,
 };
 use async_trait::async_trait;
@@ -34,8 +38,13 @@ impl UserRepository for UserRepositoryImpl {
             .map_error()
     }
 
-    async fn create_profile(&self, request: CreateUserRequest) -> Result<UserRecord> {
-        todo!()
+    async fn create_profile(
+        &self,
+        request: CreateUserProfileRequest,
+    ) -> Result<CreateUserProfileResponse> {
+        base::rest::create::<ProfileDmc, _, _>(&self.app_state.mm, request)
+            .await
+            .map_error()
     }
 
     async fn find_by_wow(&self, req: UserFilter) -> Result<UserRecord> {

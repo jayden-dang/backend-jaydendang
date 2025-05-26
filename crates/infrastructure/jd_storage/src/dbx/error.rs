@@ -5,6 +5,7 @@ pub type Result<T> = core::result::Result<T, Error>;
 
 #[serde_as]
 #[derive(Debug, Serialize, thiserror::Error)]
+#[serde(tag = "type", content = "data")]
 pub enum Error {
     // -- Transaction State Errors
     #[error("Cannot commit transaction: no open transaction found")]
@@ -125,9 +126,7 @@ impl Error {
     }
 
     pub fn savepoint_not_found(savepoint: impl Into<String>) -> Self {
-        Self::SavepointNotFound {
-            savepoint: savepoint.into(),
-        }
+        Self::SavepointNotFound { savepoint: savepoint.into() }
     }
 
     pub fn savepoint_without_transaction() -> Self {
@@ -161,9 +160,10 @@ impl Error {
             | Self::NestedTransactionNotSupported => ErrorSeverity::Low,
 
             // Medium severity - concurrency issues
-            Self::TxnTimeout { .. } | Self::TxnDeadlock | Self::TxnIsolationConflict | Self::TxnLockTimeout => {
-                ErrorSeverity::Medium
-            }
+            Self::TxnTimeout { .. }
+            | Self::TxnDeadlock
+            | Self::TxnIsolationConflict
+            | Self::TxnLockTimeout => ErrorSeverity::Medium,
 
             // High severity - connection/infrastructure issues
             Self::TxnConnectionLost => ErrorSeverity::High,
@@ -184,9 +184,10 @@ impl Error {
 
     pub fn category(&self) -> ErrorCategory {
         match self {
-            Self::TxnCantCommitNoOpenTxn | Self::TxnAlreadyCommitted | Self::TxnAlreadyRolledBack | Self::NoTxn => {
-                ErrorCategory::TransactionState
-            }
+            Self::TxnCantCommitNoOpenTxn
+            | Self::TxnAlreadyCommitted
+            | Self::TxnAlreadyRolledBack
+            | Self::NoTxn => ErrorCategory::TransactionState,
 
             Self::CannotBeginTxnWithTxnFalse
             | Self::CannotCommitTxnWithTxnFalse
@@ -196,9 +197,10 @@ impl Error {
 
             Self::TxnConnectionLost => ErrorCategory::DatabaseConnection,
 
-            Self::TxnTimeout { .. } | Self::TxnDeadlock | Self::TxnIsolationConflict | Self::TxnLockTimeout => {
-                ErrorCategory::Concurrency
-            }
+            Self::TxnTimeout { .. }
+            | Self::TxnDeadlock
+            | Self::TxnIsolationConflict
+            | Self::TxnLockTimeout => ErrorCategory::Concurrency,
 
             Self::Sqlx(_) => ErrorCategory::DatabaseConnection,
 
@@ -209,7 +211,10 @@ impl Error {
     pub fn is_retryable(&self) -> bool {
         matches!(
             self,
-            Self::TxnDeadlock | Self::TxnTimeout { .. } | Self::TxnLockTimeout | Self::TxnConnectionLost
+            Self::TxnDeadlock
+                | Self::TxnTimeout { .. }
+                | Self::TxnLockTimeout
+                | Self::TxnConnectionLost
         )
     }
 
@@ -231,7 +236,10 @@ impl Error {
     pub fn requires_rollback(&self) -> bool {
         matches!(
             self,
-            Self::TxnDeadlock | Self::TxnTimeout { .. } | Self::TxnIsolationConflict | Self::TxnConnectionLost
+            Self::TxnDeadlock
+                | Self::TxnTimeout { .. }
+                | Self::TxnIsolationConflict
+                | Self::TxnConnectionLost
         )
     }
 

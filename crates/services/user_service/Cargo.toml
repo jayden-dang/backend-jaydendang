@@ -22,6 +22,7 @@ validator = { version = "0.20.0", features = ["derive"] }
 # Members
 jd_domain = { path = "../../shared/jd_domain" }
 jd_contracts = { path = "../../shared/jd_contracts" }
+jd_storage = { path = "../../infrastructure/jd_storage" }
 jd_core = { path = "../../core/jd_core" }
 jd_utils = { path = "../../shared/jd_utils" }
 tracing.workspace = true

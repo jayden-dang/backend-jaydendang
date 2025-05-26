@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use sea_query::Value;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 mod error;
 mod utils;
@@ -10,7 +10,7 @@ pub mod user_domain;
 
 pub type Result<T> = std::result::Result<T, error::Error>;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Id(Uuid);
 
 impl Id {

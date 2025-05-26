@@ -19,9 +19,7 @@ impl Ctx {
 
     pub fn new(user_id: i64) -> Result<Self> {
         if user_id == 0 {
-            Err(Error::CtxCannotNewRootCtx {
-                message: user_id.to_string(),
-            })
+            Err(Error::CtxCannotNewRootCtx { message: user_id.to_string() })
         } else {
             Ok(Self { user_id })
         }

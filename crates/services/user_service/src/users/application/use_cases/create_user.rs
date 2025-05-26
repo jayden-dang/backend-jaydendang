@@ -1,5 +1,8 @@
 use crate::{
-    users::{domain::repository::UserRepository, record::UserRecord},
+    users::{
+        domain::repository::UserRepository,
+        record::{CreateUserProfileRequest, CreateUserProfileResponse, UserRecord},
+    },
     Result,
 };
 use jd_contracts::user::dto::CreateUserRequest;
@@ -16,6 +19,16 @@ impl<R: UserRepository> CreateUserUseCase<R> {
 
     pub async fn execute(&self, request: CreateUserRequest) -> Result<UserRecord> {
         request.validate()?;
+
         self.repository.create(request).await
+    }
+
+    pub async fn execute_create_profile(
+        &self,
+        request: CreateUserProfileRequest,
+    ) -> Result<CreateUserProfileResponse> {
+        request.validate()?;
+
+        self.repository.create_profile(request).await
     }
 }

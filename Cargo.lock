@@ -3218,6 +3218,7 @@ dependencies = [
  "jd_contracts",
  "jd_core",
  "jd_domain",
+ "jd_storage",
  "jd_utils",
  "modql",
  "sea-query",

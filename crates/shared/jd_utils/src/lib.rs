@@ -57,3 +57,24 @@ macro_rules! impl_value_from_enum {
         }
     };
 }
+
+// Macro để handle transaction tự động
+#[macro_export]
+macro_rules! with_transaction {
+    ($dbx:expr, $block:block) => {
+        {
+            $dbx.begin_txn().await?;
+            let result = async move $block .await;
+            match result {
+                Ok(val) => {
+                    $dbx.commit_txn().await?;
+                    Ok(val)
+                }
+                Err(e) => {
+                    $dbx.rollback_txn().await.ok(); // Ignore rollback errors
+                    Err(e)
+                }
+            }
+        }
+    };
+}

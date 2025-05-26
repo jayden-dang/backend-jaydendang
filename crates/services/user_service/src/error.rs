@@ -19,11 +19,17 @@ impl<T> ErrorMapper<T> for Result<T, jd_core::Error> {
         match self {
             Ok(value) => Ok(value),
             Err(e) => match &e {
-                jd_core::Error::UniqueViolation { table, constraint } => match (table.as_str(), constraint.as_str()) {
-                    ("users", "users_email_key") => Err(Error::conflict("Email already exists")),
-                    ("users", "users_username_key") => Err(Error::conflict("Username already exists")),
-                    _ => Err(Error::CoreError(Arc::new(e))),
-                },
+                jd_core::Error::UniqueViolation { table, constraint } => {
+                    match (table.as_str(), constraint.as_str()) {
+                        ("users", "users_email_key") => {
+                            Err(Error::conflict("Email already exists"))
+                        }
+                        ("users", "users_username_key") => {
+                            Err(Error::conflict("Username already exists"))
+                        }
+                        _ => Err(Error::CoreError(Arc::new(e))),
+                    }
+                }
                 _ => Err(Error::CoreError(Arc::new(e))),
             },
         }
@@ -84,42 +90,44 @@ pub enum Error {
         #[serde_as(as = "DisplayFromStr")]
         Arc<jd_core::Error>,
     ),
+
+    #[error(transparent)]
+    StorageError(
+        #[from]
+        #[serde_as(as = "DisplayFromStr")]
+        Arc<jd_storage::dbx::Error>,
+    ),
 }
 
 impl Clone for Error {
     fn clone(&self) -> Self {
         match self {
-            Self::BadRequest { message } => Self::BadRequest {
-                message: message.clone(),
-            },
-            Self::AuthenticationFailed { reason } => Self::AuthenticationFailed { reason: reason.clone() },
-            Self::AccessDenied { resource } => Self::AccessDenied {
-                resource: resource.clone(),
-            },
-            Self::EntityNotFound { entity, id } => Self::EntityNotFound {
-                entity: entity.to_string(),
-                id: *id,
-            },
-            Self::ValidationFailed { details } => Self::ValidationFailed {
-                details: details.clone(),
-            },
-            Self::Conflict { message } => Self::Conflict {
-                message: message.clone(),
-            },
-            Self::RateLimitExceeded { resource } => Self::RateLimitExceeded {
-                resource: resource.clone(),
-            },
-            Self::InternalServerError { context, .. } => Self::InternalServerError {
-                source: None,
-                context: context.clone(),
-            },
-            Self::ServiceUnavailable { service } => Self::ServiceUnavailable {
-                service: service.clone(),
-            },
-            Self::DatabaseError { .. } => Self::DatabaseError {
-                source: Box::new(std::io::Error::other("cloned error")),
-            },
+            Self::BadRequest { message } => Self::BadRequest { message: message.clone() },
+            Self::AuthenticationFailed { reason } => {
+                Self::AuthenticationFailed { reason: reason.clone() }
+            }
+            Self::AccessDenied { resource } => Self::AccessDenied { resource: resource.clone() },
+            Self::EntityNotFound { entity, id } => {
+                Self::EntityNotFound { entity: entity.to_string(), id: *id }
+            }
+            Self::ValidationFailed { details } => {
+                Self::ValidationFailed { details: details.clone() }
+            }
+            Self::Conflict { message } => Self::Conflict { message: message.clone() },
+            Self::RateLimitExceeded { resource } => {
+                Self::RateLimitExceeded { resource: resource.clone() }
+            }
+            Self::InternalServerError { context, .. } => {
+                Self::InternalServerError { source: None, context: context.clone() }
+            }
+            Self::ServiceUnavailable { service } => {
+                Self::ServiceUnavailable { service: service.clone() }
+            }
+            Self::DatabaseError { .. } => {
+                Self::DatabaseError { source: Box::new(std::io::Error::other("cloned error")) }
+            }
             Self::CoreError(err) => Self::CoreError(err.clone()),
+            Self::StorageError(err) => Self::StorageError(err.clone()),
         }
     }
 }
@@ -186,9 +194,7 @@ pub enum ErrorCategory {
 impl Error {
     // -- Constructors with context
     pub fn bad_request(message: impl Into<String>) -> Self {
-        Self::BadRequest {
-            message: message.into(),
-        }
+        Self::BadRequest { message: message.into() }
     }
 
     pub fn auth_failed(reason: impl Into<String>) -> Self {
@@ -196,9 +202,7 @@ impl Error {
     }
 
     pub fn access_denied(resource: impl Into<String>) -> Self {
-        Self::AccessDenied {
-            resource: resource.into(),
-        }
+        Self::AccessDenied { resource: resource.into() }
     }
 
     pub fn not_found(entity: String, id: i64) -> Self {
@@ -210,44 +214,30 @@ impl Error {
     }
 
     pub fn conflict(message: impl Into<String>) -> Self {
-        Self::Conflict {
-            message: message.into(),
-        }
+        Self::Conflict { message: message.into() }
     }
 
     pub fn rate_limit(resource: impl Into<String>) -> Self {
-        Self::RateLimitExceeded {
-            resource: resource.into(),
-        }
+        Self::RateLimitExceeded { resource: resource.into() }
     }
 
     pub fn internal_error(context: impl Into<String>) -> Self {
-        Self::InternalServerError {
-            source: None,
-            context: context.into(),
-        }
+        Self::InternalServerError { source: None, context: context.into() }
     }
 
     pub fn internal_with_source(
         source: impl std::error::Error + Send + Sync + 'static,
         context: impl Into<String>,
     ) -> Self {
-        Self::InternalServerError {
-            source: Some(Box::new(source)),
-            context: context.into(),
-        }
+        Self::InternalServerError { source: Some(Box::new(source)), context: context.into() }
     }
 
     pub fn service_unavailable(service: impl Into<String>) -> Self {
-        Self::ServiceUnavailable {
-            service: service.into(),
-        }
+        Self::ServiceUnavailable { service: service.into() }
     }
 
     pub fn database_error(source: impl std::error::Error + Send + Sync + 'static) -> Self {
-        Self::DatabaseError {
-            source: Box::new(source),
-        }
+        Self::DatabaseError { source: Box::new(source) }
     }
 
     // -- Error properties
@@ -256,9 +246,14 @@ impl Error {
             Self::ValidationFailed { .. } | Self::EntityNotFound { .. } => ErrorSeverity::Low,
             Self::BadRequest { .. } | Self::Conflict { .. } => ErrorSeverity::Medium,
             Self::AuthenticationFailed { .. } | Self::AccessDenied { .. } => ErrorSeverity::High,
-            Self::InternalServerError { .. } | Self::DatabaseError { .. } => ErrorSeverity::Critical,
-            Self::RateLimitExceeded { .. } | Self::ServiceUnavailable { .. } => ErrorSeverity::Medium,
+            Self::InternalServerError { .. } | Self::DatabaseError { .. } => {
+                ErrorSeverity::Critical
+            }
+            Self::RateLimitExceeded { .. } | Self::ServiceUnavailable { .. } => {
+                ErrorSeverity::Medium
+            }
             Self::CoreError(_) => ErrorSeverity::High,
+            Self::StorageError(_) => ErrorSeverity::High,
         }
     }
 
@@ -270,9 +265,12 @@ impl Error {
             Self::EntityNotFound { .. } => ErrorCategory::NotFound,
             Self::Conflict { .. } => ErrorCategory::Conflict,
             Self::RateLimitExceeded { .. } => ErrorCategory::RateLimit,
-            Self::InternalServerError { .. } | Self::DatabaseError { .. } => ErrorCategory::Internal,
+            Self::InternalServerError { .. } | Self::DatabaseError { .. } => {
+                ErrorCategory::Internal
+            }
             Self::ServiceUnavailable { .. } => ErrorCategory::External,
             Self::CoreError(_) => ErrorCategory::Internal,
+            Self::StorageError(_) => ErrorCategory::Internal,
         }
     }
 
@@ -301,12 +299,9 @@ impl Error {
     pub fn client_status_and_error(&self, request_id: Option<String>) -> (StatusCode, ClientError) {
         let (status_code, error_code, message, details) = match self {
             // Client Errors (4xx)
-            Self::BadRequest { message } => (
-                StatusCode::BAD_REQUEST,
-                "BAD_REQUEST".to_string(),
-                message.clone(),
-                None,
-            ),
+            Self::BadRequest { message } => {
+                (StatusCode::BAD_REQUEST, "BAD_REQUEST".to_string(), message.clone(), None)
+            }
             Self::AuthenticationFailed { reason } => (
                 StatusCode::UNAUTHORIZED,
                 "AUTHENTICATION_FAILED".to_string(),
@@ -331,7 +326,9 @@ impl Error {
                 "Validation failed".to_string(),
                 Some(serde_json::to_value(details).unwrap_or_default()),
             ),
-            Self::Conflict { message } => (StatusCode::CONFLICT, "CONFLICT".to_string(), message.clone(), None),
+            Self::Conflict { message } => {
+                (StatusCode::CONFLICT, "CONFLICT".to_string(), message.clone(), None)
+            }
             Self::RateLimitExceeded { resource } => (
                 StatusCode::TOO_MANY_REQUESTS,
                 "RATE_LIMIT_EXCEEDED".to_string(),
@@ -365,6 +362,7 @@ impl Error {
 
             // Core Error Mapping
             Self::CoreError(core_err) => self.map_core_error(core_err),
+            Self::StorageError(storage_err) => self.map_storage_error(storage_err),
         };
 
         let client_error = ClientError {
@@ -378,7 +376,10 @@ impl Error {
         (status_code, client_error)
     }
 
-    fn map_core_error(&self, core_err: &jd_core::Error) -> (StatusCode, String, String, Option<serde_json::Value>) {
+    fn map_core_error(
+        &self,
+        core_err: &jd_core::Error,
+    ) -> (StatusCode, String, String, Option<serde_json::Value>) {
         match core_err {
             jd_core::Error::CantCreateModelManagerProvider(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -417,6 +418,18 @@ impl Error {
                 None,
             ),
         }
+    }
+
+    fn map_storage_error(
+        &self,
+        _storage_err: &jd_storage::dbx::Error,
+    ) -> (StatusCode, String, String, Option<serde_json::Value>) {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "STORAGE_ERROR".to_string(),
+            "Database storage error occurred".to_string(),
+            None,
+        )
     }
 }
 
@@ -504,15 +517,15 @@ impl From<validator::ValidationErrors> for Error {
                         .as_ref()
                         .map(|m| m.to_string())
                         .unwrap_or_else(|| format!("Invalid {}", field)),
-                    rejected_value: error.params.get("value").and_then(|v| serde_json::to_value(v).ok()),
+                    rejected_value: error
+                        .params
+                        .get("value")
+                        .and_then(|v| serde_json::to_value(v).ok()),
                 })
             })
             .collect();
 
-        Self::validation_failed(ValidationDetails {
-            field_errors,
-            global_errors: vec![],
-        })
+        Self::validation_failed(ValidationDetails { field_errors, global_errors: vec![] })
     }
 }
 

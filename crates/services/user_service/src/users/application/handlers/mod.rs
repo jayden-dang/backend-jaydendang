@@ -1,6 +1,6 @@
 use crate::{
-    users::{domain::UserRepository, GetUserUseCase},
-    Result,
+    users::{domain::UserRepository, record::CreateUserProfileRequest, GetUserUseCase},
+    Error, Result,
 };
 use axum::{
     extract::{Path, Query, State},
@@ -8,8 +8,10 @@ use axum::{
 };
 use jd_contracts::user::dto::{CreateUserRequest, UserFilter};
 use jd_core::AppState;
+use tracing::{error, info};
 
 use crate::users::{infrastructure::UserRepositoryImpl, record::UserRecord, CreateUserUseCase};
+use std::sync::Arc;
 
 pub struct UserHandler<R: UserRepository> {
     pub create_user: CreateUserUseCase<R>,
@@ -25,10 +27,40 @@ impl<R: UserRepository> UserHandler<R> {
         State(state): State<AppState>,
         Json(request): Json<CreateUserRequest>,
     ) -> Result<Json<UserRecord>> {
-        let repository = UserRepositoryImpl::new(state);
+        let repository = UserRepositoryImpl::new(state.clone());
         let use_case = CreateUserUseCase::new(repository);
-        let result = use_case.execute(request).await?;
-        Ok(Json(result))
+
+        state
+            .mm
+            .dbx()
+            .begin_txn()
+            .await
+            .map_err(|e| Error::from(Arc::new(e)))?;
+
+        let result = async {
+            let user = use_case.execute(request).await?;
+            let profile_request = CreateUserProfileRequest::with_defaults(user.user_id.clone());
+            let _profile = use_case.execute_create_profile(profile_request).await?;
+            Ok(user)
+        }
+        .await;
+
+        match result {
+            Ok(user) => {
+                state.mm.dbx().commit_txn().await.map_err(|e| {
+                    error!("Failed to commit transaction: {:?}", e);
+                    Error::AccessDenied { resource: e.to_string() }
+                })?;
+                Ok(Json(user))
+            }
+            Err(e) => {
+                if let Err(rollback_err) = state.mm.dbx().rollback_txn().await {
+                    error!("Failed to commit transaction: {:?}", rollback_err);
+                }
+
+                Err(e)
+            }
+        }
     }
 
     pub async fn get_user_by_username(
