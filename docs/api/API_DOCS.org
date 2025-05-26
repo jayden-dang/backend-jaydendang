@@ -57,24 +57,24 @@ POST :host/api/v1/users
 {
   "error": {
     "details": null,
-    "error_code": "UNKNOWN_CORE_ERROR",
-    "message": "Unknown core error occurred",
+    "error_code": "CONFLICT",
+    "message": "Email already exists",
     "request_id": null,
-    "timestamp": "2025-05-25T15:12:27.056127+00:00"
+    "timestamp": "2025-05-26T02:50:43.474282+00:00"
   },
-  "id": "14a79e2c-731b-4bcd-87e3-183c843314d4",
+  "id": "1e14e8ce-17e3-4bf7-8c7e-e08fb6a0fbf5",
   "meta": {
-    "timestamp": "2025-05-25T15:12:27.056358Z"
+    "timestamp": "2025-05-26T02:50:43.478825Z"
   },
   "status": 1,
   "type": "error"
 }
 // POST http://localhost:8080/api/v1/users
-// HTTP/1.1 500 Internal Server Error
+// HTTP/1.1 409 Conflict
 // content-type: application/json
-// content-length: 286
-// date: Sun, 25 May 2025 15:12:27 GMT
-// Request duration: 0.036053s
+// content-length: 269
+// date: Mon, 26 May 2025 02:50:43 GMT
+// Request duration: 0.024201s
 #+END_SRC
 
 #+begin_src restclient :var host=host :var headers=headers

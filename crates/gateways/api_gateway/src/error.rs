@@ -639,7 +639,7 @@ impl Error {
             ),
 
             // Security Errors
-            Self::SuspiciousRequest { reason } => (
+            Self::SuspiciousRequest { reason: _ } => (
                 StatusCode::FORBIDDEN,
                 "SUSPICIOUS_REQUEST",
                 "Request blocked for security reasons".to_string(),
@@ -651,7 +651,7 @@ impl Error {
                 "CORS policy violation".to_string(),
                 Some(serde_json::json!({ "origin": origin })),
             ),
-            Self::SecurityPolicyViolation { policy } => (
+            Self::SecurityPolicyViolation { policy: _ } => (
                 StatusCode::FORBIDDEN,
                 "SECURITY_POLICY_VIOLATION",
                 "Security policy violation".to_string(),

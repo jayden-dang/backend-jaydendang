@@ -24,9 +24,9 @@ pub struct User {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Validate)]
 pub struct Email {
     #[validate(email)]
-    pub value: String,
-    pub domain: String,
-    pub local_part: String,
+    pub value: String, // jayden@gmail.com
+    pub domain: String,     // @gmail.com
+    pub local_part: String, // jayden
 }
 
 impl From<Email> for sea_query::Value {

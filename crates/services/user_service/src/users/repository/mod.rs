@@ -1,22 +1,7 @@
-use std::sync::Arc;
+pub mod handlers;
+pub mod repository_impl;
+pub mod repository_trait;
 
-use crate::{error::{Error, ErrorMapper}, Result};
-use axum::{extract::State, Json};
-use jd_contracts::user::dto::CreateUserRequest;
-use jd_core::{
-    base::{self},
-    AppState, ModelManager,
-};
-use validator::Validate;
-
-use super::{record::UserRecord, UsersDmc};
-
-pub async fn create_user(State(mm): State<AppState>, Json(req): Json<CreateUserRequest>) -> Result<Json<UserRecord>> {
-    req.validate()?;
-    Ok(Json(
-        base::rest::create::<UsersDmc, _, _>(&mm.mm, req)
-            .await
-            .map_error()?
-    ))
-}
-
+pub use handlers::create_user;
+pub use repository_impl::UserRepositoryImpl;
+pub use repository_trait::UserRepository;

@@ -3,7 +3,7 @@ use modql::{
     field::Fields,
     filter::{FilterNodes, OpValsBool, OpValsString},
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use sqlx::prelude::FromRow;
 use uuid::Uuid;
 use validator::Validate;
@@ -29,7 +29,7 @@ pub struct CreateUserRequest {
     pub last_name: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Fields, FromRow)]
+#[derive(Debug, Deserialize, Fields, FromRow)]
 pub struct CreateUserResponse {
     pub user_id: Uuid,
     pub email: String,

@@ -1,13 +1,6 @@
-use axum::{
-    response::Response,
-    routing::{get, post},
-    Json, Router,
-};
-use hyper::StatusCode;
+use axum::Router;
 use jd_core::AppState;
-use serde::Serialize;
-use serde_json::{json, Value};
-use user_service::users::repository::create_user;
+use users::user_router;
 
 mod error;
 mod log;
@@ -18,6 +11,6 @@ pub type Result<T> = std::result::Result<T, error::Error>;
 
 pub fn v1_routes(app_state: AppState) -> Router {
     Router::new()
-        .nest("/api/v1", Router::new().route("/users", post(create_user)))
+        .nest("/api/v1", Router::new().nest("/users", user_router()))
         .with_state(app_state)
 }

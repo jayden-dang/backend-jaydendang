@@ -22,3 +22,6 @@ strum_macros = "0.27"
 uuid = { workspace = true, features = ["serde"] }
 redis = "0.31.0"
 thiserror.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full"] }
