@@ -16,15 +16,18 @@ pub enum UserGender {
 // <<<-- Region:: END    <<<---  User Gender
 
 // -->>> Region:: START  --->>>  Education Level
-#[derive(Debug, Clone, PartialEq, Serialize, Deen, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default, Deen)]
 pub enum EducationLevel {
     HighSchool,
     Bachelor,
     Master,
-    Doctorate,
+    PhD,
+    Bootcamp,
+    SelfTaught,
     #[default]
     Other,
 }
+
 // <<<-- Region:: END    <<<---  Education Level
 
 // -->>> Region:: START  --->>>  Experience Level
@@ -65,25 +68,6 @@ pub enum AccountStatus {
     MarkedForDeletion {
         scheduled_for: OffsetDateTime,
     },
-}
-
-
-impl PartialEq for AccountStatus {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (AccountStatus::Active, AccountStatus::Active) => true,
-            (AccountStatus::Inactive, AccountStatus::Inactive) => true,
-            (AccountStatus::Suspended, AccountStatus::Suspended) => true,
-            (AccountStatus::PendingVerification, AccountStatus::PendingVerification) => true,
-            (AccountStatus::Locked { until: u1, reason: r1 }, AccountStatus::Locked { until: u2, reason: r2 }) => {
-                u1 == u2 && r1 == r2
-            }
-            (AccountStatus::MarkedForDeletion { scheduled_for: s1 }, AccountStatus::MarkedForDeletion { scheduled_for: s2 }) => {
-                s1 == s2
-            }
-            _ => false,
-        }
-    }
 }
 // <<<-- Region:: END    <<<---  Account Status
 

@@ -36,6 +36,7 @@ pub trait DMC {
     const SCHEMA: &'static str;
     const TABLE: &'static str;
     const ID: &'static str;
+    const ENUM_COLUMNS: &'static [&'static str];
 
     fn table_ref() -> TableRef {
         TableRef::SchemaTable(SeaRc::new(SIden(Self::SCHEMA)), SeaRc::new(SIden(Self::TABLE)))

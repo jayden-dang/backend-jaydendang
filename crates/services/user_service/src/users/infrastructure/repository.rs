@@ -42,7 +42,7 @@ impl UserRepository for UserRepositoryImpl {
         &self,
         request: CreateUserProfileRequest,
     ) -> Result<CreateUserProfileResponse> {
-        base::rest::create::<ProfileDmc, _, _>(&self.app_state.mm, request)
+        base::rest::create_with_enum_cast::<ProfileDmc, _, _>(&self.app_state.mm, request)
             .await
             .map_error()
     }

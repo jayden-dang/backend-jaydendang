@@ -56,7 +56,7 @@ pub struct UserProfileRecord {
     pub account_status: AccountStatus,
     pub timezone: Option<String>,
     pub country_code: Option<String>,
-    pub language_preference: String, // ✅ Match DB field name
+    pub language_preference: String,
     pub avatar_url: Option<String>,
     #[validate(length(min = 1, max = 1000, message = "Bio must be 1-1000 characters"))]
     pub bio: Option<String>,
@@ -141,7 +141,7 @@ pub struct CreateUserProfileRequest {
         max = 10,
         message = "Language preference must be 2-10 characters"
     ))]
-    pub language_preference: Option<String>, // ✅ Match DB: language_preference
+    pub language_preference: String, // ✅ Match DB: language_preference
 
     // Profile metadata
     #[validate(url(message = "Invalid avatar URL"))]
@@ -167,7 +167,7 @@ impl CreateUserProfileRequest {
             account_status: None,
             timezone: None,
             country_code: None,
-            language_preference: None, // ✅ Correct field name
+            language_preference: "en".to_string(),
             avatar_url: None,
             bio: None,
             profile_visibility: None, // ✅ Correct field name
@@ -186,7 +186,7 @@ impl CreateUserProfileRequest {
             account_status: Some(AccountStatus::default()),
             timezone: None,
             country_code: None,
-            language_preference: Some("en".to_string()), // ✅ Correct field name
+            language_preference: "en".to_string(), // ✅ Correct field name
             avatar_url: None,
             bio: None,
             profile_visibility: Some(ProfileVisibility::default()), // ✅ Correct field name

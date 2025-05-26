@@ -56,6 +56,16 @@ pub enum Error {
         #[serde_as(as = "DisplayFromStr")]
         redis::RedisError,
     ),
+
+    #[error("Invalid enum value: {value}")]
+    InvalidEnumValue {
+        value: String,
+    },
+
+    #[error("Column not found: {column}")]
+    ColumnNotFound {
+        column: String,
+    },
 }
 
 impl Error {

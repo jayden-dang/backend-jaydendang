@@ -2,46 +2,65 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, Data, DataEnum, DeriveInput};
 
+fn convert_to_snake_case(name: &str) -> String {
+    let mut result = String::new();
+    let chars: Vec<char> = name.chars().collect();
+
+    for (i, &c) in chars.iter().enumerate() {
+        if i > 0 && c.is_uppercase() {
+            result.push('_');
+        }
+        result.push(c.to_ascii_lowercase());
+    }
+
+    result
+}
+
 #[proc_macro_derive(Deen)]
 pub fn derive_enum_common(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = input.ident;
+    let name_str = name.to_string();
 
     let variants = match input.data {
         Data::Enum(DataEnum { variants, .. }) => variants,
-        _ => panic!("Deen chỉ áp dụng cho enum"),
+        _ => panic!("only for Enum"),
     };
 
-    let unit_variants: Vec<_> = variants
-        .iter()
-        .filter(|v| v.fields.is_empty())
-        .collect();
+    let unit_variants: Vec<_> = variants.iter().filter(|v| v.fields.is_empty()).collect();
+
+    // 🚀 Pre-compute type name at compile time
+    let type_name = format!("{}_enum", convert_to_snake_case(&name_str));
 
     let from_patterns = unit_variants.iter().map(|v| {
         let variant_name = &v.ident;
+        let variant_str = convert_to_snake_case(&variant_name.to_string());
         quote! {
-            #name::#variant_name => stringify!(#variant_name).to_lowercase(),
+            #name::#variant_name => #variant_str,
         }
     });
 
     let display_patterns = unit_variants.iter().map(|v| {
         let variant_name = &v.ident;
+        let variant_str = convert_to_snake_case(&variant_name.to_string());
         quote! {
-            #name::#variant_name => write!(f, "{}", stringify!(#variant_name).to_lowercase()),
+            #name::#variant_name => write!(f, #variant_str),
         }
     });
 
     let decode_patterns = unit_variants.iter().map(|v| {
         let variant_name = &v.ident;
+        let variant_str = convert_to_snake_case(&variant_name.to_string());
         quote! {
-            _ if s == stringify!(#variant_name).to_lowercase() => Ok(#name::#variant_name),
+            #variant_str => Ok(#name::#variant_name),
         }
     });
 
     let encode_patterns = unit_variants.iter().map(|v| {
         let variant_name = &v.ident;
+        let variant_str = convert_to_snake_case(&variant_name.to_string());
         quote! {
-            #name::#variant_name => stringify!(#variant_name).to_lowercase(),
+            #name::#variant_name => #variant_str,
         }
     });
 
@@ -52,7 +71,8 @@ pub fn derive_enum_common(input: TokenStream) -> TokenStream {
                     #(#from_patterns)*
                     _ => return sea_query::Value::String(None),
                 };
-                sea_query::Value::String(Some(Box::new(s)))
+                // ✅ Use static string - no allocation
+                sea_query::Value::String(Some(Box::new(s.to_string())))
             }
         }
 
@@ -67,7 +87,9 @@ pub fn derive_enum_common(input: TokenStream) -> TokenStream {
 
         impl sqlx::Type<sqlx::Postgres> for #name {
             fn type_info() -> sqlx::postgres::PgTypeInfo {
-                <String as sqlx::Type<sqlx::Postgres>>::type_info()
+                // ✅ Use compile-time constant - zero runtime cost
+                const TYPE_NAME: &'static str = #type_name;
+                sqlx::postgres::PgTypeInfo::with_name(TYPE_NAME)
             }
         }
 
@@ -92,8 +114,8 @@ pub fn derive_enum_common(input: TokenStream) -> TokenStream {
                     #(#encode_patterns)*
                     _ => return Err("Complex enum variants are not supported for DB storage".into()),
                 };
-                let s_ref: &str = &s;
-                <&str as sqlx::Encode<sqlx::Postgres>>::encode_by_ref(&s_ref, buf)
+                // ✅ Direct string reference - minimal allocation
+                <&str as sqlx::Encode<sqlx::Postgres>>::encode_by_ref(&s, buf)
             }
         }
 

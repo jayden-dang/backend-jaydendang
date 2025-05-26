@@ -6,12 +6,18 @@ use modql::{
     field::HasSeaFields,
     filter::{FilterGroups, ListOptions},
 };
-use sea_query::{Condition, Expr, PostgresQueryBuilder, Query};
-use sea_query_binder::SqlxBinder;
+use sea_query::{Condition, Expr, PostgresQueryBuilder, Query, Value};
+use sea_query_binder::{SqlxBinder, SqlxValues};
 use sqlx::{postgres::PgRow, prelude::FromRow};
 use uuid::Uuid;
 
 use super::{PaginationMetadata, DMC, LIST_LIMIT_DEFAULT, LIST_LIMIT_MAX};
+
+#[derive(Debug, Clone)]
+pub struct PgEnum {
+    pub type_name: String,
+    pub value: String,
+}
 
 /// Creates a single record in the database
 ///
@@ -50,28 +56,37 @@ where
 
     // Step 4: Execute the query and handle the result
     let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+
+    // 🔍 DEBUG: Log the generated SQL and values
+    println!("Generated SQL: {}", sql);
+    println!("Values: {:?}", values);
+
     let sqlx_query = sqlx::query_as_with::<_, O, _>(&sql, values);
 
     match db.dbx().fetch_one(sqlx_query).await {
         Ok(entity) => Ok(entity),
-        Err(e) => match e {
-            jd_storage::dbx::Error::Sqlx(sqlx_err) => {
-                // Handle unique constraint violation
-                if let Some(db_err) = sqlx_err.as_database_error() {
-                    if db_err.code().map(|code| code == "23505").unwrap_or(false) {
-                        return Err(Error::UniqueViolation {
-                            table: db_err.table().unwrap_or("unknown").to_string(),
-                            constraint: db_err.constraint().unwrap_or("unknown").to_string(),
-                        });
+        Err(e) => {
+            // 🔍 DEBUG: Log the actual error
+            println!("Database error: {:?}", e);
+
+            match e {
+                jd_storage::dbx::Error::Sqlx(sqlx_err) => {
+                    // Handle unique constraint violation
+                    if let Some(db_err) = sqlx_err.as_database_error() {
+                        if db_err.code().map(|code| code == "23505").unwrap_or(false) {
+                            return Err(Error::UniqueViolation {
+                                table: db_err.table().unwrap_or("unknown").to_string(),
+                                constraint: db_err.constraint().unwrap_or("unknown").to_string(),
+                            });
+                        }
                     }
+                    Err(Error::Sqlx(sqlx_err))
                 }
-                Err(Error::Sqlx(sqlx_err))
+                _ => Err(Error::Dbx(e)),
             }
-            _ => Err(Error::Dbx(e)),
-        },
+        }
     }
 }
-
 /// Creates multiple records in the database
 ///
 /// # Arguments
@@ -677,4 +692,238 @@ where
     let result = db.dbx().execute(sqlx_query).await?;
 
     Ok(result)
+}
+
+/// Trait for converting between Rust enums and PostgreSQL enum types
+pub trait EnumConverter {
+    /// Convert a Rust enum value to a PostgreSQL enum string
+    fn to_pg_enum(&self) -> String;
+    
+    /// Convert a PostgreSQL enum string to a Rust enum value
+    fn from_pg_enum(value: &str) -> Self;
+}
+
+/// Enhanced builder for handling PostgreSQL enum types
+pub struct PostgresEnumQueryBuilder;
+
+impl PostgresEnumQueryBuilder {
+    /// Builds a SQL query with proper enum type casting
+    pub fn build_sqlx_with_enum_cast(
+        query: &sea_query::InsertStatement,
+        enum_columns: &[&str],
+    ) -> (String, SqlxValues) {
+        let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+        let mut all_replacements = Vec::new();
+        let mut custom_values = Vec::new();
+        let mut param_index = 1;
+
+        // Extract column names and returning columns more efficiently
+        let (column_names, mut returning_columns) = Self::extract_columns(&sql);
+        let returning_columns_clone = returning_columns.clone();
+
+        // Process values with improved enum handling
+        for (i, value) in values.0.iter().enumerate() {
+            match value {
+                Value::String(Some(s)) => {
+                    if let Some((type_name, enum_value)) = s.split_once("::") {
+                        // Handle explicit enum casting
+                        let (placeholder, cast_placeholder) = Self::create_enum_cast(
+                            param_index,
+                            type_name,
+                            enum_value,
+                            &mut all_replacements,
+                        );
+                        custom_values.push(Value::String(Some(Box::new(enum_value.to_string()))));
+                    } else if let Some(column_name) = column_names.get(i) {
+                        // Handle implicit enum casting
+                        if enum_columns.contains(&column_name) {
+                            Self::add_implicit_enum_cast(
+                                param_index,
+                                column_name,
+                                &mut all_replacements,
+                            );
+                        }
+                        custom_values.push(value.clone());
+                    } else {
+                        custom_values.push(value.clone());
+                    }
+                }
+                _ => custom_values.push(value.clone()),
+            }
+            param_index += 1;
+        }
+
+        // Add explicit type casting for enum columns in RETURNING clause
+        for column in &returning_columns_clone {
+            if enum_columns.contains(column) {
+                let pattern = format!("\"{}\"", column);
+                // Cast both input and output values
+                let replacement = format!("(\"{}\"::TEXT)::{}_enum", column, column.to_lowercase());
+                all_replacements.push((pattern, replacement));
+            }
+        }
+
+        // Apply all replacements efficiently
+        let mut final_sql = sql.to_string();
+        for (pattern, replacement) in all_replacements {
+            final_sql = final_sql.replace(&pattern, &replacement);
+        }
+
+        // Add explicit type casting for enum columns in VALUES clause
+        for column in column_names {
+            if enum_columns.contains(&column) {
+                let pattern = format!("${}", param_index);
+                let replacement = format!("(${}::TEXT)::{}_enum", param_index, column.to_lowercase());
+                final_sql = final_sql.replace(&pattern, &replacement);
+                param_index += 1;
+            }
+        }
+
+        // Add explicit type casting for enum columns in RETURNING clause
+        for column in returning_columns {
+            if enum_columns.contains(&column) {
+                let pattern = format!("\"{}\"", column);
+                // Cast both input and output values
+                let replacement = format!("(\"{}\"::TEXT)::{}_enum", column, column.to_lowercase());
+                final_sql = final_sql.replace(&pattern, &replacement);
+            }
+        }
+
+        // Debug log
+        println!("Final SQL: {}", final_sql);
+        println!("Values: {:?}", custom_values);
+
+        (final_sql, SqlxValues(sea_query::Values(custom_values)))
+    }
+
+    /// Extract column names and returning columns from SQL query
+    fn extract_columns(sql: &str) -> (Vec<&str>, Vec<&str>) {
+        let column_names = sql
+            .split("(\"")
+            .nth(1)
+            .and_then(|s| s.split("\")").next())
+            .map(|s| s.split("\", \"").collect())
+            .unwrap_or_default();
+
+        let returning_columns = sql
+            .split("RETURNING \"")
+            .nth(1)
+            .and_then(|s| s.split("\"").next())
+            .map(|s| s.split("\", \"").collect())
+            .unwrap_or_default();
+
+        (column_names, returning_columns)
+    }
+
+    /// Create enum cast for explicit enum values
+    fn create_enum_cast(
+        param_index: i32,
+        type_name: &str,
+        enum_value: &str,
+        replacements: &mut Vec<(String, String)>,
+    ) -> (String, String) {
+        let placeholder = format!("${}", param_index);
+        let cast_placeholder = format!("${}::{}", param_index, type_name);
+        replacements.push((placeholder.clone(), cast_placeholder.clone()));
+        (placeholder, cast_placeholder)
+    }
+
+    /// Add implicit enum cast for enum columns
+    fn add_implicit_enum_cast(
+        param_index: i32,
+        column_name: &str,
+        replacements: &mut Vec<(String, String)>,
+    ) {
+        let enum_type = format!("{}_enum", column_name.to_lowercase());
+        let placeholder = format!("${}", param_index);
+        let cast_placeholder = format!("${}::{}", param_index, enum_type);
+        replacements.push((placeholder, cast_placeholder));
+    }
+
+    /// Add type casting for enum columns in RETURNING clause
+    fn add_returning_casts(
+        returning_columns: &[&str],
+        enum_columns: &[&str],
+        replacements: &mut Vec<(String, String)>,
+    ) {
+        for column in returning_columns {
+            if enum_columns.contains(column) {
+                let pattern = format!("\"{}\"", column);
+                // Cast directly to enum type
+                let replacement = format!("\"{}\"::{}_enum", column, column.to_lowercase());
+                replacements.push((pattern, replacement));
+            }
+        }
+    }
+
+    /// Apply all replacements to SQL query
+    fn apply_replacements(mut sql: String, replacements: Vec<(String, String)>) -> String {
+        for (pattern, replacement) in replacements {
+            sql = sql.replace(&pattern, &replacement);
+        }
+        sql
+    }
+}
+
+/// Creates a record with proper enum handling
+pub async fn create_with_enum_cast<MC, I, O>(db: &ModelManager, input: I) -> Result<O>
+where
+    MC: DMC,
+    I: HasSeaFields,
+    O: HasSeaFields + for<'a> FromRow<'a, PgRow> + Send + Unpin,
+{
+    // Step 1: Extract non-null fields and prepare for insertion
+    let fields = input.not_none_sea_fields();
+    let (columns, sea_values) = fields.for_sea_insert();
+
+    // Step 2: Build and validate the INSERT query
+    let mut query = Query::insert();
+    query
+        .into_table(MC::table_ref())
+        .columns(columns)
+        .values(sea_values)?;
+
+    // Step 3: Add RETURNING clause with proper column selection
+    let o_fields = O::sea_column_refs();
+    query.returning(Query::returning().columns(o_fields));
+
+    // Step 4: Build SQL with enum casting
+    let (sql, values) = PostgresEnumQueryBuilder::build_sqlx_with_enum_cast(&query, MC::ENUM_COLUMNS);
+
+    // Step 5: Log the generated SQL for debugging (only in debug mode)
+    #[cfg(debug_assertions)]
+    {
+        println!("Generated SQL with casts: {}", sql);
+        println!("Values: {:?}", values);
+    }
+
+    // Step 6: Execute query with proper error handling
+    let sqlx_query = sqlx::query_as_with::<_, O, _>(&sql, values);
+    
+    match db.dbx().fetch_one(sqlx_query).await {
+        Ok(entity) => Ok(entity),
+        Err(e) => match e {
+            jd_storage::dbx::Error::Sqlx(sqlx_err) => {
+                // Handle specific database errors
+                if let Some(db_err) = sqlx_err.as_database_error() {
+                    match db_err.code().as_deref() {
+                        Some("23505") => Err(Error::UniqueViolation {
+                            table: db_err.table().unwrap_or("unknown").to_string(),
+                            constraint: db_err.constraint().unwrap_or("unknown").to_string(),
+                        }),
+                        Some("22P02") => Err(Error::InvalidEnumValue {
+                            value: db_err.message().to_string(),
+                        }),
+                        Some("42703") => Err(Error::ColumnNotFound {
+                            column: db_err.message().to_string(),
+                        }),
+                        _ => Err(Error::Sqlx(sqlx_err)),
+                    }
+                } else {
+                    Err(Error::Sqlx(sqlx_err))
+                }
+            }
+            _ => Err(Error::Dbx(e)),
+        },
+    }
 }

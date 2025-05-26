@@ -17,36 +17,14 @@ User-Agent: Emacs30"
 GET :host/api/v1
 #+end_src
 
-#+RESULTS:
-#+BEGIN_SRC js
-{
-  "data": {
-    "id": 1,
-    "username": "hello"
-  },
-  "id": "05424404-60c9-4e89-97e2-b7c5c0be14cf",
-  "meta": {
-    "timestamp": "2025-05-25T14:22:29.273424Z"
-  },
-  "status": 0,
-  "type": "success"
-}
-// GET http://localhost:8080/api/v1
-// HTTP/1.1 200 OK
-// content-type: application/json
-// content-length: 159
-// date: Sun, 25 May 2025 14:22:29 GMT
-// Request duration: 0.006228s
-#+END_SRC
-
 * Api
 ** Create user
 #+begin_src restclient :var host=host :var headers=headers
 POST :host/api/v1/users
 :headers
 {
-  "email": "j1aydeu111@gmail.com",
-  "username": "j1aaayd122endaang111",
+  "email": "j1aydeuaai111i@gmail.com",
+  "username": "j1aaaaayd1122endaang111",
   "password_hash": "passawordasdflkaj",
   "first_name": "first_naame",
   "last_name": "last_namae"
@@ -56,26 +34,30 @@ POST :host/api/v1/users
 #+RESULTS:
 #+BEGIN_SRC js
 {
-  "error": {
-    "details": null,
-    "error_code": "UNKNOWN_CORE_ERROR",
-    "message": "Unknown core error occurred",
-    "request_id": null,
-    "timestamp": "2025-05-26T10:31:28.237374+00:00"
+  "data": {
+    "created_at": "2025-05-26T14:44:05.154709Z",
+    "email": "j1aydeuaai111i@gmail.com",
+    "email_verified": false,
+    "first_name": "first_naame",
+    "last_name": "last_namae",
+    "password_hash": "passawordasdflkaj",
+    "updated_at": "2025-05-26T14:44:05.154709Z",
+    "user_id": "23464133-918a-43df-a706-8d91be96e456",
+    "username": "j1aaaaayd1122endaang111"
   },
-  "id": "fc38a911-12a1-4266-8730-8bcac74830b6",
+  "id": "e05dbb9b-f47a-43cf-91b8-5025ae6d5f36",
   "meta": {
-    "timestamp": "2025-05-26T10:31:28.237514Z"
+    "timestamp": "2025-05-26T14:44:05.174686Z"
   },
-  "status": 1,
-  "type": "error"
+  "status": 0,
+  "type": "success"
 }
 // POST http://localhost:8080/api/v1/users
-// HTTP/1.1 500 Internal Server Error
+// HTTP/1.1 200 OK
 // content-type: application/json
-// content-length: 286
-// date: Mon, 26 May 2025 10:31:28 GMT
-// Request duration: 0.094923s
+// content-length: 451
+// date: Mon, 26 May 2025 14:44:05 GMT
+// Request duration: 0.033510s
 #+END_SRC
 
 #+begin_src restclient :var host=host :var headers=headers
