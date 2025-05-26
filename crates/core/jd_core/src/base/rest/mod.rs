@@ -698,7 +698,7 @@ where
 pub trait EnumConverter {
     /// Convert a Rust enum value to a PostgreSQL enum string
     fn to_pg_enum(&self) -> String;
-    
+
     /// Convert a PostgreSQL enum string to a Rust enum value
     fn from_pg_enum(value: &str) -> Self;
 }
@@ -718,21 +718,15 @@ impl PostgresEnumQueryBuilder {
         let mut param_index = 1;
 
         // Extract column names and returning columns more efficiently
-        let (column_names, mut returning_columns) = Self::extract_columns(&sql);
+        let (column_names, returning_columns) = Self::extract_columns(&sql);
         let returning_columns_clone = returning_columns.clone();
 
         // Process values with improved enum handling
         for (i, value) in values.0.iter().enumerate() {
             match value {
                 Value::String(Some(s)) => {
-                    if let Some((type_name, enum_value)) = s.split_once("::") {
+                    if let Some((_, enum_value)) = s.split_once("::") {
                         // Handle explicit enum casting
-                        let (placeholder, cast_placeholder) = Self::create_enum_cast(
-                            param_index,
-                            type_name,
-                            enum_value,
-                            &mut all_replacements,
-                        );
                         custom_values.push(Value::String(Some(Box::new(enum_value.to_string()))));
                     } else if let Some(column_name) = column_names.get(i) {
                         // Handle implicit enum casting
@@ -773,7 +767,8 @@ impl PostgresEnumQueryBuilder {
         for column in column_names {
             if enum_columns.contains(&column) {
                 let pattern = format!("${}", param_index);
-                let replacement = format!("(${}::TEXT)::{}_enum", param_index, column.to_lowercase());
+                let replacement =
+                    format!("(${}::TEXT)::{}_enum", param_index, column.to_lowercase());
                 final_sql = final_sql.replace(&pattern, &replacement);
                 param_index += 1;
             }
@@ -815,19 +810,6 @@ impl PostgresEnumQueryBuilder {
         (column_names, returning_columns)
     }
 
-    /// Create enum cast for explicit enum values
-    fn create_enum_cast(
-        param_index: i32,
-        type_name: &str,
-        enum_value: &str,
-        replacements: &mut Vec<(String, String)>,
-    ) -> (String, String) {
-        let placeholder = format!("${}", param_index);
-        let cast_placeholder = format!("${}::{}", param_index, type_name);
-        replacements.push((placeholder.clone(), cast_placeholder.clone()));
-        (placeholder, cast_placeholder)
-    }
-
     /// Add implicit enum cast for enum columns
     fn add_implicit_enum_cast(
         param_index: i32,
@@ -838,30 +820,6 @@ impl PostgresEnumQueryBuilder {
         let placeholder = format!("${}", param_index);
         let cast_placeholder = format!("${}::{}", param_index, enum_type);
         replacements.push((placeholder, cast_placeholder));
-    }
-
-    /// Add type casting for enum columns in RETURNING clause
-    fn add_returning_casts(
-        returning_columns: &[&str],
-        enum_columns: &[&str],
-        replacements: &mut Vec<(String, String)>,
-    ) {
-        for column in returning_columns {
-            if enum_columns.contains(column) {
-                let pattern = format!("\"{}\"", column);
-                // Cast directly to enum type
-                let replacement = format!("\"{}\"::{}_enum", column, column.to_lowercase());
-                replacements.push((pattern, replacement));
-            }
-        }
-    }
-
-    /// Apply all replacements to SQL query
-    fn apply_replacements(mut sql: String, replacements: Vec<(String, String)>) -> String {
-        for (pattern, replacement) in replacements {
-            sql = sql.replace(&pattern, &replacement);
-        }
-        sql
     }
 }
 
@@ -888,7 +846,8 @@ where
     query.returning(Query::returning().columns(o_fields));
 
     // Step 4: Build SQL with enum casting
-    let (sql, values) = PostgresEnumQueryBuilder::build_sqlx_with_enum_cast(&query, MC::ENUM_COLUMNS);
+    let (sql, values) =
+        PostgresEnumQueryBuilder::build_sqlx_with_enum_cast(&query, MC::ENUM_COLUMNS);
 
     // Step 5: Log the generated SQL for debugging (only in debug mode)
     #[cfg(debug_assertions)]
@@ -899,7 +858,7 @@ where
 
     // Step 6: Execute query with proper error handling
     let sqlx_query = sqlx::query_as_with::<_, O, _>(&sql, values);
-    
+
     match db.dbx().fetch_one(sqlx_query).await {
         Ok(entity) => Ok(entity),
         Err(e) => match e {
@@ -911,12 +870,12 @@ where
                             table: db_err.table().unwrap_or("unknown").to_string(),
                             constraint: db_err.constraint().unwrap_or("unknown").to_string(),
                         }),
-                        Some("22P02") => Err(Error::InvalidEnumValue {
-                            value: db_err.message().to_string(),
-                        }),
-                        Some("42703") => Err(Error::ColumnNotFound {
-                            column: db_err.message().to_string(),
-                        }),
+                        Some("22P02") => {
+                            Err(Error::InvalidEnumValue { value: db_err.message().to_string() })
+                        }
+                        Some("42703") => {
+                            Err(Error::ColumnNotFound { column: db_err.message().to_string() })
+                        }
                         _ => Err(Error::Sqlx(sqlx_err)),
                     }
                 } else {
