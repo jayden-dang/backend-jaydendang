@@ -1,5 +1,7 @@
+pub mod application;
+pub mod domain;
+pub mod infrastructure;
 pub(crate) mod record;
-pub mod repository;
 
 use jd_core::base::DMC;
 
@@ -10,3 +12,5 @@ impl DMC for UsersDmc {
     const TABLE: &'static str = "users";
     const ID: &'static str = "user_id";
 }
+
+pub use application::use_cases::*;

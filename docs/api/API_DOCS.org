@@ -44,8 +44,8 @@ GET :host/api/v1
 POST :host/api/v1/users
 :headers
 {
-  "email": "jayden.dangvu@gmail.com",
-  "username": "jaydendang",
+  "email": "jayden.dangvu111@gmail.com",
+  "username": "jaydendang111",
   "password_hash": "passawordasdflkaj",
   "first_name": "first_naame",
   "last_name": "last_namae"
@@ -55,26 +55,30 @@ POST :host/api/v1/users
 #+RESULTS:
 #+BEGIN_SRC js
 {
-  "error": {
-    "details": null,
-    "error_code": "CONFLICT",
-    "message": "Email already exists",
-    "request_id": null,
-    "timestamp": "2025-05-26T02:50:43.474282+00:00"
+  "data": {
+    "created_at": "2025-05-26T04:00:04.488513Z",
+    "email": "jayden.dangvu111@gmail.com",
+    "email_verified": false,
+    "first_name": "first_naame",
+    "last_name": "last_namae",
+    "password_hash": "passawordasdflkaj",
+    "updated_at": "2025-05-26T04:00:04.488513Z",
+    "user_id": "e861ef97-f71f-45dd-a6a6-daacef94055a",
+    "username": "jaydendang111"
   },
-  "id": "1e14e8ce-17e3-4bf7-8c7e-e08fb6a0fbf5",
+  "id": "3f131265-f068-4d4d-ac6b-f0ea646820e6",
   "meta": {
-    "timestamp": "2025-05-26T02:50:43.478825Z"
+    "timestamp": "2025-05-26T04:00:04.493035Z"
   },
-  "status": 1,
-  "type": "error"
+  "status": 0,
+  "type": "success"
 }
 // POST http://localhost:8080/api/v1/users
-// HTTP/1.1 409 Conflict
+// HTTP/1.1 200 OK
 // content-type: application/json
-// content-length: 269
-// date: Mon, 26 May 2025 02:50:43 GMT
-// Request duration: 0.024201s
+// content-length: 443
+// date: Mon, 26 May 2025 04:00:04 GMT
+// Request duration: 0.081413s
 #+END_SRC
 
 #+begin_src restclient :var host=host :var headers=headers

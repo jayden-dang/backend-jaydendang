@@ -1,18 +1,15 @@
 use crate::{
-    error::{Error, ErrorMapper},
-    users::{record::UserRecord, UsersDmc},
-    Result,
+    users::{domain::repository::UserRepository, record::UserRecord, UsersDmc},
+    Error, Result, error::ErrorMapper,
 };
 use async_trait::async_trait;
+use axum::Json;
 use jd_contracts::user::dto::{CreateUserRequest, UserFilter};
 use jd_core::{
     base::{self},
     AppState,
 };
 use jd_utils::ensure;
-use validator::Validate;
-
-use super::repository_trait::UserRepository;
 
 pub struct UserRepositoryImpl {
     app_state: AppState,
@@ -26,9 +23,7 @@ impl UserRepositoryImpl {
 
 #[async_trait]
 impl UserRepository for UserRepositoryImpl {
-    async fn create_user(&self, req: CreateUserRequest) -> Result<UserRecord> {
-        req.validate()?;
-
+    async fn create(&self, Json(req): Json<CreateUserRequest>) -> Result<Json<UserRecord>> {
         // Check if user exists with same username or email
         let exists = base::rest::exists::<UsersDmc, _>(
             &self.app_state.mm,
@@ -46,8 +41,26 @@ impl UserRepository for UserRepositoryImpl {
             Error::conflict("User with this username or email already exists")
         );
 
-        base::rest::create::<UsersDmc, _, _>(&self.app_state.mm, req)
+        let record = base::rest::create::<UsersDmc, _, _>(&self.app_state.mm, req)
             .await
-            .map_error()
+            .map_error()?;
+
+        Ok(Json(record))
+    }
+
+    async fn find_by_id(&self, id: &str) -> Result<Option<UserRecord>> {
+        todo!()
+    }
+
+    async fn find_by_username(&self, username: &str) -> Result<Option<UserRecord>> {
+        todo!()
+    }
+
+    async fn find_by_email(&self, email: &str) -> Result<Option<UserRecord>> {
+        todo!()
+    }
+
+    async fn exists(&self, username: &str, email: &str) -> Result<bool> {
+        todo!()
     }
 }
