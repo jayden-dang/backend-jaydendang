@@ -27,7 +27,8 @@ impl<R: UserRepository> UserHandler<R> {
     ) -> Result<Json<UserRecord>> {
         let repository = UserRepositoryImpl::new(state);
         let use_case = CreateUserUseCase::new(repository);
-        Ok(use_case.execute(Json(request)).await.unwrap())
+        let result = use_case.execute(request).await?;
+        Ok(Json(result))
     }
 
     pub async fn get_user_by_username(
@@ -36,7 +37,8 @@ impl<R: UserRepository> UserHandler<R> {
     ) -> Result<Json<UserRecord>> {
         let repository = UserRepositoryImpl::new(state);
         let use_case = GetUserUseCase::new(repository);
-        Ok(use_case.execute_by_username(id).await.unwrap())
+        let result = use_case.execute_by_username(id).await?;
+        Ok(Json(result))
     }
 
     pub async fn get_user_by_email(
@@ -45,7 +47,8 @@ impl<R: UserRepository> UserHandler<R> {
     ) -> Result<Json<UserRecord>> {
         let repository = UserRepositoryImpl::new(state);
         let use_case = GetUserUseCase::new(repository);
-        use_case.execute_by_email(email).await
+        let result = use_case.execute_by_email(email).await?;
+        Ok(Json(result))
     }
 
     pub async fn get_user_by_wow(
@@ -54,6 +57,7 @@ impl<R: UserRepository> UserHandler<R> {
     ) -> Result<Json<UserRecord>> {
         let repository = UserRepositoryImpl::new(state);
         let use_case = GetUserUseCase::new(repository);
-        use_case.execute_by_wow(query).await
+        let result = use_case.execute_by_wow(query).await?;
+        Ok(Json(result))
     }
 }

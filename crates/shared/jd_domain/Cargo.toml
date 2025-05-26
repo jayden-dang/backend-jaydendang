@@ -13,6 +13,7 @@ sqlx.workspace = true
 
 # Members
 jd_utils = { path = "../jd_utils" }
+jd_deencode = { path = "../jd_deencode" }
 uuid = { workspace = true, features = ["serde"] }
 validator = { version = "0.20.0", features = ["derive"] }
 derive_more.workspace = true

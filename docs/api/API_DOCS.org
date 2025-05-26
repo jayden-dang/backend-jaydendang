@@ -45,8 +45,8 @@ GET :host/api/v1
 POST :host/api/v1/users
 :headers
 {
-  "email": "jayden.danagvu111@gmail.com",
-  "username": "jaydendaang111",
+  "email": "j1ayden.danagvu111@gmail.com",
+  "username": "j1aydendaang111",
   "password_hash": "passawordasdflkaj",
   "first_name": "first_naame",
   "last_name": "last_namae"
@@ -58,24 +58,24 @@ POST :host/api/v1/users
 {
   "error": {
     "details": null,
-    "error_code": "CONFLICT",
-    "message": "User with this username or email already exists",
+    "error_code": "UNKNOWN_CORE_ERROR",
+    "message": "Unknown core error occurred",
     "request_id": null,
-    "timestamp": "2025-05-26T04:36:24.218250+00:00"
+    "timestamp": "2025-05-26T08:04:03.289501+00:00"
   },
-  "id": "a8d7021e-bba9-4827-9849-82cfa1e99984",
+  "id": "ab588f69-5669-4a35-9b1f-8c3353e1ed97",
   "meta": {
-    "timestamp": "2025-05-26T04:36:24.218394Z"
+    "timestamp": "2025-05-26T08:04:03.289641Z"
   },
   "status": 1,
   "type": "error"
 }
 // POST http://localhost:8080/api/v1/users
-// HTTP/1.1 409 Conflict
+// HTTP/1.1 500 Internal Server Error
 // content-type: application/json
-// content-length: 296
-// date: Mon, 26 May 2025 04:36:24 GMT
-// Request duration: 0.045926s
+// content-length: 286
+// date: Mon, 26 May 2025 08:04:03 GMT
+// Request duration: 0.090988s
 #+END_SRC
 
 #+begin_src restclient :var host=host :var headers=headers

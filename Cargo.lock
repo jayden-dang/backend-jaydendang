@@ -1236,6 +1236,7 @@ checksum = "4a5f13b858c8d314ee3e8f639011f7ccefe71f97f96e50151fb991f267928e2c"
 name = "jd_contracts"
 version = "0.1.0"
 dependencies = [
+ "jd_domain",
  "jd_utils",
  "modql",
  "sea-query",
@@ -1270,10 +1271,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "jd_deencode"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "jd_domain"
 version = "0.1.0"
 dependencies = [
  "derive_more",
+ "jd_deencode",
  "jd_utils",
  "modql",
  "sea-query",

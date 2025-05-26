@@ -48,11 +48,7 @@ pub enum Error {
     InsufficientPermissions { resource: String },
 
     #[error("Rate limit exceeded for client '{client_id}': {limit} requests per {window}")]
-    RateLimitExceeded {
-        client_id: String,
-        limit: u32,
-        window: String,
-    },
+    RateLimitExceeded { client_id: String, limit: u32, window: String },
 
     // -- Service Communication
     #[error("Downstream service '{service}' unavailable")]
@@ -62,7 +58,7 @@ pub enum Error {
     ServiceTimeout { service: String, timeout_ms: u64 },
 
     #[error("Service '{service}' returned error: {status_code}")]
-    ServiceError {
+    Servic {
         service: String,
         status_code: u16,
         #[serde(skip)]
@@ -86,7 +82,7 @@ pub enum Error {
     RoutingFailed { reason: String },
 
     #[error("Gateway configuration error: {config_key}")]
-    GatewayConfigError { config_key: String },
+    GatewayConfig { config_key: String },
 
     // -- Monitoring & Observability
     #[error("Request correlation ID not found")]
@@ -106,7 +102,7 @@ pub enum Error {
     LockAcquisitionFailed { resource: String },
 
     #[error("Session store operation failed")]
-    SessionStoreError {
+    SessionStore {
         #[serde(skip)]
         source: Box<dyn std::error::Error + Send + Sync>,
     },
@@ -122,7 +118,7 @@ pub enum Error {
     },
 
     #[error("Message queue operation failed")]
-    MessageQueueError { queue: String, operation: String },
+    MessageQueue { queue: String, operation: String },
 
     // -- Security
     #[error("Suspicious request detected: {reason}")]
@@ -141,96 +137,89 @@ pub enum Error {
 impl Clone for Error {
     fn clone(&self) -> Self {
         match self {
-            Self::SessionStoreError { .. } => Self::SessionStoreError {
-                source: Box::new(std::io::Error::new(std::io::ErrorKind::Other, "cloned error")),
-            },
+            Self::SessionStore { .. } => {
+                Self::SessionStore { source: Box::new(std::io::Error::other("cloned error")) }
+            }
             Self::RedisConnectionFailed { .. } => Self::RedisConnectionFailed {
-                source: Box::new(std::io::Error::new(std::io::ErrorKind::Other, "cloned error")),
+                source: Box::new(std::io::Error::other("cloned error")),
             },
             Self::ReqStampNotInReqExt => Self::ReqStampNotInReqExt,
-            Self::InvalidRequestFormat { message } => Self::InvalidRequestFormat {
-                message: message.clone(),
-            },
-            Self::RequestTooLarge { size, max_size } => Self::RequestTooLarge {
-                size: *size,
-                max_size: *max_size,
-            },
-            Self::MissingRequiredHeader { header } => Self::MissingRequiredHeader { header: header.clone() },
-            Self::InvalidHeaderValue { header, value } => Self::InvalidHeaderValue {
-                header: header.clone(),
-                value: value.clone(),
-            },
+            Self::InvalidRequestFormat { message } => {
+                Self::InvalidRequestFormat { message: message.clone() }
+            }
+            Self::RequestTooLarge { size, max_size } => {
+                Self::RequestTooLarge { size: *size, max_size: *max_size }
+            }
+            Self::MissingRequiredHeader { header } => {
+                Self::MissingRequiredHeader { header: header.clone() }
+            }
+            Self::InvalidHeaderValue { header, value } => {
+                Self::InvalidHeaderValue { header: header.clone(), value: value.clone() }
+            }
             Self::CtxExt(e) => Self::CtxExt(e.clone()),
             Self::ApiKeyAuthFailed { reason } => Self::ApiKeyAuthFailed { reason: reason.clone() },
-            Self::JwtValidationFailed { reason } => Self::JwtValidationFailed { reason: reason.clone() },
-            Self::SessionExpired { expired_at } => Self::SessionExpired {
-                expired_at: expired_at.clone(),
-            },
-            Self::InsufficientPermissions { resource } => Self::InsufficientPermissions {
-                resource: resource.clone(),
-            },
-            Self::RateLimitExceeded {
-                client_id,
-                limit,
-                window,
-            } => Self::RateLimitExceeded {
+            Self::JwtValidationFailed { reason } => {
+                Self::JwtValidationFailed { reason: reason.clone() }
+            }
+            Self::SessionExpired { expired_at } => {
+                Self::SessionExpired { expired_at: expired_at.clone() }
+            }
+            Self::InsufficientPermissions { resource } => {
+                Self::InsufficientPermissions { resource: resource.clone() }
+            }
+            Self::RateLimitExceeded { client_id, limit, window } => Self::RateLimitExceeded {
                 client_id: client_id.clone(),
                 limit: *limit,
                 window: window.clone(),
             },
-            Self::ServiceUnavailable { service } => Self::ServiceUnavailable {
-                service: service.clone(),
-            },
-            Self::ServiceTimeout { service, timeout_ms } => Self::ServiceTimeout {
-                service: service.clone(),
-                timeout_ms: *timeout_ms,
-            },
-            Self::ServiceError {
-                service,
-                status_code,
-                body,
-            } => Self::ServiceError {
+            Self::ServiceUnavailable { service } => {
+                Self::ServiceUnavailable { service: service.clone() }
+            }
+            Self::ServiceTimeout { service, timeout_ms } => {
+                Self::ServiceTimeout { service: service.clone(), timeout_ms: *timeout_ms }
+            }
+            Self::Servic { service, status_code, body } => Self::Servic {
                 service: service.clone(),
                 status_code: *status_code,
                 body: body.clone(),
             },
-            Self::CircuitBreakerOpen { service } => Self::CircuitBreakerOpen {
-                service: service.clone(),
-            },
-            Self::NoHealthyInstances { service } => Self::NoHealthyInstances {
-                service: service.clone(),
-            },
-            Self::RouteNotFound { path, method } => Self::RouteNotFound {
-                path: path.clone(),
-                method: method.clone(),
-            },
-            Self::ServiceDiscoveryFailed { service } => Self::ServiceDiscoveryFailed {
-                service: service.clone(),
-            },
+            Self::CircuitBreakerOpen { service } => {
+                Self::CircuitBreakerOpen { service: service.clone() }
+            }
+            Self::NoHealthyInstances { service } => {
+                Self::NoHealthyInstances { service: service.clone() }
+            }
+            Self::RouteNotFound { path, method } => {
+                Self::RouteNotFound { path: path.clone(), method: method.clone() }
+            }
+            Self::ServiceDiscoveryFailed { service } => {
+                Self::ServiceDiscoveryFailed { service: service.clone() }
+            }
             Self::RoutingFailed { reason } => Self::RoutingFailed { reason: reason.clone() },
-            Self::GatewayConfigError { config_key } => Self::GatewayConfigError {
-                config_key: config_key.clone(),
-            },
+            Self::GatewayConfig { config_key } => {
+                Self::GatewayConfig { config_key: config_key.clone() }
+            }
             Self::MissingCorrelationId => Self::MissingCorrelationId,
             Self::TracingContextLost => Self::TracingContextLost,
-            Self::MetricsCollectionFailed { metric_name } => Self::MetricsCollectionFailed {
-                metric_name: metric_name.clone(),
-            },
+            Self::MetricsCollectionFailed { metric_name } => {
+                Self::MetricsCollectionFailed { metric_name: metric_name.clone() }
+            }
             Self::CacheOperationFailed { key } => Self::CacheOperationFailed { key: key.clone() },
-            Self::LockAcquisitionFailed { resource } => Self::LockAcquisitionFailed {
-                resource: resource.clone(),
-            },
+            Self::LockAcquisitionFailed { resource } => {
+                Self::LockAcquisitionFailed { resource: resource.clone() }
+            }
             Self::DatabasePoolExhausted => Self::DatabasePoolExhausted,
-            Self::MessageQueueError { queue, operation } => Self::MessageQueueError {
-                queue: queue.clone(),
-                operation: operation.clone(),
-            },
-            Self::SuspiciousRequest { reason } => Self::SuspiciousRequest { reason: reason.clone() },
+            Self::MessageQueue { queue, operation } => {
+                Self::MessageQueue { queue: queue.clone(), operation: operation.clone() }
+            }
+            Self::SuspiciousRequest { reason } => {
+                Self::SuspiciousRequest { reason: reason.clone() }
+            }
             Self::CorsViolation { origin } => Self::CorsViolation { origin: origin.clone() },
-            Self::CspViolation { directive } => Self::CspViolation {
-                directive: directive.clone(),
-            },
-            Self::SecurityPolicyViolation { policy } => Self::SecurityPolicyViolation { policy: policy.clone() },
+            Self::CspViolation { directive } => Self::CspViolation { directive: directive.clone() },
+            Self::SecurityPolicyViolation { policy } => {
+                Self::SecurityPolicyViolation { policy: policy.clone() }
+            }
         }
     }
 }
@@ -281,9 +270,7 @@ pub struct ClientError {
 impl Error {
     // -- Constructor methods
     pub fn invalid_request(message: impl Into<String>) -> Self {
-        Self::InvalidRequestFormat {
-            message: message.into(),
-        }
+        Self::InvalidRequestFormat { message: message.into() }
     }
 
     pub fn request_too_large(size: u64, max_size: u64) -> Self {
@@ -295,10 +282,7 @@ impl Error {
     }
 
     pub fn invalid_header(header: impl Into<String>, value: impl Into<String>) -> Self {
-        Self::InvalidHeaderValue {
-            header: header.into(),
-            value: value.into(),
-        }
+        Self::InvalidHeaderValue { header: header.into(), value: value.into() }
     }
 
     pub fn api_key_failed(reason: impl Into<String>) -> Self {
@@ -310,57 +294,43 @@ impl Error {
     }
 
     pub fn session_expired(expired_at: impl Into<String>) -> Self {
-        Self::SessionExpired {
-            expired_at: expired_at.into(),
-        }
+        Self::SessionExpired { expired_at: expired_at.into() }
     }
 
     pub fn insufficient_permissions(resource: impl Into<String>) -> Self {
-        Self::InsufficientPermissions {
-            resource: resource.into(),
-        }
+        Self::InsufficientPermissions { resource: resource.into() }
     }
 
-    pub fn rate_limited(client_id: impl Into<String>, limit: u32, window: impl Into<String>) -> Self {
-        Self::RateLimitExceeded {
-            client_id: client_id.into(),
-            limit,
-            window: window.into(),
-        }
+    pub fn rate_limited(
+        client_id: impl Into<String>,
+        limit: u32,
+        window: impl Into<String>,
+    ) -> Self {
+        Self::RateLimitExceeded { client_id: client_id.into(), limit, window: window.into() }
     }
 
     pub fn service_unavailable(service: impl Into<String>) -> Self {
-        Self::ServiceUnavailable {
-            service: service.into(),
-        }
+        Self::ServiceUnavailable { service: service.into() }
     }
 
     pub fn service_timeout(service: impl Into<String>, timeout_ms: u64) -> Self {
-        Self::ServiceTimeout {
-            service: service.into(),
-            timeout_ms,
-        }
+        Self::ServiceTimeout { service: service.into(), timeout_ms }
     }
 
-    pub fn service_error(service: impl Into<String>, status_code: u16, body: Option<String>) -> Self {
-        Self::ServiceError {
-            service: service.into(),
-            status_code,
-            body,
-        }
+    pub fn service_error(
+        service: impl Into<String>,
+        status_code: u16,
+        body: Option<String>,
+    ) -> Self {
+        Self::Servic { service: service.into(), status_code, body }
     }
 
     pub fn circuit_breaker_open(service: impl Into<String>) -> Self {
-        Self::CircuitBreakerOpen {
-            service: service.into(),
-        }
+        Self::CircuitBreakerOpen { service: service.into() }
     }
 
     pub fn route_not_found(path: impl Into<String>, method: impl Into<String>) -> Self {
-        Self::RouteNotFound {
-            path: path.into(),
-            method: method.into(),
-        }
+        Self::RouteNotFound { path: path.into(), method: method.into() }
     }
 
     pub fn routing_failed(reason: impl Into<String>) -> Self {
@@ -388,10 +358,10 @@ impl Error {
             // Medium severity - business/service issues
             Self::RateLimitExceeded { .. }
             | Self::ServiceTimeout { .. }
-            | Self::ServiceError { .. }
+            | Self::Servic { .. }
             | Self::RequestTooLarge { .. }
             | Self::CacheOperationFailed { .. }
-            | Self::MessageQueueError { .. } => ErrorSeverity::Medium,
+            | Self::MessageQueue { .. } => ErrorSeverity::Medium,
 
             // High severity - infrastructure/security
             Self::ServiceUnavailable { .. }
@@ -405,11 +375,11 @@ impl Error {
 
             // Critical severity - gateway failures
             Self::ReqStampNotInReqExt
-            | Self::GatewayConfigError { .. }
+            | Self::GatewayConfig { .. }
             | Self::RoutingFailed { .. }
             | Self::MissingCorrelationId
             | Self::TracingContextLost
-            | Self::SessionStoreError { .. }
+            | Self::SessionStore { .. }
             | Self::LockAcquisitionFailed { .. } => ErrorSeverity::Critical,
 
             // Security violations
@@ -426,28 +396,30 @@ impl Error {
             | Self::JwtValidationFailed { .. }
             | Self::SessionExpired { .. } => ErrorCategory::Authentication,
 
-            Self::InsufficientPermissions { .. } | Self::RateLimitExceeded { .. } => ErrorCategory::Authorization,
+            Self::InsufficientPermissions { .. } | Self::RateLimitExceeded { .. } => {
+                ErrorCategory::Authorization
+            }
 
             Self::InvalidRequestFormat { .. }
             | Self::RequestTooLarge { .. }
             | Self::MissingRequiredHeader { .. }
             | Self::InvalidHeaderValue { .. } => ErrorCategory::Validation,
 
-            Self::RouteNotFound { .. } | Self::RoutingFailed { .. } | Self::ServiceDiscoveryFailed { .. } => {
-                ErrorCategory::Routing
-            }
+            Self::RouteNotFound { .. }
+            | Self::RoutingFailed { .. }
+            | Self::ServiceDiscoveryFailed { .. } => ErrorCategory::Routing,
 
             Self::ServiceUnavailable { .. }
             | Self::ServiceTimeout { .. }
-            | Self::ServiceError { .. }
+            | Self::Servic { .. }
             | Self::CircuitBreakerOpen { .. }
             | Self::NoHealthyInstances { .. } => ErrorCategory::ServiceCommunication,
 
             Self::DatabasePoolExhausted
             | Self::RedisConnectionFailed { .. }
-            | Self::MessageQueueError { .. }
+            | Self::MessageQueue { .. }
             | Self::CacheOperationFailed { .. }
-            | Self::SessionStoreError { .. }
+            | Self::SessionStore { .. }
             | Self::LockAcquisitionFailed { .. } => ErrorCategory::Infrastructure,
 
             Self::SuspiciousRequest { .. }
@@ -460,7 +432,7 @@ impl Error {
             | Self::MetricsCollectionFailed { .. }
             | Self::ReqStampNotInReqExt => ErrorCategory::Monitoring,
 
-            Self::GatewayConfigError { .. } => ErrorCategory::Infrastructure,
+            Self::GatewayConfig { .. } => ErrorCategory::Infrastructure,
         }
     }
 
@@ -491,7 +463,10 @@ impl Error {
     }
 
     // -- Error conversion for clients
-    pub fn client_status_and_error(&self, request_context: &RequestContext) -> (StatusCode, ClientError) {
+    pub fn client_status_and_error(
+        &self,
+        request_context: &RequestContext,
+    ) -> (StatusCode, ClientError) {
         let (status_code, error_code, message, details) = match self {
             // Authentication Errors (401)
             Self::CtxExt(_) => (
@@ -561,11 +536,7 @@ impl Error {
             ),
 
             // Rate Limiting (429)
-            Self::RateLimitExceeded {
-                client_id,
-                limit,
-                window,
-            } => (
+            Self::RateLimitExceeded { client_id, limit, window } => (
                 StatusCode::TOO_MANY_REQUESTS,
                 "RATE_LIMIT_EXCEEDED",
                 "Rate limit exceeded".to_string(),
@@ -589,9 +560,7 @@ impl Error {
                 "Service request timeout".to_string(),
                 Some(serde_json::json!({ "service": service, "timeout_ms": timeout_ms })),
             ),
-            Self::ServiceError {
-                service, status_code, ..
-            } => (
+            Self::Servic { service, status_code, .. } => (
                 StatusCode::BAD_GATEWAY,
                 "SERVICE_ERROR",
                 "Downstream service error".to_string(),
@@ -617,7 +586,7 @@ impl Error {
                 "Gateway internal error".to_string(),
                 None,
             ),
-            Self::GatewayConfigError { config_key } => (
+            Self::GatewayConfig { config_key } => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "GATEWAY_CONFIG_ERROR",
                 "Gateway configuration error".to_string(),

@@ -3,8 +3,10 @@ CREATE TYPE experience_level_enum AS ENUM ('beginner', 'intermediate', 'advanced
 CREATE TYPE subscription_tier_enum AS ENUM ('free', 'premium', 'enterprise', 'lifetime');
 CREATE TYPE education_level_enum AS ENUM ('high_school', 'bachelor', 'master', 'phd', 'bootcamp', 'self_taught', 'other');
 CREATE TYPE device_type_enum AS ENUM ('mobile', 'tablet', 'desktop');
+CREATE TYPE profile_visibility_enum AS ENUM ('public', 'private', 'friends');
 CREATE TYPE user_gender_enum AS ENUM ('male', 'female', 'non_binary', 'prefer_not_to_say', 'other');
 CREATE TYPE registration_source_enum AS ENUM ('organic', 'google', 'facebook', 'twitter', 'referral', 'paid_ad', 'blog', 'youtube', 'email', 'other');
+CREATE TYPE account_status_enum AS ENUM ('active', 'inactive', 'suspended', 'pending_verification', 'locked', 'marked_for_deletion');
 
 -- Create profile schema
 CREATE SCHEMA IF NOT EXISTS "profile";
@@ -26,7 +28,7 @@ CREATE TABLE profile.users (
     last_name VARCHAR(100),
 
     -- Account status (security-critical)
-    is_active BOOLEAN DEFAULT true,
+    is_active BOOLEAN DEFAULT false,
     email_verified BOOLEAN DEFAULT false,
 
     -- Timestamps (audit trail)
@@ -53,6 +55,7 @@ CREATE TABLE profile.user_profiles (
     occupation VARCHAR(100),
     education_level education_level_enum,
     experience_level experience_level_enum,
+    account_status account_status_enum DEFAULT 'active',
 
     -- Location & preferences
     timezone VARCHAR(50),
@@ -64,7 +67,7 @@ CREATE TABLE profile.user_profiles (
     bio TEXT,
 
     -- Privacy settings
-    profile_visibility VARCHAR(20) DEFAULT 'public', -- public, private, friends
+    profile_visibility profile_visibility_enum DEFAULT 'public',
     show_progress BOOLEAN DEFAULT true,
 
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,

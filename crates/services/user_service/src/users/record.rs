@@ -1,7 +1,7 @@
 use jd_domain::{
-    user::{
+    user_domain::{
         user::{DomainValidation, Email, HashedPassword, User, Username},
-        AccountStatus,
+        AccountStatus, EducationLevel, ExperienceLevel, ProfileVisibility, UserGender,
     },
     Id,
 };
@@ -36,8 +36,30 @@ pub struct UserRecord {
     #[validate(length(min = 1, max = 100, message = "Last name must be 1-100 characters"))]
     pub last_name: Option<String>,
 
-    // pub status: AccountStatus,
     pub email_verified: bool,
+    #[serde_as(as = "Rfc3339")]
+    pub created_at: OffsetDateTime,
+    #[serde_as(as = "Rfc3339")]
+    pub updated_at: OffsetDateTime,
+}
+
+#[serde_as]
+#[derive(Serialize, FromRow, Fields, Clone, Debug, Validate)]
+pub struct UserProfileRecord {
+    pub user_id: Id,
+    pub birth_year: Option<i32>,
+    pub gender: Option<UserGender>,
+    pub occupation: Option<String>,
+    pub education_level: Option<EducationLevel>,
+    pub experience_level: Option<ExperienceLevel>,
+    pub timezone: Option<String>,
+    pub country_code: Option<String>,
+    pub account_status: AccountStatus,
+    pub language: String,
+    #[validate(length(min = 1, max = 1000, message = "Last name must be 1-100 characters"))]
+    pub bio: Option<String>,
+    pub visibility: ProfileVisibility,
+    pub show_progress: bool,
     #[serde_as(as = "Rfc3339")]
     pub created_at: OffsetDateTime,
     #[serde_as(as = "Rfc3339")]
@@ -53,7 +75,6 @@ impl From<User> for UserRecord {
             password_hash: value.password_hash.value,
             first_name: value.first_name,
             last_name: value.last_name,
-            // status: value.status,
             email_verified: value.email_verified,
             created_at: now_utc(),
             updated_at: now_utc(),
@@ -76,7 +97,6 @@ impl TryFrom<UserRecord> for User {
             password_hash,
             first_name: value.first_name,
             last_name: value.last_name,
-            // status: value.status,
             email_verified: value.email_verified,
         };
 

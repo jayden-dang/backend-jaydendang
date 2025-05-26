@@ -117,7 +117,7 @@ impl Clone for Error {
                 service: service.clone(),
             },
             Self::DatabaseError { .. } => Self::DatabaseError {
-                source: Box::new(std::io::Error::new(std::io::ErrorKind::Other, "cloned error")),
+                source: Box::new(std::io::Error::other("cloned error")),
             },
             Self::CoreError(err) => Self::CoreError(err.clone()),
         }

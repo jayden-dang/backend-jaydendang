@@ -6,7 +6,7 @@ use uuid::Uuid;
 mod error;
 mod utils;
 
-pub mod user;
+pub mod user_domain;
 
 pub type Result<T> = std::result::Result<T, error::Error>;
 
@@ -48,14 +48,19 @@ impl sqlx::Type<sqlx::Postgres> for Id {
 }
 
 impl<'r> sqlx::Decode<'r, sqlx::Postgres> for Id {
-    fn decode(value: sqlx::postgres::PgValueRef<'r>) -> std::result::Result<Self, sqlx::error::BoxDynError> {
+    fn decode(
+        value: sqlx::postgres::PgValueRef<'r>,
+    ) -> std::result::Result<Self, sqlx::error::BoxDynError> {
         let uuid = <Uuid as sqlx::Decode<sqlx::Postgres>>::decode(value)?;
         Ok(Id(uuid))
     }
 }
 
 impl<'r> sqlx::Encode<'r, sqlx::Postgres> for Id {
-    fn encode_by_ref(&self, buf: &mut sqlx::postgres::PgArgumentBuffer) -> std::result::Result<sqlx::encode::IsNull, sqlx::error::BoxDynError> {
+    fn encode_by_ref(
+        &self,
+        buf: &mut sqlx::postgres::PgArgumentBuffer,
+    ) -> std::result::Result<sqlx::encode::IsNull, sqlx::error::BoxDynError> {
         <Uuid as sqlx::Encode<sqlx::Postgres>>::encode_by_ref(&self.0, buf)
     }
 }

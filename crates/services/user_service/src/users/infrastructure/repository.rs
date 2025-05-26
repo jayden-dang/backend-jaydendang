@@ -4,7 +4,6 @@ use crate::{
     Error, Result,
 };
 use async_trait::async_trait;
-use axum::Json;
 use jd_contracts::user::dto::{CreateUserRequest, UserFilter};
 use jd_core::{
     base::{self},
@@ -24,24 +23,25 @@ impl UserRepositoryImpl {
 
 #[async_trait]
 impl UserRepository for UserRepositoryImpl {
-    async fn create(&self, req: CreateUserRequest) -> Result<Json<UserRecord>> {
+    async fn create(&self, req: CreateUserRequest) -> Result<UserRecord> {
         // Check if user exists with same username or email
         let exists = self.exists(&req).await.unwrap();
 
         ensure!(!exists, Error::conflict("User with this username or email already exists"));
 
-        let record = base::rest::create::<UsersDmc, _, _>(&self.app_state.mm, req)
+        base::rest::create::<UsersDmc, _, _>(&self.app_state.mm, req)
             .await
-            .map_error()?;
-
-        Ok(Json(record))
+            .map_error()
     }
 
-    async fn find_by_wow(&self, req: UserFilter) -> Result<Json<UserRecord>> {
-        let record = base::rest::get_by_sth::<UsersDmc, _, _>(&self.app_state.mm, Some(req))
+    async fn create_profile(&self, request: CreateUserRequest) -> Result<UserRecord> {
+        todo!()
+    }
+
+    async fn find_by_wow(&self, req: UserFilter) -> Result<UserRecord> {
+        base::rest::get_by_sth::<UsersDmc, _, _>(&self.app_state.mm, Some(req))
             .await
-            .map_err(|e| Error::EntityNotFound { entity: e.to_string(), id: 0 })?;
-        Ok(Json(record))
+            .map_err(|e| Error::EntityNotFound { entity: e.to_string(), id: 0 })
     }
 
     async fn exists(&self, req: &CreateUserRequest) -> Result<bool> {
