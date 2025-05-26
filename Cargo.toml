@@ -22,7 +22,8 @@ members = [
   "crates/services/user_service",
 
   # -- Libraries Application
-  "crates/shared/jd_contracts", "crates/shared/jd_deencode",
+  "crates/shared/jd_contracts",
+  "crates/shared/jd_deencode",
   "crates/shared/jd_domain",
   "crates/shared/jd_rpc_core",
   "crates/shared/jd_streams",

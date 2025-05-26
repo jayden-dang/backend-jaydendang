@@ -8,6 +8,20 @@ pub use macros::*;
 
 pub type Result<T> = std::result::Result<T, error::Error>;
 
+pub fn convert_variant_name(s: &str) -> String {
+    let mut result = String::new();
+    let mut chars = s.chars().peekable();
+
+    while let Some(c) = chars.next() {
+        if c.is_uppercase() && !result.is_empty() {
+            result.push('_');
+        }
+        result.push(c.to_lowercase().next().unwrap());
+    }
+
+    result
+}
+
 #[macro_export]
 macro_rules! impl_sqlx_encode_decode_enum {
     ($enum_type:ty, { $($variant:ident),* $(,)? }) => {
@@ -18,7 +32,7 @@ macro_rules! impl_sqlx_encode_decode_enum {
                 let s = <&str as sqlx::Decode<sqlx::Postgres>>::decode(value)?;
                 match s {
                     $(
-                        _ if s == stringify!($variant).to_lowercase() => Ok(<$enum_type>::$variant),
+                        _ if s == $crate::convert_variant_name(stringify!($variant)) => Ok(<$enum_type>::$variant),
                     )*
                     _ => Err(format!("Unknown {}: {}", stringify!($enum_type), s).into()),
                 }
@@ -32,7 +46,7 @@ macro_rules! impl_sqlx_encode_decode_enum {
             ) -> Result<sqlx::encode::IsNull, Box<dyn std::error::Error + Send + Sync>> {
                 let s = match self {
                     $(
-                        <$enum_type>::$variant => stringify!($variant).to_lowercase(),
+                        <$enum_type>::$variant => $crate::convert_variant_name(stringify!($variant)),
                     )*
                     _ => return Err("Complex enum variants are not supported for DB storage".into()),
                 };
@@ -49,7 +63,7 @@ macro_rules! impl_value_from_enum {
         impl From<$enum_type> for sea_query::Value {
             fn from(value: $enum_type) -> Self {
                 let s = match value {
-                    $(<$enum_type>::$variant => stringify!($variant).to_lowercase(),)*
+                    $(<$enum_type>::$variant => $crate::convert_variant_name(stringify!($variant)),)*
                     _ => return sea_query::Value::String(None),
                 };
                 sea_query::Value::String(Some(Box::new(s)))
