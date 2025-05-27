@@ -2,14 +2,19 @@ use crate::{
     application::use_cases::{CreateUserUseCase, GetUserUseCase},
     domain::user_repository_trait::UserRepository,
     infrastructure::database::user_repository_impl::UserRepositoryImpl,
-    record::{CreateUserProfileRequest, UserRecord},
     Error, Result,
 };
 use axum::{
     extract::{Path, Query, State},
     Json,
 };
-use jd_contracts::user::dto::{CreateUserRequest, UserFilter};
+use jd_contracts::user::dtos::{
+    records::user_record::UserRecord,
+    requests::{
+        create_profile_request::CreateUserProfileRequest, create_user_request::CreateUserRequest,
+        user_filter::UserFilter,
+    },
+};
 use jd_core::AppState;
 use tracing::error;
 

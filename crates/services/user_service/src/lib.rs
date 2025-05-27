@@ -2,7 +2,6 @@
 pub mod application;
 pub mod infrastructure;
 pub mod models;
-pub mod record;
 // <<<-- Region:: END    <<<---  Public Modules
 
 mod domain;

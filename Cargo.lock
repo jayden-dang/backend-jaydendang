@@ -1241,6 +1241,7 @@ dependencies = [
  "modql",
  "sea-query",
  "serde",
+ "serde_with",
  "sqlx",
  "time",
  "uuid",

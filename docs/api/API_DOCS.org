@@ -23,8 +23,8 @@ GET :host/api/v1
 POST :host/api/v1/users
 :headers
 {
-  "email": "asdfasdfaaaaadjhdf@gmaial.com",
-  "username": "bcdaangig1a",
+  "email": "asdfasdfaaaaadjhdfa@gmaial.com",
+  "username": "bcdaangig1aaa",
   "password_hash": "passawordasdflkaj",
   "first_name": "first_naame",
   "last_name": "last_namae"
@@ -35,20 +35,20 @@ POST :host/api/v1/users
 #+BEGIN_SRC js
 {
   "data": {
-    "created_at": "2025-05-27T01:59:03.069157Z",
-    "email": "asdfasdfaaaaadjhdf@gmaial.com",
+    "created_at": "2025-05-27T02:38:14.070612Z",
+    "email": "asdfasdfaaaaadjhdfa@gmaial.com",
     "email_verified": false,
     "first_name": "first_naame",
     "last_name": "last_namae",
     "password_hash": "passawordasdflkaj",
-    "updated_at": "2025-05-27T01:59:03.069157Z",
-    "user_id": "e46522f7-34aa-40a7-a643-c60502bb0ef1",
-    "username": "bcdaangig1a"
+    "updated_at": "2025-05-27T02:38:14.070612Z",
+    "user_id": "59dd6b1b-9f38-4bea-b118-5ef2420eadc5",
+    "username": "bcdaangig1aaa"
   },
   "error": null,
-  "id": "8d2f283b-f3de-4254-889a-06d554180802",
+  "id": "fdab9e78-f829-4cb5-a3de-1d0f700b52d2",
   "meta": {
-    "timestamp": "2025-05-27T01:59:03.135556Z"
+    "timestamp": "2025-05-27T02:38:14.140488Z"
   },
   "status": 0,
   "type": "success"
@@ -56,9 +56,9 @@ POST :host/api/v1/users
 // POST http://localhost:8080/api/v1/users
 // HTTP/1.1 200 OK
 // content-type: application/json
-// content-length: 457
-// date: Tue, 27 May 2025 01:59:03 GMT
-// Request duration: 0.103935s
+// content-length: 460
+// date: Tue, 27 May 2025 02:38:14 GMT
+// Request duration: 0.078456s
 #+END_SRC
 
 #+begin_src restclient :var host=host :var headers=headers

@@ -14,3 +14,4 @@ validator = { version = "0.20.0", features = ["derive"] }
 
 jd_utils = { path = "../jd_utils" }
 jd_domain = { path = "../jd_domain" }
+serde_with.workspace = true

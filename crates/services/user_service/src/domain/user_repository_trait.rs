@@ -1,9 +1,13 @@
-use crate::{
-    record::{CreateUserProfileRequest, CreateUserProfileResponse, UserRecord},
-    Result,
-};
+use crate::Result;
 use async_trait::async_trait;
-use jd_contracts::user::dto::{CreateUserRequest, UserFilter};
+use jd_contracts::user::dtos::{
+    records::user_record::UserRecord,
+    requests::{
+        create_profile_request::CreateUserProfileRequest, create_user_request::CreateUserRequest,
+        user_filter::UserFilter,
+    },
+    responses::create_profile_response::CreateUserProfileResponse,
+};
 
 #[async_trait]
 pub trait UserRepository: Send + Sync {

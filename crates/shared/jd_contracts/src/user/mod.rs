@@ -1,4 +1,3 @@
 pub mod api;
-pub mod dto;
+pub mod dtos;
 pub mod error;
-pub mod event;

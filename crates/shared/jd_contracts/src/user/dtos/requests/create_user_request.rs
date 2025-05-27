@@ -1,8 +1,5 @@
 use jd_utils::regex::USERNAME_REGEX;
-use modql::{
-    field::Fields,
-    filter::{FilterNodes, OpValsBool, OpValsString},
-};
+use modql::field::Fields;
 use serde::Deserialize;
 use validator::Validate;
 
@@ -25,11 +22,4 @@ pub struct CreateUserRequest {
     pub first_name: Option<String>,
     #[validate(length(min = 1, max = 100, message = "Last name must be 1-100 characters"))]
     pub last_name: Option<String>,
-}
-
-#[derive(Deserialize, FilterNodes, Default, Debug)]
-pub struct UserFilter {
-    pub email: Option<OpValsString>,
-    pub username: Option<OpValsString>,
-    pub is_active: Option<OpValsBool>,
 }

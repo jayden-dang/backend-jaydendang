@@ -1,6 +1,8 @@
-use crate::{record::UserRecord, Result};
+use crate::Result;
 use async_trait::async_trait;
-use jd_contracts::user::dto::CreateUserRequest;
+use jd_contracts::user::dtos::{
+    records::user_record::UserRecord, requests::create_user_request::CreateUserRequest,
+};
 
 #[async_trait]
 pub trait UserService: Send + Sync {
