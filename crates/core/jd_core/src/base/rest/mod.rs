@@ -10,6 +10,8 @@ use sea_query::{Condition, Expr, PostgresQueryBuilder, Query, Value};
 use sea_query_binder::{SqlxBinder, SqlxValues};
 use sqlx::{postgres::PgRow, prelude::FromRow};
 use uuid::Uuid;
+use std::collections::HashMap;
+use regex::Regex;
 
 use super::{PaginationMetadata, DMC, LIST_LIMIT_DEFAULT, LIST_LIMIT_MAX};
 
@@ -704,24 +706,117 @@ pub trait EnumConverter {
 }
 
 /// Enhanced builder for handling PostgreSQL enum types
-pub struct PostgresEnumQueryBuilder;
+pub struct PostgresEnumQueryBuilder {
+    /// Cache for compiled regex patterns
+    pattern_cache: HashMap<String, Regex>,
+    /// Cache for enum type mappings
+    enum_type_cache: HashMap<String, String>,
+}
 
 impl PostgresEnumQueryBuilder {
-    /// Builds a SQL query with proper enum type casting
+    /// Creates a new instance of PostgresEnumQueryBuilder
+    pub fn new() -> Self {
+        Self {
+            pattern_cache: HashMap::new(),
+            enum_type_cache: HashMap::new(),
+        }
+    }
+
+    /// Builds a SQL query with proper enum type casting and optimized performance
+    /// 
+    /// # Arguments
+    /// * `query` - The insert statement to process
+    /// * `enum_columns` - List of column names that are enum types
+    /// 
+    /// # Returns
+    /// * `Result<(String, SqlxValues), Error>` - The processed SQL query and values, or an error
     pub fn build_sqlx_with_enum_cast(
+        &mut self,
         query: &sea_query::InsertStatement,
         enum_columns: &[&str],
-    ) -> (String, SqlxValues) {
+    ) -> Result<(String, SqlxValues)> {
+        // Validate input
+        if enum_columns.is_empty() {
+            return Err(Error::InvalidEnumValue { value: "No enum columns provided".to_string() });
+        }
+
+        // Build base query
         let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
-        let mut all_replacements = Vec::new();
+        
+        // Extract column information efficiently
+        let (column_names, returning_columns) = self.extract_columns(&sql)?;
+        
+        // Pre-compile regex patterns for better performance
+        let patterns = self.compile_patterns(&column_names, &returning_columns);
+        
+        // Process values with optimized enum handling
+        let (custom_values, param_index) = self.process_values(&values, &column_names, enum_columns)?;
+        
+        // Apply type casting with caching
+        let final_sql = self.apply_type_casting(
+            &sql,
+            &patterns,
+            &column_names,
+            &returning_columns,
+            enum_columns,
+            param_index,
+        )?;
+
+        // Debug logging in debug mode
+        #[cfg(debug_assertions)]
+        {
+            println!("Final SQL: {}", final_sql);
+            println!("Values: {:?}", custom_values);
+        }
+
+        Ok((final_sql, SqlxValues(sea_query::Values(custom_values))))
+    }
+
+    /// Compiles regex patterns for efficient matching
+    fn compile_patterns(
+        &mut self,
+        column_names: &[&str],
+        returning_columns: &[&str],
+    ) -> HashMap<String, Regex> {
+        let mut patterns = HashMap::new();
+        
+        // Compile patterns for column names
+        for column in column_names {
+            let pattern = format!("\"{}\"", column);
+            if !self.pattern_cache.contains_key(&pattern) {
+                let regex = Regex::new(&pattern).expect("Invalid regex pattern");
+                self.pattern_cache.insert(pattern.clone(), regex);
+            }
+            if let Some(regex) = self.pattern_cache.get(&pattern) {
+                patterns.insert(pattern, regex.clone());
+            }
+        }
+        
+        // Compile patterns for returning columns
+        for column in returning_columns {
+            let pattern = format!("\"{}\"", column);
+            if !self.pattern_cache.contains_key(&pattern) {
+                let regex = Regex::new(&pattern).expect("Invalid regex pattern");
+                self.pattern_cache.insert(pattern.clone(), regex);
+            }
+            if let Some(regex) = self.pattern_cache.get(&pattern) {
+                patterns.insert(pattern, regex.clone());
+            }
+        }
+        
+        patterns
+    }
+
+    /// Processes values with optimized enum handling
+    fn process_values(
+        &self,
+        values: &SqlxValues,
+        column_names: &[&str],
+        enum_columns: &[&str],
+    ) -> Result<(Vec<Value>, i32)> {
         let mut custom_values = Vec::new();
         let mut param_index = 1;
 
-        // Extract column names and returning columns more efficiently
-        let (column_names, returning_columns) = Self::extract_columns(&sql);
-        let returning_columns_clone = returning_columns.clone();
-
-        // Process values with improved enum handling
         for (i, value) in values.0.iter().enumerate() {
             match value {
                 Value::String(Some(s)) => {
@@ -730,14 +825,11 @@ impl PostgresEnumQueryBuilder {
                         custom_values.push(Value::String(Some(Box::new(enum_value.to_string()))));
                     } else if let Some(column_name) = column_names.get(i) {
                         // Handle implicit enum casting
-                        if enum_columns.contains(&column_name) {
-                            Self::add_implicit_enum_cast(
-                                param_index,
-                                column_name,
-                                &mut all_replacements,
-                            );
+                        if enum_columns.contains(column_name) {
+                            custom_values.push(value.clone());
+                        } else {
+                            custom_values.push(value.clone());
                         }
-                        custom_values.push(value.clone());
                     } else {
                         custom_values.push(value.clone());
                     }
@@ -747,79 +839,75 @@ impl PostgresEnumQueryBuilder {
             param_index += 1;
         }
 
-        // Add explicit type casting for enum columns in RETURNING clause
-        for column in &returning_columns_clone {
-            if enum_columns.contains(column) {
-                let pattern = format!("\"{}\"", column);
-                // Cast both input and output values
-                let replacement = format!("(\"{}\"::TEXT)::{}_enum", column, column.to_lowercase());
-                all_replacements.push((pattern, replacement));
-            }
-        }
+        Ok((custom_values, param_index))
+    }
 
-        // Apply all replacements efficiently
+    /// Applies type casting with caching
+    fn apply_type_casting(
+        &mut self,
+        sql: &str,
+        patterns: &HashMap<String, Regex>,
+        column_names: &[&str],
+        returning_columns: &[&str],
+        enum_columns: &[&str],
+        param_index: i32,
+    ) -> Result<String> {
         let mut final_sql = sql.to_string();
-        for (pattern, replacement) in all_replacements {
-            final_sql = final_sql.replace(&pattern, &replacement);
-        }
-
-        // Add explicit type casting for enum columns in VALUES clause
-        for column in column_names {
-            if enum_columns.contains(&column) {
-                let pattern = format!("${}", param_index);
-                let replacement =
-                    format!("(${}::TEXT)::{}_enum", param_index, column.to_lowercase());
+        
+        // Apply type casting for enum columns in VALUES clause
+        for (i, column) in column_names.iter().enumerate() {
+            if enum_columns.contains(column) {
+                let enum_type = self.get_enum_type(column)?;
+                let param_num = i + 1;
+                let pattern = format!("${}", param_num);
+                let replacement = format!("${}::{}", param_num, enum_type);
                 final_sql = final_sql.replace(&pattern, &replacement);
-                param_index += 1;
             }
         }
-
-        // Add explicit type casting for enum columns in RETURNING clause
+        
+        // Apply type casting for enum columns in RETURNING clause
         for column in returning_columns {
-            if enum_columns.contains(&column) {
+            if enum_columns.contains(column) {
+                let enum_type = self.get_enum_type(column)?;
                 let pattern = format!("\"{}\"", column);
-                // Cast both input and output values
-                let replacement = format!("(\"{}\"::TEXT)::{}_enum", column, column.to_lowercase());
+                let replacement = format!("\"{}\"::{}", column, enum_type);
                 final_sql = final_sql.replace(&pattern, &replacement);
             }
         }
+        
+        Ok(final_sql)
+    }
 
-        // Debug log
-        println!("Final SQL: {}", final_sql);
-        println!("Values: {:?}", custom_values);
-
-        (final_sql, SqlxValues(sea_query::Values(custom_values)))
+    /// Gets enum type with caching
+    fn get_enum_type(&mut self, column: &str) -> Result<String> {
+        if let Some(cached_type) = self.enum_type_cache.get(column) {
+            return Ok(cached_type.clone());
+        }
+        
+        // Use the column name directly as the enum type name
+        let enum_type = column.to_lowercase();
+        self.enum_type_cache.insert(column.to_string(), enum_type.clone());
+        
+        Ok(enum_type)
     }
 
     /// Extract column names and returning columns from SQL query
-    fn extract_columns(sql: &str) -> (Vec<&str>, Vec<&str>) {
+    fn extract_columns<'a>(&self, sql: &'a str) -> Result<(Vec<&'a str>, Vec<&'a str>)> {
         let column_names = sql
             .split("(\"")
             .nth(1)
             .and_then(|s| s.split("\")").next())
             .map(|s| s.split("\", \"").collect())
-            .unwrap_or_default();
+            .ok_or_else(|| Error::InvalidEnumValue { value: "Invalid SQL format".to_string() })?;
 
         let returning_columns = sql
             .split("RETURNING \"")
             .nth(1)
             .and_then(|s| s.split("\"").next())
             .map(|s| s.split("\", \"").collect())
-            .unwrap_or_default();
+            .ok_or_else(|| Error::InvalidEnumValue { value: "Invalid SQL format".to_string() })?;
 
-        (column_names, returning_columns)
-    }
-
-    /// Add implicit enum cast for enum columns
-    fn add_implicit_enum_cast(
-        param_index: i32,
-        column_name: &str,
-        replacements: &mut Vec<(String, String)>,
-    ) {
-        let enum_type = format!("{}_enum", column_name.to_lowercase());
-        let placeholder = format!("${}", param_index);
-        let cast_placeholder = format!("${}::{}", param_index, enum_type);
-        replacements.push((placeholder, cast_placeholder));
+        Ok((column_names, returning_columns))
     }
 }
 
@@ -846,8 +934,8 @@ where
     query.returning(Query::returning().columns(o_fields));
 
     // Step 4: Build SQL with enum casting
-    let (sql, values) =
-        PostgresEnumQueryBuilder::build_sqlx_with_enum_cast(&query, MC::ENUM_COLUMNS);
+    let mut builder = PostgresEnumQueryBuilder::new();
+    let (sql, values) = builder.build_sqlx_with_enum_cast(&query, MC::ENUM_COLUMNS)?;
 
     // Step 5: Log the generated SQL for debugging (only in debug mode)
     #[cfg(debug_assertions)]

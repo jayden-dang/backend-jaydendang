@@ -13,6 +13,7 @@ sea-query-binder.workspace = true
 modql.workspace = true
 tracing.workspace = true
 axum.workspace = true
+regex = "1.10.2"
 
 # Members
 jd_utils = { path = "../../shared/jd_utils" }

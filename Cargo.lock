@@ -1257,6 +1257,7 @@ dependencies = [
  "jd_utils",
  "modql",
  "redis",
+ "regex",
  "sea-query",
  "sea-query-binder",
  "serde",

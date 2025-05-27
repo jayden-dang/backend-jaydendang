@@ -3,7 +3,10 @@
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, parse::Parse, parse2, Attribute, Data, DataEnum, DeriveInput, Expr, ExprLit, Lit, Meta, MetaList, MetaNameValue, punctuated::Punctuated, Token};
+use syn::{
+    parse::Parse, parse2, parse_macro_input, punctuated::Punctuated, Attribute, Data, DataEnum,
+    DeriveInput, Expr, ExprLit, Lit, Meta, MetaList, MetaNameValue, Token,
+};
 
 struct MetaListParser(Punctuated<Meta, Token![,]>);
 
@@ -24,9 +27,9 @@ pub fn derive_enum_common(input: TokenStream) -> TokenStream {
         _ => panic!("Deen chỉ áp dụng cho enum"),
     };
 
+
     // Extract custom postgres type name from attributes
-    let postgres_type = extract_postgres_type(&input.attrs)
-        .unwrap_or_else(|| convert_to_postgres_enum_type(&name_str));
+    let postgres_type = extract_postgres_type(&input.attrs).unwrap();
 
     let unit_variants: Vec<_> = variants.iter().filter(|v| v.fields.is_empty()).collect();
 

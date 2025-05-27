@@ -1,12 +1,12 @@
 -- Create ENUMs for stable, business-critical categories
-CREATE TYPE experience_level_enum AS ENUM ('beginner', 'intermediate', 'advanced', 'expert');
-CREATE TYPE subscription_tier_enum AS ENUM ('free', 'premium', 'enterprise', 'lifetime');
-CREATE TYPE education_level_enum AS ENUM ('high_school', 'bachelor', 'master', 'phd', 'bootcamp', 'self_taught', 'other');
-CREATE TYPE device_type_enum AS ENUM ('mobile', 'tablet', 'desktop');
-CREATE TYPE profile_visibility_enum AS ENUM ('public', 'private', 'friends');
-CREATE TYPE user_gender_enum AS ENUM ('male', 'female', 'non_binary', 'prefer_not_to_say', 'other');
-CREATE TYPE registration_source_enum AS ENUM ('organic', 'google', 'facebook', 'twitter', 'referral', 'paid_ad', 'blog', 'youtube', 'email', 'other');
-CREATE TYPE account_status_enum AS ENUM ('active', 'inactive', 'suspended', 'pending_verification', 'locked', 'marked_for_deletion');
+CREATE TYPE experience_level AS ENUM ('beginner', 'intermediate', 'advanced', 'expert');
+CREATE TYPE subscription_tier AS ENUM ('free', 'premium', 'enterprise', 'lifetime');
+CREATE TYPE education_level AS ENUM ('high_school', 'bachelor', 'master', 'phd', 'bootcamp', 'self_taught', 'other');
+CREATE TYPE device_type AS ENUM ('mobile', 'tablet', 'desktop');
+CREATE TYPE profile_visibility AS ENUM ('public', 'private', 'friends');
+CREATE TYPE user_gender AS ENUM ('male', 'female', 'non_binary', 'prefer_not_to_say', 'other');
+CREATE TYPE registration_source AS ENUM ('organic', 'google', 'facebook', 'twitter', 'referral', 'paid_ad', 'blog', 'youtube', 'email', 'other');
+CREATE TYPE account_status AS ENUM ('active', 'inactive', 'suspended', 'pending_verification', 'locked', 'marked_for_deletion');
 
 -- Create profile schema
 CREATE SCHEMA IF NOT EXISTS "profile";
@@ -51,11 +51,11 @@ CREATE TABLE profile.user_profiles (
 
     -- Demographics (for personalization)
     birth_year INTEGER,
-    gender user_gender_enum,
+    gender user_gender,
     occupation VARCHAR(100),
-    education_level education_level_enum,
-    experience_level experience_level_enum,
-    account_status account_status_enum DEFAULT 'active',
+    education_level education_level,
+    experience_level experience_level,
+    account_status account_status DEFAULT 'active',
 
     -- Location & preferences
     timezone VARCHAR(50),
@@ -67,7 +67,7 @@ CREATE TABLE profile.user_profiles (
     bio TEXT,
 
     -- Privacy settings
-    profile_visibility profile_visibility_enum DEFAULT 'public',
+    profile_visibility profile_visibility DEFAULT 'public',
     show_progress BOOLEAN DEFAULT true,
 
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -87,7 +87,7 @@ CREATE TABLE profile.user_subscriptions (
     user_id UUID UNIQUE REFERENCES profile.users(user_id) ON DELETE CASCADE,
 
     -- Current subscription
-    tier subscription_tier_enum DEFAULT 'free',
+    tier subscription_tier DEFAULT 'free',
     status VARCHAR(20) DEFAULT 'active', -- active, cancelled, expired, suspended
 
     -- Billing cycle
@@ -126,7 +126,7 @@ CREATE TABLE profile.user_acquisition (
     user_id UUID UNIQUE REFERENCES profile.users(user_id) ON DELETE CASCADE,
 
     -- Registration source tracking
-    registration_source registration_source_enum,
+    registration_source registration_source,
     referral_code VARCHAR(50),
 
     -- UTM parameters (marketing attribution)
@@ -165,7 +165,7 @@ CREATE TABLE profile.user_devices (
     user_id UUID REFERENCES profile.users(user_id) ON DELETE CASCADE,
 
     -- Device fingerprinting
-    device_type device_type_enum,
+    device_type device_type,
     browser VARCHAR(50),
     browser_version VARCHAR(20),
     operating_system VARCHAR(50),
@@ -400,7 +400,7 @@ $$ LANGUAGE plpgsql;
 -- Function to sync device information
 CREATE OR REPLACE FUNCTION profile.sync_user_device(
     p_user_id UUID,
-    p_device_type device_type_enum,
+    p_device_type device_type,
     p_browser VARCHAR(50),
     p_os VARCHAR(50),
     p_screen_resolution VARCHAR(20)

@@ -7,6 +7,7 @@ pub mod user;
 
 // -->>> Region:: START  --->>>  User Gender
 #[derive(Debug, Clone, PartialEq, Serialize, Deen, Deserialize)]
+#[deen(postgres_type = "user_gender")]
 pub enum UserGender {
     Male,
     Female,
@@ -17,6 +18,7 @@ pub enum UserGender {
 
 // -->>> Region:: START  --->>>  Education Level
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default, Deen)]
+#[deen(postgres_type = "education_level")]
 pub enum EducationLevel {
     HighSchool,
     Bachelor,
@@ -32,6 +34,7 @@ pub enum EducationLevel {
 
 // -->>> Region:: START  --->>>  Experience Level
 #[derive(Debug, Clone, PartialEq, Serialize, Deen, Deserialize, Default)]
+#[deen(postgres_type = "experience_level")]
 pub enum ExperienceLevel {
     #[default]
     Beginner,
@@ -43,6 +46,7 @@ pub enum ExperienceLevel {
 
 // -->>> Region:: START  --->>>  Subscription Tier
 #[derive(Debug, Clone, PartialEq, Serialize, Deen, Deserialize, Default)]
+#[deen(postgres_type = "subscription_tier")]
 pub enum SubscriptionTier {
     #[default]
     Free,
@@ -55,6 +59,7 @@ pub enum SubscriptionTier {
 
 // -->>> Region:: START  --->>>  Account Status
 #[derive(Debug, Clone, Serialize, Deen, Deserialize, Default)]
+#[deen(postgres_type = "account_status")]
 pub enum AccountStatus {
     #[default]
     Active,
@@ -73,6 +78,7 @@ pub enum AccountStatus {
 
 // -->>> Region:: START  --->>>  Profile Visibility
 #[derive(Debug, Clone, PartialEq, Serialize, Deen, Deserialize, Default)]
+#[deen(postgres_type = "profile_visibility")]
 pub enum ProfileVisibility {
     #[default]
     Public,
