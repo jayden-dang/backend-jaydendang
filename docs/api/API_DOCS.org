@@ -23,8 +23,8 @@ GET :host/api/v1
 POST :host/api/v1/users
 :headers
 {
-  "email": "j1aydeuaai111iaaaaa@gmail.com",
-  "username": "j1aaaaayd112zxaaa2endaang111",
+  "email": "b1aydeuaai111iaaaaa@gmail.com",
+  "username": "adaang111",
   "password_hash": "passawordasdflkaj",
   "first_name": "first_naame",
   "last_name": "last_namae"
@@ -35,19 +35,19 @@ POST :host/api/v1/users
 #+BEGIN_SRC js
 {
   "data": {
-    "created_at": "2025-05-27T01:04:28.24832Z",
-    "email": "j1aydeuaai111iaaaaa@gmail.com",
+    "created_at": "2025-05-27T01:08:11.1156Z",
+    "email": "b1aydeuaai111iaaaaa@gmail.com",
     "email_verified": false,
     "first_name": "first_naame",
     "last_name": "last_namae",
     "password_hash": "passawordasdflkaj",
-    "updated_at": "2025-05-27T01:04:28.24832Z",
-    "user_id": "d2e364f5-673b-4c4d-9e99-9d1d13924b44",
-    "username": "j1aaaaayd112zxaaa2endaang111"
+    "updated_at": "2025-05-27T01:08:11.1156Z",
+    "user_id": "baf3d3f7-5883-4a5b-932a-dd4110236f18",
+    "username": "adaang111"
   },
-  "id": "3c5d0c56-bd3c-485c-b0b5-4e35b560d85b",
+  "id": "4c5bd30c-393e-4884-a137-067d94757b36",
   "meta": {
-    "timestamp": "2025-05-27T01:04:28.312473Z"
+    "timestamp": "2025-05-27T01:08:11.185231Z"
   },
   "status": 0,
   "type": "success"
@@ -55,9 +55,9 @@ POST :host/api/v1/users
 // POST http://localhost:8080/api/v1/users
 // HTTP/1.1 200 OK
 // content-type: application/json
-// content-length: 459
-// date: Tue, 27 May 2025 01:04:28 GMT
-// Request duration: 0.105400s
+// content-length: 438
+// date: Tue, 27 May 2025 01:08:11 GMT
+// Request duration: 0.109928s
 #+END_SRC
 
 #+begin_src restclient :var host=host :var headers=headers
