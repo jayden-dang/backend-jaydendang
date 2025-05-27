@@ -5,11 +5,63 @@ CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
 default_to_workspace = false
 
 [tasks.dev]
-install_crate="cargo-watch"
+install_crate = "cargo-watch"
 cwd = "./crates/gateways/web_server"
 command = "cargo"
 args = ["watch", "-x", "clippy", "-x", "run"]
-env = { RUST_LOG = "debug" }
+env = { RUST_LOG = "info,jd_=debug,web_server=info,api_gateway=info,jd_storage=trace,sqlx=warn,axum=warn,tokio=warn,h2=warn,tower=warn,reqwest=warn", ENVIRONMENT = "development" }
+
+[tasks.dev-info]
+install_crate = "cargo-watch"
+cwd = "./crates/gateways/web_server"
+command = "cargo"
+args = ["watch", "-x", "clippy", "-x", "run"]
+env = { RUST_LOG = "info,jd_=info,web_server=info,api_gateway=info,jd_storage=debug,sqlx=warn,axum=warn,tokio=warn,h2=warn,tower=warn,reqwest=warn", ENVIRONMENT = "development" }
+
+[tasks.staging]
+install_crate = "cargo-watch"
+cwd = "./crates/gateways/web_server"
+command = "cargo"
+args = ["watch", "-x", "clippy", "-x", "run"]
+env = { RUST_LOG = "info,jd_=info,web_server=info,api_gateway=info,jd_storage=info,sqlx=warn,axum=warn,tokio=warn,h2=warn,tower=warn,reqwest=warn", ENVIRONMENT = "staging" }
+
+[tasks.production]
+install_crate = "cargo-watch"
+cwd = "./crates/gateways/web_server"
+command = "cargo"
+args = ["watch", "-x", "clippy", "-x", "run"]
+env = { RUST_LOG = "warn,jd_=info,web_server=info,api_gateway=info,jd_storage=warn,sqlx=warn,axum=warn,tokio=warn,h2=warn,tower=warn,reqwest=warn", ENVIRONMENT = "production" }
+
+[tasks.test-env]
+install_crate = "cargo-watch"
+cwd = "./crates/gateways/web_server"
+command = "cargo"
+args = ["watch", "-x", "clippy", "-x", "run"]
+env = { RUST_LOG = "warn,jd_=error", ENVIRONMENT = "testing" }
+
+[tasks.run-all]
+description = "Start all required services and run the application"
+dependencies = ["db-start", "redis-up"]
+script = [
+    "echo 'Starting all services...'",
+    "cargo make dev"
+]
+
+[tasks.run-staging]
+description = "Start all services and run in staging environment"
+dependencies = ["db-start", "redis-up"]
+script = [
+    "echo 'Starting staging environment...'",
+    "cargo make staging"
+]
+
+[tasks.run-production]
+description = "Start all services and run in production environment"
+dependencies = ["db-start", "redis-up"]
+script = [
+    "echo 'Starting production environment...'",
+    "cargo make production"
+]
 
 [tasks.debug]
 install_crate="cargo-watch"

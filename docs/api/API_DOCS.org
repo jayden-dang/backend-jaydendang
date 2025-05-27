@@ -23,8 +23,8 @@ GET :host/api/v1
 POST :host/api/v1/users
 :headers
 {
-  "email": "b1aydeuaai111iaaaaa@gmail.com",
-  "username": "adaang111",
+  "email": "asdfasdfaaaaadjhdf@gmaial.com",
+  "username": "bcdaangig1a",
   "password_hash": "passawordasdflkaj",
   "first_name": "first_naame",
   "last_name": "last_namae"
@@ -35,19 +35,20 @@ POST :host/api/v1/users
 #+BEGIN_SRC js
 {
   "data": {
-    "created_at": "2025-05-27T01:08:11.1156Z",
-    "email": "b1aydeuaai111iaaaaa@gmail.com",
+    "created_at": "2025-05-27T01:59:03.069157Z",
+    "email": "asdfasdfaaaaadjhdf@gmaial.com",
     "email_verified": false,
     "first_name": "first_naame",
     "last_name": "last_namae",
     "password_hash": "passawordasdflkaj",
-    "updated_at": "2025-05-27T01:08:11.1156Z",
-    "user_id": "baf3d3f7-5883-4a5b-932a-dd4110236f18",
-    "username": "adaang111"
+    "updated_at": "2025-05-27T01:59:03.069157Z",
+    "user_id": "e46522f7-34aa-40a7-a643-c60502bb0ef1",
+    "username": "bcdaangig1a"
   },
-  "id": "4c5bd30c-393e-4884-a137-067d94757b36",
+  "error": null,
+  "id": "8d2f283b-f3de-4254-889a-06d554180802",
   "meta": {
-    "timestamp": "2025-05-27T01:08:11.185231Z"
+    "timestamp": "2025-05-27T01:59:03.135556Z"
   },
   "status": 0,
   "type": "success"
@@ -55,9 +56,9 @@ POST :host/api/v1/users
 // POST http://localhost:8080/api/v1/users
 // HTTP/1.1 200 OK
 // content-type: application/json
-// content-length: 438
-// date: Tue, 27 May 2025 01:08:11 GMT
-// Request duration: 0.109928s
+// content-length: 457
+// date: Tue, 27 May 2025 01:59:03 GMT
+// Request duration: 0.103935s
 #+END_SRC
 
 #+begin_src restclient :var host=host :var headers=headers
@@ -79,37 +80,4 @@ GET :host/api/v1/users
 // content-length: 146
 // date: Sun, 25 May 2025 06:07:49 GMT
 // Request duration: 0.007698s
-#+END_SRC
-** Get User by Username
-#+begin_src restclient :var host=host :var headers=headers
-GET :host/api/v1/users?email=john.doe@example.com
-#+end_src
-
-#+RESULTS:
-#+BEGIN_SRC js
-{
-  "data": {
-    "created_at": "2025-05-25T09:07:48.122931Z",
-    "email": "john.doe@example.com",
-    "email_verified": true,
-    "first_name": "John",
-    "last_name": "Doe",
-    "password_hash": "hashed_pw_123",
-    "updated_at": "2025-05-25T09:07:48.122931Z",
-    "user_id": "f08f8c2b-44b1-43ca-bbef-c837b3fcdb4c",
-    "username": "johndoe"
-  },
-  "id": "f4465b0d-e3fd-4fdc-bc60-d20b872027aa",
-  "meta": {
-    "timestamp": "2025-05-26T06:07:52.538416Z"
-  },
-  "status": 0,
-  "type": "success"
-}
-// GET http://localhost:8080/api/v1/users?email=john.doe@example.com
-// HTTP/1.1 200 OK
-// content-type: application/json
-// content-length: 412
-// date: Mon, 26 May 2025 06:07:52 GMT
-// Request duration: 0.056443s
 #+END_SRC

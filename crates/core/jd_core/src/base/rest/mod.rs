@@ -1,5 +1,7 @@
 pub mod macros_utils;
 
+use std::collections::HashSet;
+
 use crate::Result;
 use crate::{error::Error, ModelManager};
 use modql::{
@@ -10,8 +12,6 @@ use sea_query::{Condition, Expr, PostgresQueryBuilder, Query, Value};
 use sea_query_binder::{SqlxBinder, SqlxValues};
 use sqlx::{postgres::PgRow, prelude::FromRow};
 use uuid::Uuid;
-use std::collections::HashMap;
-use regex::Regex;
 
 use super::{PaginationMetadata, DMC, LIST_LIMIT_DEFAULT, LIST_LIMIT_MAX};
 
@@ -60,8 +60,8 @@ where
     let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
 
     // 🔍 DEBUG: Log the generated SQL and values
-    println!("Generated SQL: {}", sql);
-    println!("Values: {:?}", values);
+    // println!("Generated SQL: {}", sql);
+    // println!("Values: {:?}", values);
 
     let sqlx_query = sqlx::query_as_with::<_, O, _>(&sql, values);
 
@@ -69,7 +69,7 @@ where
         Ok(entity) => Ok(entity),
         Err(e) => {
             // 🔍 DEBUG: Log the actual error
-            println!("Database error: {:?}", e);
+            // println!("Database error: {:?}", e);
 
             match e {
                 jd_storage::dbx::Error::Sqlx(sqlx_err) => {
@@ -705,8 +705,37 @@ pub trait EnumConverter {
     fn from_pg_enum(value: &str) -> Self;
 }
 
-/// Enhanced builder for handling PostgreSQL enum types
+/// A builder for handling PostgreSQL enum types in SQL queries.
+///
+/// This builder is specifically designed to handle the conversion between Rust enums and PostgreSQL enum types
+/// in SQL queries. It automatically adds type casting for enum columns in both VALUES and RETURNING clauses.
+///
+/// # Example
+/// ```rust
+/// let mut builder = PostgresEnumQueryBuilder::new();
+/// let (sql, values) = builder.build_sqlx_with_enum_cast(&query, &["status", "type"])?;
+/// ```
+///
+/// # How it works
+/// 1. Takes an INSERT query and a list of enum column names
+/// 2. Extracts column names from the SQL query
+/// 3. Processes values to handle enum types
+/// 4. Adds type casting for enum columns in both VALUES and RETURNING clauses
+///
+/// # Type Casting
+/// - For VALUES clause: `$1` becomes `$1::column_name`
+/// - For RETURNING clause: `"column_name"` becomes `"column_name"::column_name`
+///
+/// # Error Handling
+/// - Returns `InvalidEnumValue` if no enum columns are provided
+/// - Returns `InvalidEnumValue` if SQL format is invalid
 pub struct PostgresEnumQueryBuilder {}
+
+impl Default for PostgresEnumQueryBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl PostgresEnumQueryBuilder {
     /// Creates a new instance of PostgresEnumQueryBuilder
@@ -714,7 +743,25 @@ impl PostgresEnumQueryBuilder {
         Self {}
     }
 
-    /// Builds a SQL query with proper enum type casting and optimized performance
+    /// Builds a SQL query with proper enum type casting.
+    ///
+    /// # Arguments
+    /// * `query` - The INSERT statement to process
+    /// * `enum_columns` - List of column names that are enum types
+    ///
+    /// # Returns
+    /// * `Result<(String, SqlxValues)>` - The processed SQL query and values
+    ///
+    /// # Example
+    /// ```rust
+    /// let query = Query::insert()
+    ///     .into_table(User::table_ref())
+    ///     .columns(vec!["status", "name"])
+    ///     .values(vec!["active", "John"])?;
+    ///
+    /// let (sql, values) = builder.build_sqlx_with_enum_cast(&query, &["status"])?;
+    /// // sql will contain: INSERT INTO users (status, name) VALUES ($1::status, $2) RETURNING ...
+    /// ```
     pub fn build_sqlx_with_enum_cast(
         &mut self,
         query: &sea_query::InsertStatement,
@@ -727,49 +774,30 @@ impl PostgresEnumQueryBuilder {
 
         // Build base query
         let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
-        
+
         // Extract column information efficiently
         let (column_names, returning_columns) = self.extract_columns(&sql)?;
-        
+
         // Process values with optimized enum handling
-        let custom_values = self.process_values(&values, &column_names, enum_columns)?;
-        
+        let custom_values = values.0.iter().cloned().collect::<Vec<Value>>();
+
         // Apply type casting
-        let final_sql = self.apply_type_casting(
-            &sql,
-            &column_names,
-            &returning_columns,
-            enum_columns,
-        )?;
+        let final_sql =
+            self.apply_type_casting(&sql, &column_names, &returning_columns, enum_columns)?;
 
         Ok((final_sql, SqlxValues(sea_query::Values(custom_values))))
     }
 
-    /// Processes values with optimized enum handling
-    fn process_values(
-        &self,
-        values: &SqlxValues,
-        column_names: &[&str],
-        enum_columns: &[&str],
-    ) -> Result<Vec<Value>> {
-        let mut custom_values = Vec::new();
-
-        for (i, value) in values.0.iter().enumerate() {
-            if let Some(column_name) = column_names.get(i) {
-                if enum_columns.contains(column_name) {
-                    custom_values.push(value.clone());
-                } else {
-                    custom_values.push(value.clone());
-                }
-            } else {
-                custom_values.push(value.clone());
-            }
-        }
-
-        Ok(custom_values)
-    }
-
-    /// Applies type casting
+    /// Applies type casting to the SQL query.
+    ///
+    /// # Arguments
+    /// * `sql` - The SQL query to process
+    /// * `column_names` - List of column names in the query
+    /// * `returning_columns` - List of columns in the RETURNING clause
+    /// * `enum_columns` - List of column names that are enum types
+    ///
+    /// # Returns
+    /// * `Result<String>` - The processed SQL query with type casting
     fn apply_type_casting(
         &mut self,
         sql: &str,
@@ -777,31 +805,44 @@ impl PostgresEnumQueryBuilder {
         returning_columns: &[&str],
         enum_columns: &[&str],
     ) -> Result<String> {
+        if enum_columns.is_empty() {
+            return Ok(sql.to_string());
+        }
+
+        // Convert enum_columns to HashSet for O(1) lookup
+        let enum_set: HashSet<&str> = enum_columns.iter().copied().collect();
+
         let mut final_sql = sql.to_string();
-        
+
         // Apply type casting for enum columns in VALUES clause
-        for (i, column) in column_names.iter().enumerate() {
-            if enum_columns.contains(column) {
+        for (i, &column) in column_names.iter().enumerate() {
+            if enum_set.contains(column) {
                 let param_num = i + 1;
                 let pattern = format!("${}", param_num);
                 let replacement = format!("${}::{}", param_num, column.to_lowercase());
                 final_sql = final_sql.replace(&pattern, &replacement);
             }
         }
-        
+
         // Apply type casting for enum columns in RETURNING clause
-        for column in returning_columns {
-            if enum_columns.contains(column) {
+        for &column in returning_columns {
+            if enum_set.contains(column) {
                 let pattern = format!("\"{}\"", column);
                 let replacement = format!("\"{}\"::{}", column, column.to_lowercase());
                 final_sql = final_sql.replace(&pattern, &replacement);
             }
         }
-        
+
         Ok(final_sql)
     }
 
-    /// Extract column names and returning columns from SQL query
+    /// Extracts column names from the SQL query.
+    ///
+    /// # Arguments
+    /// * `sql` - The SQL query to process
+    ///
+    /// # Returns
+    /// * `Result<(Vec<&str>, Vec<&str>)>` - Tuple of column names and returning columns
     fn extract_columns<'a>(&self, sql: &'a str) -> Result<(Vec<&'a str>, Vec<&'a str>)> {
         let column_names = sql
             .split("(\"")
@@ -848,11 +889,11 @@ where
     let (sql, values) = builder.build_sqlx_with_enum_cast(&query, MC::ENUM_COLUMNS)?;
 
     // Step 5: Log the generated SQL for debugging (only in debug mode)
-    #[cfg(debug_assertions)]
-    {
-        println!("Generated SQL with casts: {}", sql);
-        println!("Values: {:?}", values);
-    }
+    // #[cfg(debug_assertions)]
+    // {
+    //     println!("Generated SQL with casts: {}", sql);
+    //     println!("Values: {:?}", values);
+    // }
 
     // Step 6: Execute query with proper error handling
     let sqlx_query = sqlx::query_as_with::<_, O, _>(&sql, values);

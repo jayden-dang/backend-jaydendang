@@ -1,0 +1,209 @@
+#+TITLE: Deen Derive Macro Documentation
+#+AUTHOR: JD Blog Team
+#+DATE: 2024
+
+* Overview
+Deen là một derive macro được thiết kế để tự động xử lý việc chuyển đổi giữa Rust enums và PostgreSQL enum types. Nó tự động tạo ra các implementations cần thiết cho việc serialize/deserialize và tương tác với database.
+
+* Cách Sử Dụng
+
+** Basic Usage
+#+BEGIN_SRC rust
+use jd_deencode::Deen;
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Deen)]
+#[deen(postgres_type = "user_status")]
+pub enum UserStatus {
+    Active,
+    Inactive,
+    Pending,
+}
+#+END_SRC
+
+** Custom Database Values
+#+BEGIN_SRC rust
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Deen)]
+#[deen(postgres_type = "subscription_tier")]
+pub enum SubscriptionTier {
+    #[deen(value = "free_tier")]
+    Free,
+    #[deen(value = "pro_tier")]
+    Pro,
+    #[deen(value = "enterprise_tier")]
+    Enterprise,
+}
+#+END_SRC
+
+* Generated Functions
+
+** postgres_type_name()
+#+BEGIN_SRC rust
+impl UserStatus {
+    pub const fn postgres_type_name() -> &'static str {
+        "user_status"
+    }
+}
+#+END_SRC
+- Trả về tên của PostgreSQL enum type
+- Sử dụng để lấy tên type khi cần tham chiếu trong code
+
+** to_db_value()
+#+BEGIN_SRC rust
+impl UserStatus {
+    pub fn to_db_value(&self) -> &'static str {
+        match self {
+            UserStatus::Active => "active",
+            UserStatus::Inactive => "inactive",
+            UserStatus::Pending => "pending",
+            _ => "unknown",
+        }
+    }
+}
+#+END_SRC
+- Chuyển đổi enum value thành string để lưu vào database
+- Tự động chuyển đổi tên variant thành snake_case nếu không có custom value
+
+** from_db_value()
+#+BEGIN_SRC rust
+impl UserStatus {
+    pub fn from_db_value(s: &str) -> Result<Self, String> {
+        match s {
+            "active" => Ok(UserStatus::Active),
+            "inactive" => Ok(UserStatus::Inactive),
+            "pending" => Ok(UserStatus::Pending),
+            _ => Err(format!("Unknown UserStatus value: {}", s)),
+        }
+    }
+}
+#+END_SRC
+- Chuyển đổi string từ database thành enum value
+- Trả về =Result= với error message nếu value không hợp lệ
+
+* Implemented Traits
+
+** Display
+#+BEGIN_SRC rust
+impl std::fmt::Display for UserStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            UserStatus::Active => write!(f, "active"),
+            UserStatus::Inactive => write!(f, "inactive"),
+            UserStatus::Pending => write!(f, "pending"),
+            _ => write!(f, "unknown"),
+        }
+    }
+}
+#+END_SRC
+- Cho phép in enum value dưới dạng string
+- Sử dụng trong =println!=, =format!=, etc.
+
+** From<UserStatus> for sea_query::Value
+#+BEGIN_SRC rust
+impl From<UserStatus> for sea_query::Value {
+    fn from(value: UserStatus) -> Self {
+        sea_query::Value::String(Some(Box::new(value.to_db_value().to_string())))
+    }
+}
+#+END_SRC
+- Cho phép sử dụng enum trong sea-query
+- Tự động chuyển đổi thành database value
+
+** sqlx::Type<sqlx::Postgres>
+#+BEGIN_SRC rust
+impl sqlx::Type<sqlx::Postgres> for UserStatus {
+    fn type_info() -> sqlx::postgres::PgTypeInfo {
+        sqlx::postgres::PgTypeInfo::with_name("user_status")
+    }
+}
+#+END_SRC
+- Định nghĩa PostgreSQL type cho enum
+- Sử dụng trong SQLx queries
+
+** sqlx::Decode<'r, sqlx::Postgres>
+#+BEGIN_SRC rust
+impl<'r> sqlx::Decode<'r, sqlx::Postgres> for UserStatus {
+    fn decode(value: sqlx::postgres::PgValueRef<'r>) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
+        let s = <&str as sqlx::Decode<sqlx::Postgres>>::decode(value)?;
+        Self::from_db_value(s).map_err(|e| e.into())
+    }
+}
+#+END_SRC
+- Cho phép decode enum từ database
+- Tự động xử lý lỗi chuyển đổi
+
+** sqlx::Encode<'q, sqlx::Postgres>
+#+BEGIN_SRC rust
+impl<'q> sqlx::Encode<'q, sqlx::Postgres> for UserStatus {
+    fn encode_by_ref(&self, buf: &mut sqlx::postgres::PgArgumentBuffer) -> Result<sqlx::encode::IsNull, Box<dyn std::error::Error + Send + Sync>> {
+        let s = self.to_db_value();
+        <&str as sqlx::Encode<sqlx::Postgres>>::encode_by_ref(&s, buf)
+    }
+}
+#+END_SRC
+- Cho phép encode enum vào database
+- Tự động chuyển đổi thành database value
+
+* Best Practices
+
+** Naming Convention
+- Sử dụng PascalCase cho enum variants
+- Sử dụng snake_case cho PostgreSQL enum types
+- Đặt tên rõ ràng và mô tả đúng mục đích
+
+** Custom Values
+- Sử dụng =#[deen(value = "...")]= khi cần giá trị khác với tên variant
+- Đảm bảo giá trị custom phù hợp với database schema
+
+** Error Handling
+- Luôn xử lý =Result= từ =from_db_value()=
+- Thêm logging khi cần thiết
+- Xử lý các trường hợp không hợp lệ
+
+** Type Safety
+- Sử dụng =postgres_type_name()= để tránh hardcode
+- Kiểm tra type compatibility khi thay đổi schema
+
+* Examples
+
+** Basic Enum
+#+BEGIN_SRC rust
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Deen)]
+#[deen(postgres_type = "user_role")]
+pub enum UserRole {
+    Admin,
+    Moderator,
+    User,
+}
+#+END_SRC
+
+** Enum with Custom Values
+#+BEGIN_SRC rust
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Deen)]
+#[deen(postgres_type = "payment_status")]
+pub enum PaymentStatus {
+    #[deen(value = "paid")]
+    Completed,
+    #[deen(value = "pending")]
+    Processing,
+    #[deen(value = "failed")]
+    Error,
+}
+#+END_SRC
+
+** Using in Queries
+#+BEGIN_SRC rust
+// Using in sea-query
+let query = Query::insert()
+    .into_table(User::table_ref())
+    .columns(vec!["role"])
+    .values(vec![UserRole::Admin.into()])?;
+
+// Using in SQLx
+let user = sqlx::query_as!(
+    User,
+    "SELECT * FROM users WHERE role = $1",
+    UserRole::Admin
+)
+.fetch_one(&pool)
+.await?;
+#+END_SRC 

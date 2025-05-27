@@ -20,28 +20,16 @@ impl Parse for MetaListParser {
 pub fn derive_enum_common(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = input.ident;
-    let name_str = name.to_string();
 
     let variants = match input.data {
         Data::Enum(DataEnum { variants, .. }) => variants,
         _ => panic!("Deen chỉ áp dụng cho enum"),
     };
 
-
     // Extract custom postgres type name from attributes
     let postgres_type = extract_postgres_type(&input.attrs).unwrap();
 
     let unit_variants: Vec<_> = variants.iter().filter(|v| v.fields.is_empty()).collect();
-
-    let from_patterns = unit_variants.iter().map(|v| {
-        let variant_name = &v.ident;
-        let db_value = extract_custom_value(&v.attrs)
-            .unwrap_or_else(|| convert_to_snake_case(&variant_name.to_string()));
-
-        quote! {
-            #name::#variant_name => #db_value,
-        }
-    });
 
     let display_patterns = unit_variants.iter().map(|v| {
         let variant_name = &v.ident;
@@ -192,11 +180,6 @@ fn extract_custom_value(attrs: &[Attribute]) -> Option<String> {
         }
     }
     None
-}
-
-/// Convert Rust enum name to PostgreSQL enum type name
-fn convert_to_postgres_enum_type(name: &str) -> String {
-    format!("{}_enum", convert_to_snake_case(name))
 }
 
 /// Convert CamelCase to snake_case

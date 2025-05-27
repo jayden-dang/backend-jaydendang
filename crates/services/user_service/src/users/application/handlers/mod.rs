@@ -8,7 +8,7 @@ use axum::{
 };
 use jd_contracts::user::dto::{CreateUserRequest, UserFilter};
 use jd_core::AppState;
-use tracing::{error, info};
+use tracing::error;
 
 use crate::users::{infrastructure::UserRepositoryImpl, record::UserRecord, CreateUserUseCase};
 use std::sync::Arc;
@@ -39,7 +39,6 @@ impl<R: UserRepository> UserHandler<R> {
 
         let result = async {
             let user = use_case.execute(request).await?;
-            error!("FOR TEST: {:?}", user);
             let profile_request = CreateUserProfileRequest::with_defaults(user.user_id.clone());
             let _profile = use_case.execute_create_profile(profile_request).await?;
             Ok(user)

@@ -1,11 +1,9 @@
-use jd_domain::Id;
 use jd_utils::regex::USERNAME_REGEX;
 use modql::{
     field::Fields,
     filter::{FilterNodes, OpValsBool, OpValsString},
 };
-use serde::{Deserialize, Serialize};
-use sqlx::prelude::FromRow;
+use serde::Deserialize;
 use validator::Validate;
 
 #[derive(Fields, Debug, Deserialize, Validate)]

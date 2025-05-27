@@ -5,12 +5,16 @@ edition = "2024"
 
 [dependencies]
 axum.workspace = true
-chrono = "0.4.41"
-color-eyre = "0.6.4"
 serde.workspace = true
-serde_json = "1.0.140"
 serde_with.workspace = true
 tracing.workspace = true
+
+chrono = "0.4.41"
+color-eyre = "0.6.4"
+serde_json = "1.0.140"
 tracing-error = "0.2.1"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt", "json"] }
 uuid = { version = "1.16.0", features = ["v4", "fast-rng"] }
+
+# Members
+jd_utils = { path = "../../shared/jd_utils" }

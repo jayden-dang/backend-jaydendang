@@ -3,7 +3,7 @@ use std::{
     sync::Arc,
 };
 use tokio::sync::Mutex;
-use tracing::{debug, warn};
+use tracing::{trace, warn};
 
 use sqlx::{
     prelude::FromRow,
@@ -38,11 +38,7 @@ impl Dbx {
     ///
     /// A new Dbx instance
     pub fn new(db_pool: Db, with_txn: bool) -> Result<Self> {
-        Ok(Dbx {
-            db_pool,
-            txn_holder: Arc::default(),
-            with_txn,
-        })
+        Ok(Dbx { db_pool, txn_holder: Arc::default(), with_txn })
     }
 }
 
@@ -55,11 +51,7 @@ struct TxnHolder {
 
 impl TxnHolder {
     fn new(txn: Transaction<'static, Postgres>) -> Self {
-        TxnHolder { 
-            txn, 
-            counter: 1,
-            is_committed: false,
-        }
+        TxnHolder { txn, counter: 1, is_committed: false }
     }
 
     fn inc(&mut self) {
@@ -109,13 +101,13 @@ impl Dbx {
                 return Err(Error::TxnAlreadyCommitted);
             }
             txh.inc();
-            debug!("Transaction counter incremented to {}", txh.counter);
+            trace!("Transaction counter incremented to {}", txh.counter);
         }
         // If not, we create one with a new transaction
         else {
             let transaction = self.db_pool.begin().await?;
             let _ = txh_g.insert(TxnHolder::new(transaction));
-            debug!("New transaction started");
+            trace!("New transaction started");
         }
 
         Ok(())
@@ -132,10 +124,10 @@ impl Dbx {
         if let Some(mut txn_holder) = txh_g.take() {
             if txn_holder.counter > 1 {
                 txn_holder.counter -= 1;
-                debug!("Transaction counter decremented to {}", txn_holder.counter);
+                trace!("Transaction counter decremented to {}", txn_holder.counter);
                 let _ = txh_g.replace(txn_holder);
             } else {
-                debug!("Rolling back transaction");
+                trace!("Rolling back transaction");
                 txn_holder.txn.rollback().await?;
             }
             Ok(())
@@ -164,11 +156,11 @@ impl Dbx {
             }
 
             let counter = txh.dec();
-            debug!("Transaction counter decremented to {}", counter);
+            trace!("Transaction counter decremented to {}", counter);
 
             if counter == 0 {
                 if let Some(mut txn) = txh_g.take() {
-                    debug!("Committing transaction");
+                    trace!("Committing transaction");
                     txn.txn.commit().await?;
                     txn.is_committed = true;
                 } else {
@@ -210,7 +202,10 @@ impl Dbx {
         Ok(data)
     }
 
-    pub async fn fetch_optional<'q, O, A>(&self, query: QueryAs<'q, Postgres, O, A>) -> Result<Option<O>>
+    pub async fn fetch_optional<'q, O, A>(
+        &self,
+        query: QueryAs<'q, Postgres, O, A>,
+    ) -> Result<Option<O>>
     where
         O: for<'r> FromRow<'r, <Postgres as sqlx::Database>::Row> + Send + Unpin,
         A: IntoArguments<'q, Postgres> + 'q,
