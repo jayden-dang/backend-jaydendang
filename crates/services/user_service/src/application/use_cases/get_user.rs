@@ -1,9 +1,6 @@
 use jd_contracts::user::dto::UserFilter;
 
-use crate::{
-    users::{domain::repository::UserRepository, record::UserRecord},
-    Result,
-};
+use crate::{domain::user_repository_trait::UserRepository, record::UserRecord, Result};
 
 pub struct GetUserUseCase<R: UserRepository> {
     repository: R,

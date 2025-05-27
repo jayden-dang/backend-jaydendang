@@ -1,5 +1,5 @@
 use crate::{
-    users::record::{CreateUserProfileRequest, CreateUserProfileResponse, UserRecord},
+    record::{CreateUserProfileRequest, CreateUserProfileResponse, UserRecord},
     Result,
 };
 use async_trait::async_trait;

@@ -3,9 +3,9 @@ use axum::{
     Router,
 };
 use jd_core::AppState;
-use user_service::users::{
-    application::handlers::UserHandler,
-    infrastructure::UserRepositoryImpl,
+use user_service::{
+    application::handlers::user_handler::UserHandler,
+    infrastructure::database::user_repository_impl::UserRepositoryImpl,
 };
 
 type Handler = UserHandler<UserRepositoryImpl>;
@@ -16,4 +16,3 @@ pub fn user_router() -> Router<AppState> {
         .route("/{id}", get(Handler::get_user_by_username))
         .route("/email/{email}", get(Handler::get_user_by_email))
 }
-

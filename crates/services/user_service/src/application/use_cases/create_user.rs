@@ -1,8 +1,6 @@
 use crate::{
-    users::{
-        domain::repository::UserRepository,
-        record::{CreateUserProfileRequest, CreateUserProfileResponse, UserRecord},
-    },
+    domain::user_repository_trait::UserRepository,
+    record::{CreateUserProfileRequest, CreateUserProfileResponse, UserRecord},
     Result,
 };
 use jd_contracts::user::dto::CreateUserRequest;

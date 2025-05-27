@@ -1,11 +1,8 @@
 use crate::{
+    domain::user_repository_trait::UserRepository,
     error::ErrorMapper,
-    users::{
-        domain::repository::UserRepository,
-        record::{CreateUserProfileRequest, CreateUserProfileResponse, UserRecord},
-        ProfileDmc, UsersDmc,
-    },
-    Error, Result,
+    record::{CreateUserProfileRequest, CreateUserProfileResponse, UserRecord},
+    Error, ProfileDmc, Result, UsersDmc,
 };
 use async_trait::async_trait;
 use jd_contracts::user::dto::{CreateUserRequest, UserFilter};

@@ -1,5 +1,8 @@
 use crate::{
-    users::{domain::UserRepository, record::CreateUserProfileRequest, GetUserUseCase},
+    application::use_cases::{CreateUserUseCase, GetUserUseCase},
+    domain::user_repository_trait::UserRepository,
+    infrastructure::database::user_repository_impl::UserRepositoryImpl,
+    record::{CreateUserProfileRequest, UserRecord},
     Error, Result,
 };
 use axum::{
@@ -10,7 +13,6 @@ use jd_contracts::user::dto::{CreateUserRequest, UserFilter};
 use jd_core::AppState;
 use tracing::error;
 
-use crate::users::{infrastructure::UserRepositoryImpl, record::UserRecord, CreateUserUseCase};
 use std::sync::Arc;
 
 pub struct UserHandler<R: UserRepository> {

@@ -1,4 +1,4 @@
-use crate::{users::record::UserRecord, Result};
+use crate::{record::UserRecord, Result};
 use async_trait::async_trait;
 use jd_contracts::user::dto::CreateUserRequest;
 
