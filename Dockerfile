@@ -23,21 +23,21 @@ RUN --mount=type=cache,target=/app/target \
     find target/release -maxdepth 1 -type f -executable -exec cp {} ./app \;
 
 # Production stage
-FROM debian:11.3-slim AS deploy
+FROM amazonlinux:2023 AS deploy
 
 # Install runtime dependencies
 RUN set -eux; \
-    export DEBIAN_FRONTEND=noninteractive; \
-    apt-get update && apt-get install -y --no-install-recommends \
+    dnf update -y && dnf install -y \
     ca-certificates \
-    curl \
-    bind9-dnsutils \
-    iputils-ping \
-    iproute2 \
+    curl-minimal \
+    bind-utils \
+    iputils \
+    iproute \
     htop \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean \
-    && apt-get autoremove -y
+    jq \
+    shadow-utils \
+    && dnf clean all \
+    && rm -rf /var/cache/dnf/*
 
 # Create non-root user
 RUN useradd -m -u 1000 appuser
@@ -56,6 +56,7 @@ USER appuser
 # Set environment variables
 ENV RUST_LOG=info
 ENV RUST_BACKTRACE=1
+ENV TZ=Asia/Ho_Chi_Minh
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
