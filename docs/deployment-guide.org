@@ -1,12 +1,31 @@
 #+TITLE: Deployment Guide
 
-* Table of Contents
+* Table of Contents :toc:
 - [[#prerequisites][Prerequisites]]
+  - [[#required-accounts-and-services][Required Accounts and Services]]
+  - [[#required-secrets][Required Secrets]]
 - [[#dockerfile-configuration][Dockerfile Configuration]]
+  - [[#builder-stage][Builder Stage]]
+  - [[#production-stage][Production Stage]]
 - [[#github-actions-workflow][GitHub Actions Workflow]]
+  - [[#key-components][Key components]]
 - [[#ec2-instance-setup][EC2 Instance Setup]]
+  - [[#launch-ec2-instance][Launch EC2 Instance]]
+  - [[#install-required-software][Install Required Software]]
+  - [[#configure-postgresql][Configure PostgreSQL]]
 - [[#database-management][Database Management]]
+  - [[#database-management-script][Database Management Script]]
+  - [[#using-the-database-management-script][Using the Database Management Script]]
 - [[#backup-strategy][Backup Strategy]]
+  - [[#automated-backup][Automated Backup]]
+  - [[#manual-backup][Manual Backup]]
+  - [[#backup-location][Backup Location]]
+  - [[#backup-retention][Backup Retention]]
+- [[#redis-deployment][Redis Deployment]]
+  - [[#development-environment][Development Environment]]
+  - [[#redis-setup-on-amazon-linux][Redis Setup on Amazon Linux]]
+  - [[#production-migration-guide][Production Migration Guide]]
+  - [[#monitoring-and-maintenance][Monitoring and Maintenance]]
 
 * Prerequisites
 ** Required Accounts and Services
@@ -140,7 +159,7 @@ on:
 
 env:
   DOCKER_IMAGE: jaydendang/jayden
-  AWS_REGION: ap-southeast-1 
+  AWS_REGION: ap-southeast-1
 
 jobs:
   test:
@@ -298,11 +317,11 @@ backup_db() {
 # Function to reset database
 reset_db() {
     log "Resetting database..."
-    
+
     # Drop and recreate database
     PGPASSWORD=$DB_PASSWORD psql -U $DB_USER -h localhost -c "DROP DATABASE IF EXISTS $DB_NAME;"
     PGPASSWORD=$DB_PASSWORD psql -U $DB_USER -h localhost -c "CREATE DATABASE $DB_NAME;"
-    
+
     if [ $? -eq 0 ]; then
         log "Database reset successfully"
     else
@@ -319,16 +338,16 @@ restore_db() {
         ls -l $BACKUP_DIR/jaydenblog_*.sql
         exit 1
     fi
-    
+
     BACKUP_FILE="$1"
     if [ ! -f "$BACKUP_FILE" ]; then
         log "Backup file not found: $BACKUP_FILE"
         exit 1
     fi
-    
+
     log "Restoring from backup: $BACKUP_FILE"
     PGPASSWORD=$DB_PASSWORD psql -U $DB_USER -h localhost $DB_NAME < $BACKUP_FILE
-    
+
     if [ $? -eq 0 ]; then
         log "Database restored successfully"
     else
@@ -418,4 +437,281 @@ sudo -u ec2-user /home/ec2-user/db-manage.sh backup
 All backups are stored in =/home/ec2-user/backups/= with timestamp in filename format: =jaydenblog_YYYYMMDD_HHMMSS.sql=
 
 ** Backup Retention
-The system keeps the last 4 backups (approximately 1 month of weekly backups) to save disk space during development. 
+The system keeps the last 4 backups (approximately 1 month of weekly backups) to save disk space during development.
+
+* Redis Deployment
+** Development Environment
+Currently, Redis is deployed on the same EC2 instance as the application for development purposes. This setup includes:
+
+1. Redis running in a Docker container
+2. Local connection with low latency
+3. Simple backup and monitoring setup
+
+** Redis Setup on Amazon Linux
+1. Install Redis:
+#+BEGIN_SRC bash
+# Update system
+sudo yum clean metadata
+sudo yum update -y
+
+# Install Redis
+sudo amazon-linux-extras install redis6
+
+# Enable and start Redis service
+sudo systemctl enable redis
+sudo systemctl start redis
+
+# Verify Redis is running
+sudo systemctl status redis
+#+END_SRC
+
+2. Configure Redis:
+#+BEGIN_SRC bash
+# Backup default config
+sudo cp /etc/redis/redis.conf /etc/redis/redis.conf.backup
+
+# Edit Redis configuration
+sudo vim /etc/redis/redis.conf
+
+# Important settings to modify:
+# bind 127.0.0.1
+# port 6379
+# requirepass your_strong_password
+# maxmemory 256mb
+# maxmemory-policy allkeys-lru
+# appendonly yes
+# appendfilename "appendonly.aof"
+#+END_SRC
+
+3. Create Redis Management Script:
+#+BEGIN_SRC bash
+sudo tee /home/ec2-user/redis-manage.sh << 'EOF'
+#!/bin/bash
+
+# Redis configuration
+REDIS_PASSWORD="your_strong_password"
+BACKUP_DIR="/home/ec2-user/redis-backups"
+LOG_FILE="/home/ec2-user/redis-manage.log"
+
+# Log function
+log() {
+    echo "$(date): $1" >> $LOG_FILE
+    echo "$(date): $1"
+}
+
+# Function to backup Redis
+backup_redis() {
+    log "Creating Redis backup..."
+    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+    redis-cli -a $REDIS_PASSWORD SAVE
+    sudo cp /var/lib/redis/dump.rdb $BACKUP_DIR/redis_$TIMESTAMP.rdb
+    if [ $? -eq 0 ]; then
+        log "Backup created successfully: redis_$TIMESTAMP.rdb"
+    else
+        log "Backup failed!"
+        exit 1
+    fi
+}
+
+# Function to restore from backup
+restore_redis() {
+    if [ -z "$1" ]; then
+        log "Please specify backup file to restore"
+        echo "Available backups:"
+        ls -l $BACKUP_DIR/redis_*.rdb
+        exit 1
+    fi
+
+    BACKUP_FILE="$1"
+    if [ ! -f "$BACKUP_FILE" ]; then
+        log "Backup file not found: $BACKUP_FILE"
+        exit 1
+    fi
+
+    log "Restoring from backup: $BACKUP_FILE"
+    sudo systemctl stop redis
+    sudo cp $BACKUP_FILE /var/lib/redis/dump.rdb
+    sudo chown redis:redis /var/lib/redis/dump.rdb
+    sudo systemctl start redis
+
+    if [ $? -eq 0 ]; then
+        log "Redis restored successfully"
+    else
+        log "Redis restore failed!"
+        exit 1
+    fi
+}
+
+# Function to list backups
+list_backups() {
+    log "Available Redis backups:"
+    ls -l $BACKUP_DIR/redis_*.rdb
+}
+
+# Function to monitor Redis
+monitor_redis() {
+    log "Monitoring Redis..."
+    redis-cli -a $REDIS_PASSWORD info
+}
+
+# Main script
+case "$1" in
+    "backup")
+        backup_redis
+        ;;
+    "restore")
+        restore_redis "$2"
+        ;;
+    "list")
+        list_backups
+        ;;
+    "monitor")
+        monitor_redis
+        ;;
+    *)
+        echo "Usage: $0 {backup|restore|list|monitor}"
+        echo "  backup  - Create a new Redis backup"
+        echo "  restore <backup_file> - Restore from backup"
+        echo "  list    - List all available backups"
+        echo "  monitor - Show Redis status and metrics"
+        exit 1
+        ;;
+esac
+EOF
+
+# Set permissions
+sudo chmod +x /home/ec2-user/redis-manage.sh
+sudo chown ec2-user:ec2-user /home/ec2-user/redis-manage.sh
+
+# Create backup directory
+sudo mkdir -p /home/ec2-user/redis-backups
+sudo chown ec2-user:ec2-user /home/ec2-user/redis-backups
+#+END_SRC
+
+4. Setup Automated Backups:
+#+BEGIN_SRC bash
+# Edit crontab
+crontab -e
+
+# Add this line for daily backups at 2 AM
+0 2 * * * /home/ec2-user/redis-manage.sh backup
+#+END_SRC
+
+5. Verify Redis Connection:
+#+BEGIN_SRC bash
+# Test Redis connection (not recommended for production)
+redis-cli -a your_strong_password ping
+
+# Should return PONG
+# Note: Using password on command line is not secure for production
+
+# More secure way to test connection
+redis-cli
+> AUTH your_strong_password
+> PING
+# Should return PONG
+
+# Check Redis info
+redis-cli
+> AUTH your_strong_password
+> INFO
+#+END_SRC
+
+6. Security Considerations:
+#+BEGIN_SRC bash
+# Configure firewall
+sudo yum install -y firewalld
+sudo systemctl enable firewalld
+sudo systemctl start firewalld
+
+# Allow Redis port only from localhost
+sudo firewall-cmd --permanent --add-rich-rule='rule family="ipv4" source address="127.0.0.1" port protocol="tcp" port="6379" accept'
+sudo firewall-cmd --reload
+
+# Verify firewall rules
+sudo firewall-cmd --list-all
+
+# Additional security recommendations:
+# 1. Use strong password
+# 2. Disable dangerous commands
+# 3. Enable protected mode
+# 4. Use SSL/TLS if possible
+# 5. Regular security updates
+#+END_SRC
+
+To start Redis in development:
+#+BEGIN_SRC bash
+docker run -d \
+  --name redis \
+  --restart unless-stopped \
+  --network host \
+  -v /var/lib/redis:/data \
+  redis:7.2-alpine \
+  redis-server /etc/redis/redis.conf
+#+END_SRC
+
+** Production Migration Guide
+When moving to production, it's recommended to migrate to AWS ElastiCache for better reliability and scalability. Here's the migration process:
+
+1. Create ElastiCache Cluster:
+   - Choose Redis engine
+   - Select appropriate node type
+   - Enable Multi-AZ for high availability
+   - Configure security groups
+   - Set up backup and maintenance windows
+
+2. Update Environment Variables:
+   - Change REDIS_URL to point to ElastiCache endpoint
+   - Update security groups to allow access
+   - Configure Redis password if needed
+
+3. Data Migration:
+   - Use redis-cli to export data from development Redis
+   - Import data to ElastiCache
+   - Verify data integrity
+
+4. Update Application Configuration:
+   - Modify connection settings
+   - Update health checks
+   - Adjust timeouts and retry policies
+
+5. Monitoring Setup:
+   - Configure CloudWatch alarms
+   - Set up Redis metrics monitoring
+   - Create backup schedules
+
+Example ElastiCache configuration:
+#+BEGIN_SRC yaml
+Resources:
+  RedisCluster:
+    Type: AWS::ElastiCache::CacheCluster
+    Properties:
+      Engine: redis
+      CacheNodeType: cache.t3.micro
+      NumCacheNodes: 1
+      Port: 6379
+      VpcSecurityGroupIds:
+        - !Ref RedisSecurityGroup
+      Tags:
+        - Key: Environment
+          Value: Production
+#+END_SRC
+
+** Monitoring and Maintenance
+1. Regular Tasks:
+   - Monitor memory usage
+   - Check connection counts
+   - Review slow queries
+   - Verify backup success
+
+2. Performance Optimization:
+   - Adjust maxmemory policy
+   - Configure persistence
+   - Optimize key patterns
+   - Monitor hit/miss ratios
+
+3. Security Considerations:
+   - Enable encryption in transit
+   - Use strong passwords
+   - Regular security updates
+   - Access control management

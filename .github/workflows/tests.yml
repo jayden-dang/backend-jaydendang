@@ -11,9 +11,8 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [ubuntu-latest]
-        # Có thể thêm các OS khác nếu cần
-        # os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        rust: [stable, nightly]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
@@ -26,13 +25,13 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.toml') }}
+          key: ${{ runner.os }}-${{ matrix.rust }}-cargo-test-${{ hashFiles('**/Cargo.toml') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-test-
+            ${{ runner.os }}-${{ matrix.rust }}-cargo-test-
       
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: stable
+          toolchain: ${{ matrix.rust }}
           components: rustfmt, clippy
       
       - name: Install dependencies
@@ -46,6 +45,19 @@ jobs:
       
       - name: Run tests
         run: cargo nextest run --workspace
+      
+      - name: Run tests with coverage
+        if: matrix.rust == 'stable' && matrix.os == 'ubuntu-latest'
+        run: |
+          cargo install cargo-llvm-cov
+          cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
+      
+      - name: Upload coverage
+        if: matrix.rust == 'stable' && matrix.os == 'ubuntu-latest'
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./lcov.info
+          fail_ci_if_error: true
 
   lint:
     runs-on: ubuntu-latest

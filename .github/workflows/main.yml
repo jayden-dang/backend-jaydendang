@@ -8,7 +8,8 @@ on:
 
 env:
   DOCKER_IMAGE: jaydendang/jayden
-  AWS_REGION: ap-southeast-1 
+  AWS_REGION: ap-southeast-1
+  CARGO_TERM_COLOR: always
 
 jobs:
   test:
@@ -21,12 +22,19 @@ jobs:
         with:
           toolchain: stable
           override: true
+          components: rustfmt, clippy
       
       - name: Install cargo-nextest
         run: cargo install cargo-nextest
       
       - name: Run tests
         run: cargo nextest run --workspace
+      
+      - name: Run clippy
+        run: cargo clippy --workspace --all-targets --all-features
+      
+      - name: Check format
+        run: cargo fmt --all -- --check
 
   build-and-push:
     needs: test
@@ -49,9 +57,15 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ env.DOCKER_IMAGE }}:latest
+          tags: |
+            ${{ env.DOCKER_IMAGE }}:latest
+            ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
           cache-from: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache
           cache-to: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache,mode=max
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            RUST_VERSION=1.87.0
+            BUILD_DATE=${{ github.event.repository.updated_at }}
 
   deploy:
     needs: build-and-push
@@ -76,17 +90,35 @@ jobs:
             echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
             
             # Pull latest image
-            docker pull ${{ env.DOCKER_IMAGE }}:latest
+            docker pull ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
             
-            # Stop and remove existing container if it exists
-            docker stop jdblog || true
-            docker rm jdblog || true
+            # Stop and remove existing containers if they exist
+            docker stop jdblog redis || true
+            docker rm jdblog redis || true
             
-            # Run new container with database connection
+            # Start Redis
+            docker run -d \
+              --name redis \
+              --restart unless-stopped \
+              --network host \
+              -v /var/lib/redis:/data \
+              redis:7.2-alpine \
+              redis-server /etc/redis/redis.conf
+            
+            # Run new container with database and Redis connection
             docker run -d \
               --name jdblog \
               --restart unless-stopped \
               -p 8080:8080 \
               --network host \
+              --log-driver json-file \
+              --log-opt max-size=10m \
+              --log-opt max-file=3 \
               -e DATABASE_URL=postgresql://jayden:postgres@localhost:5432/jaydenblog \
-              ${{ env.DOCKER_IMAGE }}:latest 
+              -e REDIS_URL=redis://localhost:6379 \
+              -e RUST_LOG=info \
+              -e RUST_BACKTRACE=1 \
+              ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+            
+            # Clean up old images
+            docker image prune -f 
