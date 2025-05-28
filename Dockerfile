@@ -19,10 +19,6 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* \
     && cargo install cargo-audit
 
-# Configure Rust toolchain
-RUN rustup default stable && \
-    rustup update
-
 # Copy dependency files first for better caching
 COPY Cargo.toml Cargo.lock ./
 
@@ -82,7 +78,8 @@ RUN mkdir -p crates/core/jd_core/src && \
 RUN --mount=type=cache,target=/app/target \
     --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
-    --mount=type=cache,target=/usr/local/rustup \
+    rustup default stable && \
+    rustup update && \
     cargo build --release
 
 # Run security audit with warnings allowed
@@ -95,7 +92,8 @@ COPY . .
 RUN --mount=type=cache,target=/app/target \
     --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
-    --mount=type=cache,target=/usr/local/rustup \
+    rustup default stable && \
+    rustup update && \
     RUSTFLAGS="-C target-cpu=native" cargo build --workspace --release && \
     find target/release -maxdepth 1 -type f -executable -exec cp {} ./app \; && \
     strip ./app
