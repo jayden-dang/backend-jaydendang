@@ -16,6 +16,9 @@
   - [[#database-management-in-development][Database Management in Development]]
   - [[#configure-postgresql][Configure PostgreSQL]]
 - [[#database-management][Database Management]]
+  - [[#deployment-options][Deployment Options]]
+  - [[#using-docker-option-1---recommended-for-development][Using Docker (Option 1 - Recommended for Development)]]
+  - [[#native-installation-option-2---alternative-for-production][Native Installation (Option 2 - Alternative for Production)]]
   - [[#quick-reset-commands][Quick Reset Commands]]
   - [[#database-management-scripts][Database Management Scripts]]
   - [[#backup-strategy][Backup Strategy]]
@@ -67,7 +70,6 @@ ssh-keygen -f your-key.pem -m PEM
 
 * Dockerfile Configuration
 The Dockerfile is configured in two stages:
-
 ** Builder Stage
 #+BEGIN_SRC dockerfile
 FROM rust:1.87.0-bullseye AS builder
@@ -344,11 +346,11 @@ docker-compose -f deployment/docker/docker-compose.postgres.yml up -d
 sudo postgresql-setup --initdb
 
 # Edit pg_hba.conf
-sudo vi /var/lib/pgsql/data/pg_hba.conf
+sudo vim /var/lib/pgsql/data/pg_hba.conf
 # Change authentication method from 'ident' to 'md5' for local connections
 
 # Edit postgresql.conf
-sudo vi /var/lib/pgsql/data/postgresql.conf
+sudo vim /var/lib/pgsql/data/postgresql.conf
 # Set listen_addresses = 'localhost'
 
 # Restart PostgreSQL

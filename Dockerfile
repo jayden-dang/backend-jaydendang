@@ -30,6 +30,40 @@ COPY crates/shared/jd_rpc_core/Cargo.toml ./crates/shared/jd_rpc_core/
 COPY crates/shared/jd_streams/Cargo.toml ./crates/shared/jd_streams/
 COPY crates/shared/jd_utils/Cargo.toml ./crates/shared/jd_utils/
 
+# Create dummy lib.rs files for library crates and main.rs for web_server
+RUN mkdir -p crates/core/jd_core/src && \
+    echo "pub fn dummy() {}" > crates/core/jd_core/src/lib.rs && \
+    mkdir -p crates/gateways/api_gateway/src && \
+    echo "pub fn dummy() {}" > crates/gateways/api_gateway/src/lib.rs && \
+    mkdir -p crates/gateways/web_server/src && \
+    echo "fn main() {}" > crates/gateways/web_server/src/main.rs && \
+    mkdir -p crates/infrastructure/jd_infra/src && \
+    echo "pub fn dummy() {}" > crates/infrastructure/jd_infra/src/lib.rs && \
+    mkdir -p crates/infrastructure/jd_messaging/src && \
+    echo "pub fn dummy() {}" > crates/infrastructure/jd_messaging/src/lib.rs && \
+    mkdir -p crates/infrastructure/jd_storage/src && \
+    echo "pub fn dummy() {}" > crates/infrastructure/jd_storage/src/lib.rs && \
+    mkdir -p crates/infrastructure/jd_tracing/src && \
+    echo "pub fn dummy() {}" > crates/infrastructure/jd_tracing/src/lib.rs && \
+    mkdir -p crates/processors/analytics_processor/src && \
+    echo "pub fn dummy() {}" > crates/processors/analytics_processor/src/lib.rs && \
+    mkdir -p crates/processors/notification_processor/src && \
+    echo "pub fn dummy() {}" > crates/processors/notification_processor/src/lib.rs && \
+    mkdir -p crates/services/user_service/src && \
+    echo "pub fn dummy() {}" > crates/services/user_service/src/lib.rs && \
+    mkdir -p crates/shared/jd_contracts/src && \
+    echo "pub fn dummy() {}" > crates/shared/jd_contracts/src/lib.rs && \
+    mkdir -p crates/shared/jd_deencode/src && \
+    echo '#[proc_macro_derive(Dummy)] pub fn dummy(_: proc_macro::TokenStream) -> proc_macro::TokenStream { proc_macro::TokenStream::new() }' > crates/shared/jd_deencode/src/lib.rs && \
+    mkdir -p crates/shared/jd_domain/src && \
+    echo "pub fn dummy() {}" > crates/shared/jd_domain/src/lib.rs && \
+    mkdir -p crates/shared/jd_rpc_core/src && \
+    echo "pub fn dummy() {}" > crates/shared/jd_rpc_core/src/lib.rs && \
+    mkdir -p crates/shared/jd_streams/src && \
+    echo "pub fn dummy() {}" > crates/shared/jd_streams/src/lib.rs && \
+    mkdir -p crates/shared/jd_utils/src && \
+    echo "pub fn dummy() {}" > crates/shared/jd_utils/src/lib.rs
+
 # Build dependencies first
 RUN --mount=type=cache,target=/app/target \
     --mount=type=cache,target=/usr/local/cargo/registry \
@@ -68,16 +102,16 @@ RUN set -eux; \
     && dnf clean all \
     && rm -rf /var/cache/dnf/*
 
+# Create non-root user first
+RUN useradd -m -u 1000 appuser
+
 # Copy Redis binary for development
 COPY --from=redis /usr/local/bin/redis-server /usr/local/bin/
 COPY --from=redis /usr/local/bin/redis-cli /usr/local/bin/
 
-# Create Redis directory
+# Create Redis directory and set permissions
 RUN mkdir -p /var/lib/redis && \
     chown -R appuser:appuser /var/lib/redis
-
-# Create non-root user
-RUN useradd -m -u 1000 appuser
 
 WORKDIR /deploy
 
