@@ -2,10 +2,10 @@ name: Code Quality & Tests
 
 on:
   pull_request:
-    branches: ["main"]
+    branches: ["dev"]
 
   push:
-    branches: ["main", "dev"]
+    branches: ["dev"]
 
 jobs:
   test:
@@ -16,7 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
-      
+
       - uses: actions/cache@v3
         with:
           path: |
@@ -28,30 +28,30 @@ jobs:
           key: ${{ runner.os }}-${{ matrix.rust }}-cargo-test-${{ hashFiles('**/Cargo.toml') }}
           restore-keys: |
             ${{ runner.os }}-${{ matrix.rust }}-cargo-test-
-      
+
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust }}
           components: rustfmt, clippy
-      
+
       - name: Install dependencies
         if: runner.os == 'linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y alsa-utils libasound2-dev udev
-      
+
       - name: Install cargo-nextest
         run: cargo install cargo-nextest --force
-      
+
       - name: Run tests
         run: cargo nextest run --workspace
-      
+
       - name: Run tests with coverage
         if: matrix.rust == 'stable' && matrix.os == 'ubuntu-latest'
         run: |
           cargo install cargo-llvm-cov
           cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
-      
+
       - name: Upload coverage
         if: matrix.rust == 'stable' && matrix.os == 'ubuntu-latest'
         uses: codecov/codecov-action@v3
@@ -63,7 +63,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - uses: actions/cache@v3
         with:
           path: |
@@ -75,15 +75,15 @@ jobs:
           key: ${{ runner.os }}-cargo-lint-${{ hashFiles('**/Cargo.toml') }}
           restore-keys: |
             ${{ runner.os }}-cargo-lint-
-      
+
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly
           components: rustfmt, rustfmt-preview, clippy
-      
+
       - name: Run clippy
         run: cargo clippy --workspace --all-targets --all-features
-      
+
       - name: Check format
         run: cargo +nightly fmt --all -- --check
 
@@ -91,7 +91,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - uses: actions/cache@v3
         with:
           path: |
@@ -103,17 +103,17 @@ jobs:
           key: ${{ runner.os }}-cargo-format-${{ hashFiles('**/Cargo.toml') }}
           restore-keys: |
             ${{ runner.os }}-cargo-format-
-      
+
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly
           components: rustfmt, rustfmt-preview
-      
+
       - name: Format code
         run: |
           rustup component add rustfmt rustfmt-preview --toolchain nightly
           cargo +nightly fmt --all
-      
+
       - name: Commit changes
         run: |
           git config --local user.email "action@github.com"
