@@ -1,50 +1,64 @@
-FROM rust:1.70.0-slim-bullseye as builder
+FROM rust:1.87.0-bullseye AS builder
 
 WORKDIR /app
 
-COPY ./rust-toolchain ./
-COPY ./Cargo.lock ./
-COPY ./Cargo.toml ./
-COPY ./.env ./.env
-COPY ./crates/core/jd_core ./crates/jd_core
-COPY ./crates/gateways/api_gateway ./crates/gateways/api_gateway
-COPY ./crates/gateways/web_server ./crates/gateways/web_server
-COPY ./crates/infrastructure/jd_infra ./crates/infrastructure/jd_infra
-COPY ./crates/infrastructure/jd_messaging ./crates/infrastructure/jd_messaging
-COPY ./crates/infrastructure/jd_storage ./crates/infrastructure/jd_storage
-COPY ./crates/infrastructure/jd_tracing ./crates/infrastructure/jd_tracing
-COPY ./crates/services/user_service ./crates/services/user_service
-COPY ./crates/shared/jd_contracts ./crates/shared/jd_contracts
-COPY ./crates/shared/jd_domain ./crates/shared/jd_domain
-COPY ./crates/shared/jd_rpc_core ./crates/shared/jd_rpc_core
-COPY ./crates/shared/jd_streams ./crates/shared/jd_streams
-COPY ./crates/shared/jd_utils ./crates/shared/jd_utils
-COPY ./crates/processors/analytics_processor ./crates/processors/analytics_processor
-COPY ./crates/processors/notification_processor ./crates/processors/notification_processor
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    binutils \
+    && rm -rf /var/lib/apt/lists/*
 
-# on rebuilds, we explicitly cache our rust build dependencies to speed things up
+# Copy all source code first
+COPY . .
+
+# Build with optimizations and caching
 RUN --mount=type=cache,target=/app/target \
     --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/usr/local/rustup \
     set -eux; \
     rustup install stable; \
-    cargo build --workspace --release; \
-    objcopy --compress-debug-sections target/release/eamon_bin ./eamon
+    RUSTFLAGS="-C target-cpu=native" cargo build --workspace --release; \
+    find target/release -maxdepth 1 -type f -executable -exec cp {} ./app \;
 
-# stage two - we'll utilize a second container to run our built binary from our first container - slim containers!
-FROM debian:11.3-slim as deploy
+# Production stage
+FROM debian:11.3-slim AS deploy
 
+# Install runtime dependencies
 RUN set -eux; \
     export DEBIAN_FRONTEND=noninteractive; \
-    apt update; \
-    apt install --yes --no-install-recommends bind9-dnsutils iputils-ping iproute2 curl ca-certificates htop; \
-    apt clean autoclean; \
-    apt autoremove --yes; \
-    rm -rf /var/lib/{apt,dpkg,cache,log}/;
+    apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    bind9-dnsutils \
+    iputils-ping \
+    iproute2 \
+    htop \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean \
+    && apt-get autoremove -y
+
+# Create non-root user
+RUN useradd -m -u 1000 appuser
 
 WORKDIR /deploy
 
-COPY --from=builder /app/jayden ./
+# Copy binary from builder
+COPY --from=builder /app/app ./
 
-CMD ["./jayden"]
+# Set proper permissions
+RUN chown -R appuser:appuser /deploy
+
+# Switch to non-root user
+USER appuser
+
+# Set environment variables
+ENV RUST_LOG=info
+ENV RUST_BACKTRACE=1
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+CMD ["./app"]
