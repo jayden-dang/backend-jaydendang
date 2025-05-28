@@ -1,0 +1,318 @@
+# Rust Docker Deployment Guide
+
+* Table of Contents
+1. [[#introduction][Introduction]]
+2. [[#prerequisites][Prerequisites]]
+3. [[#dockerfile-basics][Dockerfile Basics]]
+4. [[#advanced-dockerfile][Advanced Dockerfile]]
+5. [[#security-considerations][Security Considerations]]
+6. [[#best-practices][Best Practices]]
+7. [[#troubleshooting][Troubleshooting]]
+
+* Introduction
+This guide provides a comprehensive walkthrough for deploying Rust applications using Docker. It covers everything from basic setup to advanced optimizations and security considerations.
+
+* Prerequisites
+- Docker installed on your system
+- Basic understanding of Rust
+- Basic understanding of Docker concepts
+- Git for version control
+
+* Dockerfile Basics
+Let's start with understanding the basic components of a Dockerfile:
+
+** Basic Structure
+A Dockerfile consists of several key components:
+1. Base image selection
+2. Working directory setup
+3. Dependencies installation
+4. Source code copying
+5. Build process
+6. Runtime configuration
+
+** Basic Example
+Here's a simple Dockerfile with explanations:
+
+#+BEGIN_SRC dockerfile
+# Base image selection
+FROM rust:1.87.0-bullseye
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy source code
+COPY . .
+
+# Build application
+RUN cargo build --release
+
+# Run the application
+CMD ["./target/release/your_app"]
+#+END_SRC
+
+** Command Explanations
+1. =FROM=: Specifies the base image
+   - =rust:1.87.0-bullseye=: Uses Rust 1.87.0 on Debian Bullseye
+   - Version pinning ensures reproducible builds
+
+2. =WORKDIR=: Sets the working directory
+   - Creates directory if it doesn't exist
+   - All subsequent commands run from this directory
+
+3. =RUN=: Executes commands
+   - =apt-get update=: Updates package lists
+   - =apt-get install=: Installs required packages
+   - =rm -rf /var/lib/apt/lists/*=: Cleans up to reduce image size
+
+4. =COPY=: Copies files from host to container
+   - First argument: Source path
+   - Second argument: Destination path
+
+5. =CMD=: Specifies the command to run when container starts
+   - Can be overridden by docker run command
+   - Only one CMD per Dockerfile
+
+* Advanced Dockerfile
+Now let's look at a more advanced Dockerfile with multi-stage builds and optimizations:
+
+#+BEGIN_SRC dockerfile
+# Builder stage
+FROM rust:1.87.0-bullseye AS builder
+
+# Add metadata labels
+LABEL maintainer="Jayden Dang <jayden.dangvu@gmail.com>"
+LABEL version="0.0.1"
+LABEL description="Web server for Jayden Blog"
+
+# Add build arguments
+ARG RUST_VERSION=1.87.0
+ARG DEBIAN_VERSION=bullseye
+ARG APP_USER=appuser
+ARG APP_UID=1000
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    binutils \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy dependency files first for better caching
+COPY Cargo.toml Cargo.lock ./
+COPY crates/core/jd_core/Cargo.toml ./crates/core/jd_core/
+# ... (other Cargo.toml files)
+
+# Create dummy lib.rs files for library crates
+RUN mkdir -p crates/core/jd_core/src && \
+    echo "pub fn dummy() {}" > crates/core/jd_core/src/lib.rs
+# ... (other dummy files)
+
+# Build dependencies with caching
+RUN --mount=type=cache,target=/app/target \
+    --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    --mount=type=cache,target=/usr/local/rustup \
+    cargo build --release
+
+# Copy actual source code
+COPY . .
+
+# Build the application with optimizations
+RUN --mount=type=cache,target=/app/target \
+    --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    --mount=type=cache,target=/usr/local/rustup \
+    RUSTFLAGS="-C target-cpu=native" cargo build --workspace --release && \
+    find target/release -maxdepth 1 -type f -executable -exec cp {} ./app \;
+
+# Production stage
+FROM amazonlinux:2023 AS deploy
+
+# Install runtime dependencies
+RUN set -eux; \
+    dnf update -y && dnf install -y \
+    ca-certificates \
+    curl-minimal \
+    bind-utils \
+    iputils \
+    iproute \
+    htop \
+    jq \
+    shadow-utils \
+    && dnf clean all \
+    && rm -rf /var/cache/dnf/*
+
+# Create non-root user
+RUN useradd -m -u 1000 appuser
+
+WORKDIR /deploy
+
+# Copy binary from builder
+COPY --from=builder /app/app ./
+
+# Set proper permissions
+RUN chown -R appuser:appuser /deploy
+
+# Switch to non-root user
+USER appuser
+
+# Set environment variables
+ENV RUST_LOG=info
+ENV RUST_BACKTRACE=1
+ENV DATABASE_URL=postgresql://jayden:postgres@localhost:5432/jaydenblog
+
+# Add security headers
+ENV RUSTFLAGS="-C target-feature=+crt-static -C link-arg=-s"
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+# Add proper signal handling
+STOPSIGNAL SIGTERM
+
+# Add proper entrypoint
+ENTRYPOINT ["./app"]
+CMD []
+#+END_SRC
+
+** Advanced Command Explanations
+
+1. Multi-stage Builds
+   - =FROM ... AS builder=: Creates a build stage
+   - =FROM ... AS deploy=: Creates a production stage
+   - Reduces final image size by excluding build tools
+
+2. Build Arguments
+   - =ARG=: Defines build-time variables
+   - Can be overridden during build
+   - Useful for version pinning
+
+3. Layer Caching
+   - Copy dependency files first
+   - Build dependencies separately
+   - Use .dockerignore effectively
+
+4. Build Cache Mounts
+   - =--mount=type=cache=: Persists build cache
+   - Improves build performance
+   - Reduces disk space usage
+
+5. Security Features
+   - Non-root user
+   - Security headers
+   - Health checks
+   - Signal handling
+
+6. Environment Variables
+   - =ENV=: Sets runtime variables
+   - Can be overridden at runtime
+   - Used for configuration
+
+7. Health Checks
+   - Monitors application health
+   - Configurable intervals
+   - Automatic container restart
+
+* Security Considerations
+
+** Non-root User
+Always run applications as non-root:
+#+BEGIN_SRC dockerfile
+RUN useradd -m -u 1000 appuser
+USER appuser
+#+END_SRC
+
+** Security Headers
+Add security headers to your application:
+#+BEGIN_SRC dockerfile
+ENV RUSTFLAGS="-C target-feature=+crt-static -C link-arg=-s"
+#+END_SRC
+
+** Health Checks
+Implement health checks:
+#+BEGIN_SRC dockerfile
+HEALTHCHECK --interval=30s --timeout=3s \
+    CMD curl -f http://localhost:8080/health || exit 1
+#+END_SRC
+
+* Best Practices
+
+** Environment Variables
+Use environment variables for configuration:
+#+BEGIN_SRC dockerfile
+ENV RUST_LOG=info
+ENV DATABASE_URL=postgresql://user:pass@localhost:5432/db
+#+END_SRC
+
+** Labels
+Add metadata to your images:
+#+BEGIN_SRC dockerfile
+LABEL maintainer="Your Name <your.email@example.com>"
+LABEL version="1.0"
+LABEL description="Your application description"
+#+END_SRC
+
+** Version Pinning
+Pin versions for reproducibility:
+#+BEGIN_SRC dockerfile
+FROM rust:1.87.0-bullseye
+#+END_SRC
+
+* Troubleshooting
+
+** Common Issues
+1. Build failures
+   - Check system dependencies
+   - Verify Cargo.toml configuration
+   - Check for missing files
+
+2. Runtime issues
+   - Verify environment variables
+   - Check file permissions
+   - Review logs
+
+** Debugging Tips
+1. Use RUST_BACKTRACE for detailed error information
+2. Enable debug logging
+3. Check container logs
+
+* Advanced Topics
+
+** Custom Base Images
+Create custom base images for specific needs:
+#+BEGIN_SRC dockerfile
+FROM rust:1.87.0-bullseye AS custom-base
+# Add custom configurations
+#+END_SRC
+
+** Optimizing for Production
+1. Use release builds
+2. Enable optimizations
+3. Strip debug symbols
+
+** Monitoring and Logging
+1. Configure logging levels
+2. Set up monitoring
+3. Implement health checks
+
+* Conclusion
+This guide provides a foundation for deploying Rust applications with Docker. Remember to:
+1. Follow security best practices
+2. Optimize for production
+3. Implement proper monitoring
+4. Keep dependencies updated
+5. Document your deployment process
+
+For more information, refer to:
+- [[https://docs.docker.com/][Docker Documentation]]
+- [[https://doc.rust-lang.org/book/][The Rust Programming Language Book]]
+- [[https://docs.docker.com/develop/dev-best-practices/][Docker Best Practices]]

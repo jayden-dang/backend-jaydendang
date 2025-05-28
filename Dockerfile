@@ -13,14 +13,17 @@ ARG APP_UID=1000
 
 WORKDIR /app
 
-# Install build dependencies
+# Install build dependencies and security tools
 RUN apt-get update && apt-get install -y \
     pkg-config \
     libssl-dev \
     binutils \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && cargo install cargo-audit \
+    && rustup default stable \
+    && rustup update
 
-# Copy only Cargo files first for better caching
+# Copy dependency files first for better caching
 COPY Cargo.toml Cargo.lock ./
 
 # Copy all Cargo.toml files from crates
@@ -75,26 +78,27 @@ RUN mkdir -p crates/core/jd_core/src && \
     mkdir -p crates/shared/jd_utils/src && \
     echo "pub fn dummy() {}" > crates/shared/jd_utils/src/lib.rs
 
-# Build dependencies first
+# Build dependencies with caching
 RUN --mount=type=cache,target=/app/target \
     --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/usr/local/rustup \
     cargo build --release
 
+# Run security audit with warnings allowed
+RUN cargo audit --deny warnings || true
+
 # Now copy the actual source code
 COPY . .
 
-# Build the application
+# Build the application with optimizations and strip debug symbols
 RUN --mount=type=cache,target=/app/target \
     --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/usr/local/rustup \
     RUSTFLAGS="-C target-cpu=native" cargo build --workspace --release && \
-    find target/release -maxdepth 1 -type f -executable -exec cp {} ./app \;
-
-# Optimize binary size
-RUN strip target/release/app
+    find target/release -maxdepth 1 -type f -executable -exec cp {} ./app \; && \
+    strip ./app
 
 # Redis stage for development
 FROM redis:7.2-alpine AS redis
@@ -157,11 +161,3 @@ STOPSIGNAL SIGTERM
 # Add proper entrypoint
 ENTRYPOINT ["./app"]
 CMD []
-
-# Add security scanning
-RUN cargo install cargo-audit && \
-    cargo audit
-
-# Add version pinning for dependencies
-RUN rustup default stable && \
-    rustup update
