@@ -14,15 +14,21 @@ COPY Cargo.toml Cargo.lock ./
 
 # Copy all Cargo.toml files from crates
 COPY crates/core/jd_core/Cargo.toml ./crates/core/jd_core/
-COPY crates/core/jd_storage/Cargo.toml ./crates/core/jd_storage/
-COPY crates/shared/jd_utils/Cargo.toml ./crates/shared/jd_utils/
-COPY crates/shared/jd_domain/Cargo.toml ./crates/shared/jd_domain/
-COPY crates/shared/jd_deencode/Cargo.toml ./crates/shared/jd_deencode/
-COPY crates/shared/jd_contracts/Cargo.toml ./crates/shared/jd_contracts/
-COPY crates/gateways/web_server/Cargo.toml ./crates/gateways/web_server/
 COPY crates/gateways/api_gateway/Cargo.toml ./crates/gateways/api_gateway/
-COPY crates/services/user_service/Cargo.toml ./crates/services/user_service/
+COPY crates/gateways/web_server/Cargo.toml ./crates/gateways/web_server/
+COPY crates/infrastructure/jd_infra/Cargo.toml ./crates/infrastructure/jd_infra/
+COPY crates/infrastructure/jd_messaging/Cargo.toml ./crates/infrastructure/jd_messaging/
 COPY crates/infrastructure/jd_storage/Cargo.toml ./crates/infrastructure/jd_storage/
+COPY crates/infrastructure/jd_tracing/Cargo.toml ./crates/infrastructure/jd_tracing/
+COPY crates/processors/analytics_processor/Cargo.toml ./crates/processors/analytics_processor/
+COPY crates/processors/notification_processor/Cargo.toml ./crates/processors/notification_processor/
+COPY crates/services/user_service/Cargo.toml ./crates/services/user_service/
+COPY crates/shared/jd_contracts/Cargo.toml ./crates/shared/jd_contracts/
+COPY crates/shared/jd_deencode/Cargo.toml ./crates/shared/jd_deencode/
+COPY crates/shared/jd_domain/Cargo.toml ./crates/shared/jd_domain/
+COPY crates/shared/jd_rpc_core/Cargo.toml ./crates/shared/jd_rpc_core/
+COPY crates/shared/jd_streams/Cargo.toml ./crates/shared/jd_streams/
+COPY crates/shared/jd_utils/Cargo.toml ./crates/shared/jd_utils/
 
 # Build dependencies first
 RUN --mount=type=cache,target=/app/target \

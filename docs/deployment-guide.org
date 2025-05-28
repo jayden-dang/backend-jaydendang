@@ -12,15 +12,13 @@
 - [[#ec2-instance-setup][EC2 Instance Setup]]
   - [[#launch-ec2-instance][Launch EC2 Instance]]
   - [[#install-required-software][Install Required Software]]
+  - [[#development-mode-setup][Development Mode Setup]]
+  - [[#database-management-in-development][Database Management in Development]]
   - [[#configure-postgresql][Configure PostgreSQL]]
 - [[#database-management][Database Management]]
   - [[#quick-reset-commands][Quick Reset Commands]]
   - [[#database-management-scripts][Database Management Scripts]]
-- [[#backup-strategy][Backup Strategy]]
-  - [[#automated-backup][Automated Backup]]
-  - [[#manual-backup][Manual Backup]]
-  - [[#backup-location][Backup Location]]
-  - [[#backup-retention][Backup Retention]]
+  - [[#backup-strategy][Backup Strategy]]
 - [[#redis-deployment][Redis Deployment]]
   - [[#development-environment][Development Environment]]
   - [[#redis-setup-on-amazon-linux][Redis Setup on Amazon Linux]]
@@ -244,18 +242,100 @@ jobs:
 ** Install Required Software
 #+BEGIN_SRC bash
 # Update system
-sudo dnf update -y
+sudo yum update -y
 
-# Install Docker
-sudo dnf install -y docker
+# Install Docker and Docker Compose
+sudo yum install -y docker
 sudo systemctl enable docker
 sudo systemctl start docker
 sudo usermod -aG docker ec2-user
 
-# Install PostgreSQL
-sudo dnf install -y postgresql13-server
-sudo systemctl enable postgresql
-sudo systemctl start postgresql
+# Fix iptables issues
+sudo yum install -y iptables-services
+sudo systemctl enable iptables
+sudo systemctl start iptables
+sudo iptables -F
+sudo service docker restart
+
+# Install Docker Compose
+sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+
+# Create project directory with correct permissions
+sudo mkdir -p /home/ec2-user/jaydenblog
+sudo chown -R ec2-user:ec2-user /home/ec2-user/jaydenblog
+cd /home/ec2-user/jaydenblog
+
+# Clone repository
+git clone https://github.com/jayden-dang/backend-jaydendang.git .
+
+# Set correct permissions for the cloned repository
+sudo chown -R ec2-user:ec2-user .
+#+END_SRC
+
+** Development Mode Setup
+#+BEGIN_SRC bash
+# Create development environment file
+cat > .env << 'EOF'
+INIT_DB=true
+POSTGRES_USER=jayden
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=jaydenblog
+EOF
+
+# Ensure Docker network exists
+docker network create docker_default || true
+
+# Start development environment
+docker-compose -f deployment/docker/docker-compose.postgres.yml up -d
+
+# Verify services are running
+docker-compose -f deployment/docker/docker-compose.postgres.yml ps
+
+# Check database initialization
+docker-compose -f deployment/docker/docker-compose.postgres.yml logs postgres
+#+END_SRC
+
+** Database Management in Development
+*** Quick Reset Commands
+For development purposes, you can use these commands to reset both databases:
+
+#+BEGIN_SRC bash
+# Reset PostgreSQL Database
+sudo -u ec2-user /home/ec2-user/db-manage.sh reset
+
+# Reset Redis Database
+sudo -u ec2-user /home/ec2-user/redis-manage.sh reset
+
+# Reset Both Databases
+sudo -u ec2-user /home/ec2-user/reset-all.sh
+#+END_SRC
+
+*** Automated Database Initialization
+The development environment is configured to automatically initialize databases:
+
+1. PostgreSQL:
+   - Database is created automatically
+   - Initial schema is applied from SQL files
+   - Sample data is loaded if available
+
+2. Redis:
+   - Redis instance is started automatically
+   - Default configuration is applied
+   - No initial data is loaded
+
+To disable automatic initialization in production:
+#+BEGIN_SRC bash
+# Create production environment file
+cat > .env << 'EOF'
+INIT_DB=false
+POSTGRES_USER=jayden
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=jayden-blog
+EOF
+
+# Start production environment
+docker-compose -f deployment/docker/docker-compose.postgres.yml up -d
 #+END_SRC
 
 ** Configure PostgreSQL
@@ -281,6 +361,80 @@ sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE jaydenblog TO jayden;
 #+END_SRC
 
 * Database Management
+** Deployment Options
+There are two ways to deploy databases in this project:
+
+1. Using Docker (Recommended for Development):
+   - PostgreSQL and Redis run in Docker containers
+   - Easy to manage and reset
+   - Isolated environment
+   - No need to install PostgreSQL or Redis on the host machine
+
+2. Native Installation (Alternative for Production):
+   - PostgreSQL and Redis installed directly on the host
+   - Better performance
+   - More control over configuration
+   - Requires manual management
+
+** Using Docker (Option 1 - Recommended for Development)
+#+BEGIN_SRC bash
+# Start all services including databases
+docker-compose -f deployment/docker/docker-compose.postgres.yml up -d
+
+# Verify services
+docker-compose -f deployment/docker/docker-compose.postgres.yml ps
+
+# View logs
+docker-compose -f deployment/docker/docker-compose.postgres.yml logs
+#+END_SRC
+
+*** Database Management with Docker
+#+BEGIN_SRC bash
+# Reset PostgreSQL data
+docker-compose -f deployment/docker/docker-compose.postgres.yml down -v
+docker-compose -f deployment/docker/docker-compose.postgres.yml up -d
+
+# Reset Redis data
+docker-compose -f deployment/docker/docker-compose.postgres.yml exec redis redis-cli FLUSHALL
+
+# View PostgreSQL logs
+docker-compose -f deployment/docker/docker-compose.postgres.yml logs postgres
+
+# View Redis logs
+docker-compose -f deployment/docker/docker-compose.postgres.yml logs redis
+#+END_SRC
+
+** Native Installation (Option 2 - Alternative for Production)
+If you prefer to run databases directly on the host machine, follow these steps:
+
+*** Install PostgreSQL
+#+BEGIN_SRC bash
+# Install PostgreSQL
+sudo yum install -y postgresql13-server
+sudo systemctl enable postgresql
+sudo systemctl start postgresql
+
+# Configure PostgreSQL
+sudo postgresql-setup --initdb
+sudo -u postgres psql -c "CREATE USER jayden WITH PASSWORD 'postgres';"
+sudo -u postgres psql -c "CREATE DATABASE jaydenblog;"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE jaydenblog TO jayden;"
+#+END_SRC
+
+*** Install Redis
+#+BEGIN_SRC bash
+# Install Redis
+sudo yum clean metadata
+sudo yum update -y
+sudo amazon-linux-extras install redis6
+sudo systemctl enable redis
+sudo systemctl start redis
+#+END_SRC
+
+*** Database Management Scripts
+The management scripts (db-manage.sh and redis-manage.sh) are designed for native installation.
+If using Docker, use the Docker commands shown above instead.
+
 ** Quick Reset Commands
 For development purposes, you can use these commands to reset both databases:
 

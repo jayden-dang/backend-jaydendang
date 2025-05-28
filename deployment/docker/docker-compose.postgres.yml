@@ -1,23 +1,24 @@
+version: '3.8'
+
 services:
-  database:
+  postgres:
     build:
-      context: ../../  # Set context to project root
+      context: ../..
       dockerfile: deployment/docker/Dockerfile.postgres
-    container_name: jd-database
-    ports:
-      - "5432:5432"
-    volumes:
-      - my_pgdata:/var/lib/postgresql/data
     environment:
       - POSTGRES_USER=jayden
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=jayden-blog
-    restart: unless-stopped
+      - INIT_DB=${INIT_DB:-true}  # Default to true for dev, can be overridden
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U jayden -d jayden-blog"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      test: ["CMD-SHELL", "pg_isready -U jayden -d jaydenblog"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     container_name: jd-redis
@@ -29,5 +30,5 @@ services:
       - redis-data:/data
 
 volumes:
-  my_pgdata:
+  postgres_data:
   redis-data:
