@@ -4,7 +4,7 @@ FROM postgres:16-alpine
 # Set environment variables
 ENV POSTGRES_USER=jayden
 ENV POSTGRES_PASSWORD=postgres
-ENV POSTGRES_DB=jayden-blog
+ENV POSTGRES_DB=jaydenblog
 
 # Create directory for initialization scripts
 RUN mkdir -p /docker-entrypoint-initdb.d

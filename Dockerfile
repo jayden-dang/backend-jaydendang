@@ -1,5 +1,16 @@
 FROM rust:1.87.0-bullseye AS builder
 
+# Add metadata labels
+LABEL maintainer="Jayden Dang <jayden.dangvu@gmail.com>"
+LABEL version="0.0.1"
+LABEL description="Web server for Jayden Blog"
+
+# Add build arguments
+ARG RUST_VERSION=1.87.0
+ARG DEBIAN_VERSION=bullseye
+ARG APP_USER=appuser
+ARG APP_UID=1000
+
 WORKDIR /app
 
 # Install build dependencies
@@ -82,6 +93,9 @@ RUN --mount=type=cache,target=/app/target \
     RUSTFLAGS="-C target-cpu=native" cargo build --workspace --release && \
     find target/release -maxdepth 1 -type f -executable -exec cp {} ./app \;
 
+# Optimize binary size
+RUN strip target/release/app
+
 # Redis stage for development
 FROM redis:7.2-alpine AS redis
 
@@ -131,10 +145,23 @@ ENV DATABASE_URL=postgresql://jayden:postgres@localhost:5432/jaydenblog
 ENV REDIS_URL=redis://localhost:6379
 
 # Add security headers
-ENV RUSTFLAGS="-C target-feature=+crt-static"
+ENV RUSTFLAGS="-C target-feature=+crt-static -C link-arg=-s"
 
-# Health check
+# Add health check with more detailed configuration
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8080/health || exit 1
 
-CMD ["./app"]
+# Add proper signal handling
+STOPSIGNAL SIGTERM
+
+# Add proper entrypoint
+ENTRYPOINT ["./app"]
+CMD []
+
+# Add security scanning
+RUN cargo install cargo-audit && \
+    cargo audit
+
+# Add version pinning for dependencies
+RUN rustup default stable && \
+    rustup update
