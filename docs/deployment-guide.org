@@ -14,8 +14,8 @@
   - [[#install-required-software][Install Required Software]]
   - [[#configure-postgresql][Configure PostgreSQL]]
 - [[#database-management][Database Management]]
-  - [[#database-management-script][Database Management Script]]
-  - [[#using-the-database-management-script][Using the Database Management Script]]
+  - [[#quick-reset-commands][Quick Reset Commands]]
+  - [[#database-management-scripts][Database Management Scripts]]
 - [[#backup-strategy][Backup Strategy]]
   - [[#automated-backup][Automated Backup]]
   - [[#manual-backup][Manual Backup]]
@@ -281,163 +281,111 @@ sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE jaydenblog TO jayden;
 #+END_SRC
 
 * Database Management
-** Database Management Script
-Create a script for managing the database:
+** Quick Reset Commands
+For development purposes, you can use these commands to reset both databases:
 
+*** Reset PostgreSQL Database
 #+BEGIN_SRC bash
-sudo tee /home/ec2-user/db-manage.sh << 'EOF'
-#!/bin/bash
-
-# Database configuration
-DB_NAME="jaydenblog"
-DB_USER="jayden"
-DB_PASSWORD="postgres"
-BACKUP_DIR="/home/ec2-user/backups"
-LOG_FILE="/home/ec2-user/db-manage.log"
-
-# Log function
-log() {
-    echo "$(date): $1" >> $LOG_FILE
-    echo "$(date): $1"
-}
-
-# Function to backup database
-backup_db() {
-    log "Creating backup before reset..."
-    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-    PGPASSWORD=$DB_PASSWORD pg_dump -U $DB_USER -h localhost $DB_NAME > $BACKUP_DIR/jaydenblog_$TIMESTAMP.sql
-    if [ $? -eq 0 ]; then
-        log "Backup created successfully: jaydenblog_$TIMESTAMP.sql"
-    else
-        log "Backup failed!"
-        exit 1
-    fi
-}
-
-# Function to reset database
-reset_db() {
-    log "Resetting database..."
-
-    # Drop and recreate database
-    PGPASSWORD=$DB_PASSWORD psql -U $DB_USER -h localhost -c "DROP DATABASE IF EXISTS $DB_NAME;"
-    PGPASSWORD=$DB_PASSWORD psql -U $DB_USER -h localhost -c "CREATE DATABASE $DB_NAME;"
-
-    if [ $? -eq 0 ]; then
-        log "Database reset successfully"
-    else
-        log "Database reset failed!"
-        exit 1
-    fi
-}
-
-# Function to restore from backup
-restore_db() {
-    if [ -z "$1" ]; then
-        log "Please specify backup file to restore"
-        echo "Available backups:"
-        ls -l $BACKUP_DIR/jaydenblog_*.sql
-        exit 1
-    fi
-
-    BACKUP_FILE="$1"
-    if [ ! -f "$BACKUP_FILE" ]; then
-        log "Backup file not found: $BACKUP_FILE"
-        exit 1
-    fi
-
-    log "Restoring from backup: $BACKUP_FILE"
-    PGPASSWORD=$DB_PASSWORD psql -U $DB_USER -h localhost $DB_NAME < $BACKUP_FILE
-
-    if [ $? -eq 0 ]; then
-        log "Database restored successfully"
-    else
-        log "Database restore failed!"
-        exit 1
-    fi
-}
-
-# Function to list backups
-list_backups() {
-    log "Available backups:"
-    ls -l $BACKUP_DIR/jaydenblog_*.sql
-}
-
-# Main script
-case "$1" in
-    "reset")
-        backup_db
-        reset_db
-        ;;
-    "restore")
-        restore_db "$2"
-        ;;
-    "backup")
-        backup_db
-        ;;
-    "list")
-        list_backups
-        ;;
-    *)
-        echo "Usage: $0 {reset|restore|backup|list}"
-        echo "  reset   - Backup current DB and reset it"
-        echo "  restore <backup_file> - Restore from backup"
-        echo "  backup  - Create a new backup"
-        echo "  list    - List all available backups"
-        exit 1
-        ;;
-esac
-EOF
-
-# Set permissions
-sudo chmod +x /home/ec2-user/db-manage.sh
-sudo chown ec2-user:ec2-user /home/ec2-user/db-manage.sh
-#+END_SRC
-
-** Using the Database Management Script
-
-*** Reset Database (creates empty database)
-#+BEGIN_SRC bash
+# This will backup current data and reset the database
 sudo -u ec2-user /home/ec2-user/db-manage.sh reset
 #+END_SRC
 
-*** Create Backup
+*** Reset Redis Database
 #+BEGIN_SRC bash
+# This will backup current data and reset Redis
+sudo -u ec2-user /home/ec2-user/redis-manage.sh reset
+#+END_SRC
+
+*** Reset Both Databases
+#+BEGIN_SRC bash
+# Create a combined reset script
+sudo tee /home/ec2-user/reset-all.sh << 'EOF'
+#!/bin/bash
+
+echo "Resetting all databases..."
+
+# Reset PostgreSQL
+echo "Resetting PostgreSQL..."
+sudo -u ec2-user /home/ec2-user/db-manage.sh reset
+
+# Reset Redis
+echo "Resetting Redis..."
+sudo -u ec2-user /home/ec2-user/redis-manage.sh reset
+
+echo "All databases have been reset!"
+EOF
+
+# Set permissions
+sudo chmod +x /home/ec2-user/reset-all.sh
+sudo chown ec2-user:ec2-user /home/ec2-user/reset-all.sh
+
+# Usage
+sudo -u ec2-user /home/ec2-user/reset-all.sh
+#+END_SRC
+
+** Database Management Scripts
+*** PostgreSQL Management
+#+BEGIN_SRC bash
+# Reset Database (creates empty database)
+sudo -u ec2-user /home/ec2-user/db-manage.sh reset
+
+# Create Backup
 sudo -u ec2-user /home/ec2-user/db-manage.sh backup
-#+END_SRC
 
-*** List Backups
-#+BEGIN_SRC bash
+# List Backups
 sudo -u ec2-user /home/ec2-user/db-manage.sh list
-#+END_SRC
 
-*** Restore from Backup
-#+BEGIN_SRC bash
+# Restore from Backup
 sudo -u ec2-user /home/ec2-user/db-manage.sh restore /home/ec2-user/backups/jaydenblog_20250528_021352.sql
 #+END_SRC
 
-* Backup Strategy
-** Automated Backup
+*** Redis Management
+#+BEGIN_SRC bash
+# Reset Redis (creates empty Redis instance)
+sudo -u ec2-user /home/ec2-user/redis-manage.sh reset
+
+# Create Backup
+sudo -u ec2-user /home/ec2-user/redis-manage.sh backup
+
+# List Backups
+sudo -u ec2-user /home/ec2-user/redis-manage.sh list
+
+# Restore from Backup
+sudo -u ec2-user /home/ec2-user/redis-manage.sh restore /home/ec2-user/redis-backups/redis_20250528_021352.rdb
+
+# Monitor Redis
+sudo -u ec2-user /home/ec2-user/redis-manage.sh monitor
+#+END_SRC
+
+** Backup Strategy
+*** Automated Backup
 The system is configured to create backups every 7 days using crontab:
 
 #+BEGIN_SRC bash
 # Edit crontab
 crontab -e
 
-# Add this line
-0 0 */7 * * /home/ec2-user/backup.sh
+# Add these lines
+0 0 */7 * * /home/ec2-user/db-manage.sh backup
+0 2 * * * /home/ec2-user/redis-manage.sh backup
 #+END_SRC
 
-** Manual Backup
+*** Manual Backup
 You can create manual backups at any time using:
 #+BEGIN_SRC bash
+# Backup PostgreSQL
 sudo -u ec2-user /home/ec2-user/db-manage.sh backup
+
+# Backup Redis
+sudo -u ec2-user /home/ec2-user/redis-manage.sh backup
 #+END_SRC
 
-** Backup Location
-All backups are stored in =/home/ec2-user/backups/= with timestamp in filename format: =jaydenblog_YYYYMMDD_HHMMSS.sql=
+*** Backup Locations
+- PostgreSQL backups: =/home/ec2-user/backups/= (format: =jaydenblog_YYYYMMDD_HHMMSS.sql=)
+- Redis backups: =/home/ec2-user/redis-backups/= (format: =redis_YYYYMMDD_HHMMSS.rdb=)
 
-** Backup Retention
-The system keeps the last 4 backups (approximately 1 month of weekly backups) to save disk space during development.
+*** Backup Retention
+The system keeps the last 4 backups for each database (approximately 1 month of weekly backups) to save disk space during development.
 
 * Redis Deployment
 ** Development Environment
@@ -554,6 +502,28 @@ monitor_redis() {
     redis-cli -a $REDIS_PASSWORD info
 }
 
+# Function to reset Redis
+reset_redis() {
+    log "Resetting Redis..."
+
+    # Stop Redis
+    sudo systemctl stop redis
+
+    # Remove all Redis data files
+    sudo rm -f /var/lib/redis/dump.rdb
+    sudo rm -f /var/lib/redis/appendonly.aof
+
+    # Start Redis
+    sudo systemctl start redis
+
+    if [ $? -eq 0 ]; then
+        log "Redis reset successfully"
+    else
+        log "Redis reset failed!"
+        exit 1
+    fi
+}
+
 # Main script
 case "$1" in
     "backup")
@@ -568,12 +538,17 @@ case "$1" in
     "monitor")
         monitor_redis
         ;;
+    "reset")
+        backup_redis  # Create backup before reset
+        reset_redis
+        ;;
     *)
-        echo "Usage: $0 {backup|restore|list|monitor}"
+        echo "Usage: $0 {backup|restore|list|monitor|reset}"
         echo "  backup  - Create a new Redis backup"
         echo "  restore <backup_file> - Restore from backup"
         echo "  list    - List all available backups"
         echo "  monitor - Show Redis status and metrics"
+        echo "  reset   - Backup current data and reset Redis"
         exit 1
         ;;
 esac
