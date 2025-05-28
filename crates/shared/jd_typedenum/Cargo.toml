@@ -1,5 +1,5 @@
 [package]
-name = "jd_deencode"
+name = "jd_typedenum"
 version = "0.1.0"
 edition = "2024"
 

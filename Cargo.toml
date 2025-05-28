@@ -23,7 +23,7 @@ members = [
 
   # -- Libraries Application
   "crates/shared/jd_contracts",
-  "crates/shared/jd_deencode",
+  "crates/shared/jd_typedenum",
   "crates/shared/jd_domain",
   "crates/shared/jd_rpc_core",
   "crates/shared/jd_streams",

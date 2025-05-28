@@ -1,4 +1,4 @@
-use jd_deencode::Deen;
+use jd_typedenum::TypedEnum;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 
@@ -6,8 +6,8 @@ pub mod profile;
 pub mod user;
 
 // -->>> Region:: START  --->>>  User Gender
-#[derive(Debug, Clone, PartialEq, Serialize, Deen, Deserialize)]
-#[deen(postgres_type = "user_gender")]
+#[derive(Debug, Clone, PartialEq, Serialize, TypedEnum, Deserialize)]
+#[typed(name = "user_gender")]
 pub enum UserGender {
   Male,
   Female,
@@ -17,8 +17,8 @@ pub enum UserGender {
 // <<<-- Region:: END    <<<---  User Gende
 
 // -->>> Region:: START  --->>>  Education Level
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default, Deen)]
-#[deen(postgres_type = "education_level")]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default, TypedEnum)]
+#[typed(name = "education_level")]
 pub enum EducationLevel {
   HighSchool,
   Bachelor,
@@ -33,8 +33,8 @@ pub enum EducationLevel {
 // <<<-- Region:: END    <<<---  Education Level
 
 // -->>> Region:: START  --->>>  Experience Level
-#[derive(Debug, Clone, PartialEq, Serialize, Deen, Deserialize, Default)]
-#[deen(postgres_type = "experience_level")]
+#[derive(Debug, Clone, PartialEq, Serialize, TypedEnum, Deserialize, Default)]
+#[typed(name = "experience_level")]
 pub enum ExperienceLevel {
   #[default]
   Beginner,
@@ -45,8 +45,8 @@ pub enum ExperienceLevel {
 // <<<-- Region:: END    <<<---  Experience Level
 
 // -->>> Region:: START  --->>>  Subscription Tier
-#[derive(Debug, Clone, PartialEq, Serialize, Deen, Deserialize, Default)]
-#[deen(postgres_type = "subscription_tier")]
+#[derive(Debug, Clone, PartialEq, Serialize, TypedEnum, Deserialize, Default)]
+#[typed(name = "subscription_tier")]
 pub enum SubscriptionTier {
   #[default]
   Free,
@@ -58,8 +58,8 @@ pub enum SubscriptionTier {
 // <<<-- Region:: END    <<<---  Subscription Tier
 
 // -->>> Region:: START  --->>>  Account Status
-#[derive(Debug, Clone, Serialize, Deen, Deserialize, Default)]
-#[deen(postgres_type = "account_status")]
+#[derive(Debug, Clone, Serialize, TypedEnum, Deserialize, Default)]
+#[typed(name = "account_status")]
 pub enum AccountStatus {
   #[default]
   Active,
@@ -77,8 +77,8 @@ pub enum AccountStatus {
 // <<<-- Region:: END    <<<---  Account Status
 
 // -->>> Region:: START  --->>>  Profile Visibility
-#[derive(Debug, Clone, PartialEq, Serialize, Deen, Deserialize, Default)]
-#[deen(postgres_type = "profile_visibility")]
+#[derive(Debug, Clone, PartialEq, Serialize, TypedEnum, Deserialize, Default)]
+#[typed(name = "profile_visibility")]
 pub enum ProfileVisibility {
   #[default]
   Public,

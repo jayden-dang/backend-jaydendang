@@ -14,12 +14,15 @@ time.workspace = true
 sqlx.workspace = true
 derive_more.workspace = true
 uuid = { workspace = true, features = ["serde"] }
+thiserror.workspace = true
 
 async-trait = "0.1.88"
 hyper = { version = "1.0", features = ["full"] }
 serde_json = "1.0.140"
 strum = "0.26"
 strum_macros = "0.26"
+reqwest = "0.12.15"
+redis = "0.31.0"
 chrono = { version = "0.4", features = ["serde"] }
 
 # -- Libraries Members
@@ -30,6 +33,3 @@ jd_domain = { path = "../../shared/jd_domain" }
 
 # -- Services
 user_service = { path = "../../services/user_service" }
-reqwest = "0.12.15"
-thiserror.workspace = true
-redis = "0.31.0"

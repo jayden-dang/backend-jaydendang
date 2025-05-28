@@ -1,11 +1,8 @@
-// jd_deencode/src/lib.rs
-// This crate contains ONLY the proc-macro
-
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
-  Attribute, Data, DataEnum, DeriveInput, Expr, ExprLit, Lit, Meta, MetaList, MetaNameValue, Token,
-  parse::Parse, parse_macro_input, parse2, punctuated::Punctuated,
+  parse::Parse, parse2, parse_macro_input, punctuated::Punctuated, Attribute, Data, DataEnum,
+  DeriveInput, Expr, ExprLit, Lit, Meta, MetaList, MetaNameValue, Token,
 };
 
 struct MetaListParser(Punctuated<Meta, Token![,]>);
@@ -16,14 +13,14 @@ impl Parse for MetaListParser {
   }
 }
 
-#[proc_macro_derive(Deen, attributes(deen))]
+#[proc_macro_derive(TypedEnum, attributes(typed))]
 pub fn derive_enum_common(input: TokenStream) -> TokenStream {
   let input = parse_macro_input!(input as DeriveInput);
   let name = input.ident;
 
   let variants = match input.data {
     Data::Enum(DataEnum { variants, .. }) => variants,
-    _ => panic!("Deen chỉ áp dụng cho enum"),
+    _ => panic!("TypedEnum chỉ áp dụng cho enum"),
   };
 
   // Extract custom postgres type name from attributes
@@ -136,16 +133,16 @@ pub fn derive_enum_common(input: TokenStream) -> TokenStream {
   TokenStream::from(expanded)
 }
 
-/// Extract custom postgres type from deen attribute
+/// Extract custom postgres type from TypedEnum attribute
 fn extract_postgres_type(attrs: &[Attribute]) -> Option<String> {
   for attr in attrs {
-    if attr.path().is_ident("deen") {
+    if attr.path().is_ident("typed") {
       if let Meta::List(MetaList { tokens, .. }) = &attr.meta {
         let tokens = tokens.clone();
         if let Ok(MetaListParser(metas)) = parse2::<MetaListParser>(tokens) {
           for meta in metas {
             if let Meta::NameValue(MetaNameValue { path, value, .. }) = meta {
-              if path.is_ident("postgres_type") {
+              if path.is_ident("name") {
                 if let Expr::Lit(ExprLit { lit: Lit::Str(lit_str), .. }) = value {
                   return Some(lit_str.value());
                 }
@@ -159,16 +156,16 @@ fn extract_postgres_type(attrs: &[Attribute]) -> Option<String> {
   None
 }
 
-/// Extract custom db value from deen attribute
+/// Extract custom db value from typed enum attribute
 fn extract_custom_value(attrs: &[Attribute]) -> Option<String> {
   for attr in attrs {
-    if attr.path().is_ident("deen") {
+    if attr.path().is_ident("typed") {
       if let Meta::List(MetaList { tokens, .. }) = &attr.meta {
         let tokens = tokens.clone();
         if let Ok(MetaListParser(metas)) = parse2::<MetaListParser>(tokens) {
           for meta in metas {
             if let Meta::NameValue(MetaNameValue { path, value, .. }) = meta {
-              if path.is_ident("value") {
+              if path.is_ident("name") {
                 if let Expr::Lit(ExprLit { lit: Lit::Str(lit_str), .. }) = value {
                   return Some(lit_str.value());
                 }
