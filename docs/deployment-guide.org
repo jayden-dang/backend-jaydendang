@@ -1,0 +1,421 @@
+#+TITLE: Deployment Guide
+
+* Table of Contents
+- [[#prerequisites][Prerequisites]]
+- [[#dockerfile-configuration][Dockerfile Configuration]]
+- [[#github-actions-workflow][GitHub Actions Workflow]]
+- [[#ec2-instance-setup][EC2 Instance Setup]]
+- [[#database-management][Database Management]]
+- [[#backup-strategy][Backup Strategy]]
+
+* Prerequisites
+** Required Accounts and Services
+- AWS Account
+- GitHub Account
+- DockerHub Account
+
+** Required Secrets
+*** GitHub Secrets
+- =DOCKERHUB_USERNAME=: Your DockerHub username
+- =DOCKERHUB_TOKEN=: Your DockerHub access token
+- =AWS_ACCESS_KEY_ID=: AWS IAM user access key
+- =AWS_SECRET_ACCESS_KEY=: AWS IAM user secret key
+- =EC2_HOST=: Your EC2 instance public IP
+- =EC2_USERNAME=: EC2 instance username (usually 'ec2-user')
+- =EC2_SSH_KEY=: Private SSH key for EC2 instance
+
+*** How to Get Required Keys
+**** DockerHub Token
+1. Log in to DockerHub
+2. Go to Account Settings > Security
+3. Click "New Access Token"
+4. Give it a name and select appropriate permissions
+5. Copy the token immediately (it won't be shown again)
+
+**** AWS Credentials
+1. Log in to AWS Console
+2. Go to IAM > Users
+3. Create a new user or select existing one
+4. Under "Security credentials" tab, create new access key
+5. Save both Access Key ID and Secret Access Key
+
+**** EC2 SSH Key
+1. In AWS Console, go to EC2 > Key Pairs
+2. Create new key pair or use existing one
+3. Download the .pem file
+4. Convert to format needed for GitHub Actions:
+#+BEGIN_SRC bash
+ssh-keygen -f your-key.pem -m PEM
+#+END_SRC
+
+* Dockerfile Configuration
+The Dockerfile is configured in two stages:
+
+** Builder Stage
+#+BEGIN_SRC dockerfile
+FROM rust:1.87.0-bullseye AS builder
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    binutils \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy all source code first
+COPY . .
+
+# Build with optimizations and caching
+RUN --mount=type=cache,target=/app/target \
+    --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    --mount=type=cache,target=/usr/local/rustup \
+    set -eux; \
+    rustup install stable; \
+    RUSTFLAGS="-C target-cpu=native" cargo build --workspace --release; \
+    find target/release -maxdepth 1 -type f -executable -exec cp {} ./app \;
+#+END_SRC
+
+** Production Stage
+#+BEGIN_SRC dockerfile
+FROM amazonlinux:2023 AS deploy
+
+# Install runtime dependencies
+RUN set -eux; \
+    dnf update -y && dnf install -y \
+    ca-certificates \
+    curl-minimal \
+    bind-utils \
+    iputils \
+    iproute \
+    htop \
+    jq \
+    shadow-utils \
+    && dnf clean all \
+    && rm -rf /var/cache/dnf/*
+
+# Create non-root user
+RUN useradd -m -u 1000 appuser
+
+WORKDIR /deploy
+
+# Copy binary from builder
+COPY --from=builder /app/app ./
+
+# Set proper permissions
+RUN chown -R appuser:appuser /deploy
+
+# Switch to non-root user
+USER appuser
+
+# Set environment variables
+ENV RUST_LOG=info
+ENV RUST_BACKTRACE=1
+ENV DATABASE_URL=postgresql://jayden:postgres@localhost:5432/jaydenblog
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+CMD ["./app"]
+#+END_SRC
+
+* GitHub Actions Workflow
+The workflow file (=.github/workflows/main.yml=) is configured to:
+1. Run tests
+2. Build and push Docker image
+3. Deploy to EC2
+
+** Key components
+#+BEGIN_SRC yaml
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  DOCKER_IMAGE: jaydendang/jayden
+  AWS_REGION: ap-southeast-1 
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Run tests
+        run: cargo test --workspace
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ env.DOCKER_IMAGE }}:latest
+          cache-from: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache
+          cache-to: type=registry,ref=${{ env.DOCKER_IMAGE }}:buildcache,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+            docker pull ${{ env.DOCKER_IMAGE }}:latest
+            docker stop jdblog || true
+            docker rm jdblog || true
+            docker run -d \
+              --name jdblog \
+              --restart unless-stopped \
+              -p 8080:8080 \
+              --network host \
+              -e DATABASE_URL=postgresql://jayden:postgres@localhost:5432/jaydenblog \
+              ${{ env.DOCKER_IMAGE }}:latest
+#+END_SRC
+
+* EC2 Instance Setup
+** Launch EC2 Instance
+1. Go to AWS Console > EC2
+2. Click "Launch Instance"
+3. Choose Amazon Linux 2023
+4. Select t2.micro (free tier eligible)
+5. Configure security group:
+   - Allow SSH (port 22)
+   - Allow HTTP (port 80)
+   - Allow HTTPS (port 443)
+   - Allow custom TCP (port 8080)
+6. Create or select existing key pair
+7. Launch instance
+
+** Install Required Software
+#+BEGIN_SRC bash
+# Update system
+sudo dnf update -y
+
+# Install Docker
+sudo dnf install -y docker
+sudo systemctl enable docker
+sudo systemctl start docker
+sudo usermod -aG docker ec2-user
+
+# Install PostgreSQL
+sudo dnf install -y postgresql13-server
+sudo systemctl enable postgresql
+sudo systemctl start postgresql
+#+END_SRC
+
+** Configure PostgreSQL
+#+BEGIN_SRC bash
+# Initialize database
+sudo postgresql-setup --initdb
+
+# Edit pg_hba.conf
+sudo vi /var/lib/pgsql/data/pg_hba.conf
+# Change authentication method from 'ident' to 'md5' for local connections
+
+# Edit postgresql.conf
+sudo vi /var/lib/pgsql/data/postgresql.conf
+# Set listen_addresses = 'localhost'
+
+# Restart PostgreSQL
+sudo systemctl restart postgresql
+
+# Create database and user
+sudo -u postgres psql -c "CREATE USER jayden WITH PASSWORD 'postgres';"
+sudo -u postgres psql -c "CREATE DATABASE jaydenblog;"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE jaydenblog TO jayden;"
+#+END_SRC
+
+* Database Management
+** Database Management Script
+Create a script for managing the database:
+
+#+BEGIN_SRC bash
+sudo tee /home/ec2-user/db-manage.sh << 'EOF'
+#!/bin/bash
+
+# Database configuration
+DB_NAME="jaydenblog"
+DB_USER="jayden"
+DB_PASSWORD="postgres"
+BACKUP_DIR="/home/ec2-user/backups"
+LOG_FILE="/home/ec2-user/db-manage.log"
+
+# Log function
+log() {
+    echo "$(date): $1" >> $LOG_FILE
+    echo "$(date): $1"
+}
+
+# Function to backup database
+backup_db() {
+    log "Creating backup before reset..."
+    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+    PGPASSWORD=$DB_PASSWORD pg_dump -U $DB_USER -h localhost $DB_NAME > $BACKUP_DIR/jaydenblog_$TIMESTAMP.sql
+    if [ $? -eq 0 ]; then
+        log "Backup created successfully: jaydenblog_$TIMESTAMP.sql"
+    else
+        log "Backup failed!"
+        exit 1
+    fi
+}
+
+# Function to reset database
+reset_db() {
+    log "Resetting database..."
+    
+    # Drop and recreate database
+    PGPASSWORD=$DB_PASSWORD psql -U $DB_USER -h localhost -c "DROP DATABASE IF EXISTS $DB_NAME;"
+    PGPASSWORD=$DB_PASSWORD psql -U $DB_USER -h localhost -c "CREATE DATABASE $DB_NAME;"
+    
+    if [ $? -eq 0 ]; then
+        log "Database reset successfully"
+    else
+        log "Database reset failed!"
+        exit 1
+    fi
+}
+
+# Function to restore from backup
+restore_db() {
+    if [ -z "$1" ]; then
+        log "Please specify backup file to restore"
+        echo "Available backups:"
+        ls -l $BACKUP_DIR/jaydenblog_*.sql
+        exit 1
+    fi
+    
+    BACKUP_FILE="$1"
+    if [ ! -f "$BACKUP_FILE" ]; then
+        log "Backup file not found: $BACKUP_FILE"
+        exit 1
+    fi
+    
+    log "Restoring from backup: $BACKUP_FILE"
+    PGPASSWORD=$DB_PASSWORD psql -U $DB_USER -h localhost $DB_NAME < $BACKUP_FILE
+    
+    if [ $? -eq 0 ]; then
+        log "Database restored successfully"
+    else
+        log "Database restore failed!"
+        exit 1
+    fi
+}
+
+# Function to list backups
+list_backups() {
+    log "Available backups:"
+    ls -l $BACKUP_DIR/jaydenblog_*.sql
+}
+
+# Main script
+case "$1" in
+    "reset")
+        backup_db
+        reset_db
+        ;;
+    "restore")
+        restore_db "$2"
+        ;;
+    "backup")
+        backup_db
+        ;;
+    "list")
+        list_backups
+        ;;
+    *)
+        echo "Usage: $0 {reset|restore|backup|list}"
+        echo "  reset   - Backup current DB and reset it"
+        echo "  restore <backup_file> - Restore from backup"
+        echo "  backup  - Create a new backup"
+        echo "  list    - List all available backups"
+        exit 1
+        ;;
+esac
+EOF
+
+# Set permissions
+sudo chmod +x /home/ec2-user/db-manage.sh
+sudo chown ec2-user:ec2-user /home/ec2-user/db-manage.sh
+#+END_SRC
+
+** Using the Database Management Script
+
+*** Reset Database (creates empty database)
+#+BEGIN_SRC bash
+sudo -u ec2-user /home/ec2-user/db-manage.sh reset
+#+END_SRC
+
+*** Create Backup
+#+BEGIN_SRC bash
+sudo -u ec2-user /home/ec2-user/db-manage.sh backup
+#+END_SRC
+
+*** List Backups
+#+BEGIN_SRC bash
+sudo -u ec2-user /home/ec2-user/db-manage.sh list
+#+END_SRC
+
+*** Restore from Backup
+#+BEGIN_SRC bash
+sudo -u ec2-user /home/ec2-user/db-manage.sh restore /home/ec2-user/backups/jaydenblog_20250528_021352.sql
+#+END_SRC
+
+* Backup Strategy
+** Automated Backup
+The system is configured to create backups every 7 days using crontab:
+
+#+BEGIN_SRC bash
+# Edit crontab
+crontab -e
+
+# Add this line
+0 0 */7 * * /home/ec2-user/backup.sh
+#+END_SRC
+
+** Manual Backup
+You can create manual backups at any time using:
+#+BEGIN_SRC bash
+sudo -u ec2-user /home/ec2-user/db-manage.sh backup
+#+END_SRC
+
+** Backup Location
+All backups are stored in =/home/ec2-user/backups/= with timestamp in filename format: =jaydenblog_YYYYMMDD_HHMMSS.sql=
+
+** Backup Retention
+The system keeps the last 4 backups (approximately 1 month of weekly backups) to save disk space during development. 

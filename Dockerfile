@@ -56,7 +56,8 @@ USER appuser
 # Set environment variables
 ENV RUST_LOG=info
 ENV RUST_BACKTRACE=1
-ENV TZ=Asia/Ho_Chi_Minh
+# ENV TZ=Asia/Ho_Chi_Minh
+ENV DATABASE_URL=postgresql://jayden:postgres@localhost:5432/jaydenblog
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
