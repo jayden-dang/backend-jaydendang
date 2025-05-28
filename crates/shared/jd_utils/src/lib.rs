@@ -9,17 +9,17 @@ pub use macros::*;
 pub type Result<T> = std::result::Result<T, error::Error>;
 
 pub fn convert_variant_name(s: &str) -> String {
-    let mut result = String::new();
-    let chars = s.chars().peekable();
+  let mut result = String::new();
+  let chars = s.chars().peekable();
 
-    for c in chars {
-        if c.is_uppercase() && !result.is_empty() {
-            result.push('_');
-        }
-        result.push(c.to_lowercase().next().unwrap());
+  for c in chars {
+    if c.is_uppercase() && !result.is_empty() {
+      result.push('_');
     }
+    result.push(c.to_lowercase().next().unwrap());
+  }
 
-    result
+  result
 }
 
 #[macro_export]

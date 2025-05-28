@@ -9,10 +9,10 @@ pub mod user;
 #[derive(Debug, Clone, PartialEq, Serialize, Deen, Deserialize)]
 #[deen(postgres_type = "user_gender")]
 pub enum UserGender {
-    Male,
-    Female,
-    Other,
-    PreferNotToSay,
+  Male,
+  Female,
+  Other,
+  PreferNotToSay,
 }
 // <<<-- Region:: END    <<<---  User Gende
 
@@ -20,14 +20,14 @@ pub enum UserGender {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default, Deen)]
 #[deen(postgres_type = "education_level")]
 pub enum EducationLevel {
-    HighSchool,
-    Bachelor,
-    Master,
-    PhD,
-    Bootcamp,
-    SelfTaught,
-    #[default]
-    Other,
+  HighSchool,
+  Bachelor,
+  Master,
+  PhD,
+  Bootcamp,
+  SelfTaught,
+  #[default]
+  Other,
 }
 
 // <<<-- Region:: END    <<<---  Education Level
@@ -36,11 +36,11 @@ pub enum EducationLevel {
 #[derive(Debug, Clone, PartialEq, Serialize, Deen, Deserialize, Default)]
 #[deen(postgres_type = "experience_level")]
 pub enum ExperienceLevel {
-    #[default]
-    Beginner,
-    Intermediate,
-    Advanced,
-    Expert,
+  #[default]
+  Beginner,
+  Intermediate,
+  Advanced,
+  Expert,
 }
 // <<<-- Region:: END    <<<---  Experience Level
 
@@ -48,11 +48,11 @@ pub enum ExperienceLevel {
 #[derive(Debug, Clone, PartialEq, Serialize, Deen, Deserialize, Default)]
 #[deen(postgres_type = "subscription_tier")]
 pub enum SubscriptionTier {
-    #[default]
-    Free,
-    Basic,
-    Premium,
-    Enterprise,
+  #[default]
+  Free,
+  Basic,
+  Premium,
+  Enterprise,
 }
 
 // <<<-- Region:: END    <<<---  Subscription Tier
@@ -61,18 +61,18 @@ pub enum SubscriptionTier {
 #[derive(Debug, Clone, Serialize, Deen, Deserialize, Default)]
 #[deen(postgres_type = "account_status")]
 pub enum AccountStatus {
-    #[default]
-    Active,
-    Inactive,
-    Suspended,
-    PendingVerification,
-    Locked {
-        until: OffsetDateTime,
-        reason: String,
-    },
-    MarkedForDeletion {
-        scheduled_for: OffsetDateTime,
-    },
+  #[default]
+  Active,
+  Inactive,
+  Suspended,
+  PendingVerification,
+  Locked {
+    until: OffsetDateTime,
+    reason: String,
+  },
+  MarkedForDeletion {
+    scheduled_for: OffsetDateTime,
+  },
 }
 // <<<-- Region:: END    <<<---  Account Status
 
@@ -80,9 +80,9 @@ pub enum AccountStatus {
 #[derive(Debug, Clone, PartialEq, Serialize, Deen, Deserialize, Default)]
 #[deen(postgres_type = "profile_visibility")]
 pub enum ProfileVisibility {
-    #[default]
-    Public,
-    Private,
-    Friends,
+  #[default]
+  Public,
+  Private,
+  Friends,
 }
 // <<<-- Region:: END    <<<---  Profile Visibility

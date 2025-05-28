@@ -10,7 +10,7 @@ mod users;
 pub type Result<T> = std::result::Result<T, error::Error>;
 
 pub fn v1_routes(app_state: AppState) -> Router {
-    Router::new()
-        .nest("/api/v1", Router::new().nest("/users", user_router()))
-        .with_state(app_state)
+  Router::new()
+    .nest("/api/v1", Router::new().nest("/users", user_router()))
+    .with_state(app_state)
 }

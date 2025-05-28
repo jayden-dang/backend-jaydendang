@@ -3,7 +3,7 @@ use serde::Deserialize;
 
 #[derive(Deserialize, FilterNodes, Default, Debug)]
 pub struct UserFilter {
-    pub email: Option<OpValsString>,
-    pub username: Option<OpValsString>,
-    pub is_active: Option<OpValsBool>,
+  pub email: Option<OpValsString>,
+  pub username: Option<OpValsString>,
+  pub is_active: Option<OpValsBool>,
 }

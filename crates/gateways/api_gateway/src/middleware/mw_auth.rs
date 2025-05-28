@@ -12,27 +12,27 @@ use tower_cookies::Cookies;
 
 #[allow(dead_code)] // For now, until we have the rpc.
 pub async fn mw_ctx_require(ctx: Result<CtxW>, req: Request<Body>, next: Next) -> Result<Response> {
-    ctx?;
+  ctx?;
 
-    Ok(next.run(req).await)
+  Ok(next.run(req).await)
 }
 
 #[allow(unused_variables, unused_mut)] // For now, until we have the rpc.
 pub async fn mw_ctx_resolve(
-    State(app_state): State<AppState>,
-    cookies: Cookies,
-    mut req: Request<Body>,
-    next: Next,
+  State(app_state): State<AppState>,
+  cookies: Cookies,
+  mut req: Request<Body>,
+  next: Next,
 ) -> Result<Response> {
-    let ctx_ext_result = ctx_resolve(app_state, &cookies).await;
+  let ctx_ext_result = ctx_resolve(app_state, &cookies).await;
 
-    Ok(next.run(req).await)
+  Ok(next.run(req).await)
 }
 
 async fn ctx_resolve(_app_state: AppState, _cookies: &Cookies) -> CtxExtResult {
-    Ctx::new(0i64)
-        .map(CtxW)
-        .map_err(|_| CtxExtError::CtxCreateFail("error".to_string()))
+  Ctx::new(0i64)
+    .map(CtxW)
+    .map_err(|_| CtxExtError::CtxCreateFail("error".to_string()))
 }
 
 // region:    --- Ctx Extractor
@@ -40,16 +40,16 @@ async fn ctx_resolve(_app_state: AppState, _cookies: &Cookies) -> CtxExtResult {
 pub struct CtxW(pub Ctx);
 
 impl<S: Send + Sync> FromRequestParts<S> for CtxW {
-    type Rejection = Error;
+  type Rejection = Error;
 
-    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self> {
-        parts
-            .extensions
-            .get::<CtxExtResult>()
-            .ok_or(Error::CtxExt(CtxExtError::CtxNotInRequestExt))?
-            .clone()
-            .map_err(Error::CtxExt)
-    }
+  async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self> {
+    parts
+      .extensions
+      .get::<CtxExtResult>()
+      .ok_or(Error::CtxExt(CtxExtError::CtxNotInRequestExt))?
+      .clone()
+      .map_err(Error::CtxExt)
+  }
 }
 // endregion: --- Ctx Extractor
 
@@ -58,31 +58,31 @@ type CtxExtResult = core::result::Result<CtxW, CtxExtError>;
 
 #[derive(Clone, Serialize, Debug)]
 pub enum CtxExtError {
-    TokenNotInCookie,
-    TokenWrongFormat,
+  TokenNotInCookie,
+  TokenWrongFormat,
 
-    UserNotFound,
-    ModelAccessError(String),
-    FailValidate,
-    CannotSetTokenCookie,
+  UserNotFound,
+  ModelAccessError(String),
+  FailValidate,
+  CannotSetTokenCookie,
 
-    CtxNotInRequestExt,
-    CtxCreateFail(String),
+  CtxNotInRequestExt,
+  CtxCreateFail(String),
 }
 
 impl std::fmt::Display for CtxExtError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::TokenNotInCookie => write!(f, "Token not found in cookie"),
-            Self::TokenWrongFormat => write!(f, "Token has wrong format"),
-            Self::UserNotFound => write!(f, "User not found"),
-            Self::ModelAccessError(msg) => write!(f, "Model access error: {}", msg),
-            Self::FailValidate => write!(f, "Validation failed"),
-            Self::CannotSetTokenCookie => write!(f, "Cannot set token cookie"),
-            Self::CtxNotInRequestExt => write!(f, "Context not found in request extensions"),
-            Self::CtxCreateFail(msg) => write!(f, "Failed to create context: {}", msg),
-        }
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      Self::TokenNotInCookie => write!(f, "Token not found in cookie"),
+      Self::TokenWrongFormat => write!(f, "Token has wrong format"),
+      Self::UserNotFound => write!(f, "User not found"),
+      Self::ModelAccessError(msg) => write!(f, "Model access error: {}", msg),
+      Self::FailValidate => write!(f, "Validation failed"),
+      Self::CannotSetTokenCookie => write!(f, "Cannot set token cookie"),
+      Self::CtxNotInRequestExt => write!(f, "Context not found in request extensions"),
+      Self::CtxCreateFail(msg) => write!(f, "Failed to create context: {}", msg),
     }
+  }
 }
 
 impl std::error::Error for CtxExtError {}
