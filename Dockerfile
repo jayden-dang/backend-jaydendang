@@ -6,8 +6,6 @@ LABEL version="0.0.1"
 LABEL description="Web server for Jayden Blog"
 
 # Add build arguments
-ARG RUST_VERSION=1.87.0
-ARG DEBIAN_VERSION=bullseye
 ARG APP_USER=appuser
 ARG APP_UID=1000
 
@@ -19,9 +17,7 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     binutils \
     && rm -rf /var/lib/apt/lists/* \
-    && cargo install cargo-audit \
-    && rustup default stable \
-    && rustup update
+    && cargo install cargo-audit
 
 # Copy dependency files first for better caching
 COPY Cargo.toml Cargo.lock ./
