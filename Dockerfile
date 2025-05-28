@@ -19,6 +19,10 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* \
     && cargo install cargo-audit
 
+# Configure Rust toolchain
+RUN rustup default stable && \
+    rustup update
+
 # Copy dependency files first for better caching
 COPY Cargo.toml Cargo.lock ./
 
