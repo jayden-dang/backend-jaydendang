@@ -32,8 +32,20 @@ pub struct PgEnum {
 ///
 /// # Example
 /// ```rust
-/// let input = CreateUserInput { name: "John".to_string() };
-/// let user = create::<UserModel, _, User>(db, input).await?;
+/// use jd_core::{base::rest::create, ModelManager};
+/// use sqlx::PgPool;
+/// use uuid::Uuid;
+/// 
+/// async fn example(db: &ModelManager) -> Result<(), Box<dyn std::error::Error>> {
+///     #[derive(serde::Serialize)]
+///     struct CreateUserInput { name: String }
+///     #[derive(serde::Deserialize)]
+///     struct User { id: Uuid, name: String }
+///     
+///     let input = CreateUserInput { name: "John".to_string() };
+///     let user = create::<UserModel, _, User>(db, input).await?;
+///     Ok(())
+/// }
 /// ```
 pub async fn create<MC, I, O>(db: &ModelManager, input: I) -> Result<O>
 where
@@ -100,11 +112,23 @@ where
 ///
 /// # Example
 /// ```rust
-/// let inputs = vec![
-///     CreateUserInput { name: "John".to_string() },
-///     CreateUserInput { name: "Jane".to_string() }
-/// ];
-/// let users = create_many::<UserModel, _, User>(db, inputs).await?;
+/// use jd_core::{base::rest::create_many, ModelManager};
+/// use sqlx::PgPool;
+/// use uuid::Uuid;
+/// 
+/// async fn example(db: &ModelManager) -> Result<(), Box<dyn std::error::Error>> {
+///     #[derive(serde::Serialize)]
+///     struct CreateUserInput { name: String }
+///     #[derive(serde::Deserialize)]
+///     struct User { id: Uuid, name: String }
+///     
+///     let inputs = vec![
+///         CreateUserInput { name: "John".to_string() },
+///         CreateUserInput { name: "Jane".to_string() }
+///     ];
+///     let users = create_many::<UserModel, _, User>(db, inputs).await?;
+///     Ok(())
+/// }
 /// ```
 pub async fn create_many<MC, I, O>(db: &ModelManager, input: Vec<I>) -> Result<Vec<O>>
 where
@@ -155,7 +179,18 @@ where
 ///
 /// # Example
 /// ```rust
-/// let user = get_by_id::<UserModel, User>(db, user_id).await?;
+/// use jd_core::{base::rest::get_by_id, ModelManager};
+/// use sqlx::PgPool;
+/// use uuid::Uuid;
+/// 
+/// async fn example(db: &ModelManager) -> Result<(), Box<dyn std::error::Error>> {
+///     #[derive(serde::Deserialize)]
+///     struct User { id: Uuid, name: String }
+///     
+///     let user_id = Uuid::new_v4();
+///     let user = get_by_id::<UserModel, User>(db, user_id).await?;
+///     Ok(())
+/// }
 /// ```
 pub async fn get_by_id<MC, O>(db: &ModelManager, id: Uuid) -> Result<O>
 where
@@ -193,8 +228,21 @@ where
 ///
 /// # Example
 /// ```rust
-/// let filter = UserFilter { status: Some("active".to_string()) };
-/// let user = first::<UserModel, _, User>(db, Some(filter), None).await?;
+/// use jd_core::{base::rest::first, ModelManager};
+/// use modql::filter::ListOptions;
+/// use sqlx::PgPool;
+/// use uuid::Uuid;
+/// 
+/// async fn example(db: &ModelManager) -> Result<(), Box<dyn std::error::Error>> {
+///     #[derive(serde::Deserialize)]
+///     struct UserFilter { status: Option<String> }
+///     #[derive(serde::Deserialize)]
+///     struct User { id: Uuid, name: String }
+///     
+///     let filter = UserFilter { status: Some("active".to_string()) };
+///     let user = first::<UserModel, _, User>(db, Some(filter), None).await?;
+///     Ok(())
+/// }
 /// ```
 pub async fn first<MC, F, O>(
     db: &ModelManager,
@@ -244,8 +292,20 @@ where
 ///
 /// # Example
 /// ```rust
-/// let filter = UserFilter { email: Some("user@example.com".to_string()) };
-/// let user = get_by_sth::<UserModel, _, User>(db, Some(filter)).await?;
+/// use jd_core::{base::rest::get_by_sth, ModelManager};
+/// use sqlx::PgPool;
+/// use uuid::Uuid;
+/// 
+/// async fn example(db: &ModelManager) -> Result<(), Box<dyn std::error::Error>> {
+///     #[derive(serde::Deserialize)]
+///     struct UserFilter { email: Option<String> }
+///     #[derive(serde::Deserialize)]
+///     struct User { id: Uuid, name: String }
+///     
+///     let filter = UserFilter { email: Some("user@example.com".to_string()) };
+///     let user = get_by_sth::<UserModel, _, User>(db, Some(filter)).await?;
+///     Ok(())
+/// }
 /// ```
 pub async fn get_by_sth<MC, F, O>(db: &ModelManager, filter: Option<F>) -> Result<O>
 where
@@ -290,9 +350,22 @@ where
 ///
 /// # Example
 /// ```rust
-/// let filter = UserFilter { status: Some("active".to_string()) };
-/// let list_options = ListOptions { limit: Some(10), offset: Some(0), ..Default::default() };
-/// let (users, metadata) = list::<UserModel, _, User>(db, Some(filter), Some(list_options)).await?;
+/// use jd_core::{base::rest::list, ModelManager};
+/// use modql::filter::ListOptions;
+/// use sqlx::PgPool;
+/// use uuid::Uuid;
+/// 
+/// async fn example(db: &ModelManager) -> Result<(), Box<dyn std::error::Error>> {
+///     #[derive(serde::Deserialize)]
+///     struct UserFilter { status: Option<String> }
+///     #[derive(serde::Deserialize)]
+///     struct User { id: Uuid, name: String }
+///     
+///     let filter = UserFilter { status: Some("active".to_string()) };
+///     let list_options = ListOptions { limit: Some(10), offset: Some(0), ..Default::default() };
+///     let (users, metadata) = list::<UserModel, _, User>(db, Some(filter), Some(list_options)).await?;
+///     Ok(())
+/// }
 /// ```
 pub async fn list<MC, F, O>(
     db: &ModelManager,
@@ -347,8 +420,18 @@ where
 ///
 /// # Example
 /// ```rust
-/// let filter = UserFilter { status: Some("active".to_string()) };
-/// let count = count::<UserModel, _>(db, Some(filter)).await?;
+/// use jd_core::{base::rest::count, ModelManager};
+/// use sqlx::PgPool;
+/// use uuid::Uuid;
+/// 
+/// async fn example(db: &ModelManager) -> Result<(), Box<dyn std::error::Error>> {
+///     #[derive(serde::Deserialize)]
+///     struct UserFilter { status: Option<String> }
+///     
+///     let filter = UserFilter { status: Some("active".to_string()) };
+///     let count = count::<UserModel, _>(db, Some(filter)).await?;
+///     Ok(())
+/// }
 /// ```
 pub async fn count<MC, F>(db: &ModelManager, filter: Option<F>) -> Result<i64>
 where
@@ -393,8 +476,19 @@ where
 ///
 /// # Example
 /// ```rust
-/// let input = UpdateUserInput { status: "inactive".to_string() };
-/// update::<UserModel, _>(db, user_id, input).await?;
+/// use jd_core::{base::rest::update, ModelManager};
+/// use sqlx::PgPool;
+/// use uuid::Uuid;
+/// 
+/// async fn example(db: &ModelManager) -> Result<(), Box<dyn std::error::Error>> {
+///     #[derive(serde::Serialize)]
+///     struct UpdateUserInput { status: String }
+///     
+///     let user_id = Uuid::new_v4();
+///     let input = UpdateUserInput { status: "inactive".to_string() };
+///     update::<UserModel, _>(db, user_id, input).await?;
+///     Ok(())
+/// }
 /// ```
 pub async fn update<MC, I>(db: &ModelManager, id: Uuid, input: I) -> Result<()>
 where
@@ -435,7 +529,15 @@ where
 ///
 /// # Example
 /// ```rust
-/// delete::<UserModel>(db, user_id).await?;
+/// use jd_core::{base::rest::delete, ModelManager};
+/// use sqlx::PgPool;
+/// use uuid::Uuid;
+/// 
+/// async fn example(db: &ModelManager) -> Result<(), Box<dyn std::error::Error>> {
+///     let user_id = Uuid::new_v4();
+///     delete::<UserModel>(db, user_id).await?;
+///     Ok(())
+/// }
 /// ```
 pub async fn delete<MC>(db: &ModelManager, id: Uuid) -> Result<()>
 where
@@ -470,8 +572,17 @@ where
 ///
 /// # Example
 /// ```rust
-/// let ids = vec![user_id1, user_id2];
-/// delete_many::<UserModel>(db, ids).await?;
+/// use jd_core::{base::rest::delete_many, ModelManager};
+/// use sqlx::PgPool;
+/// use uuid::Uuid;
+/// 
+/// async fn example(db: &ModelManager) -> Result<(), Box<dyn std::error::Error>> {
+///     let user_id1 = Uuid::new_v4();
+///     let user_id2 = Uuid::new_v4();
+///     let ids = vec![user_id1, user_id2];
+///     delete_many::<UserModel>(db, ids).await?;
+///     Ok(())
+/// }
 /// ```
 pub async fn delete_many<MC: DMC>(db: &ModelManager, ids: Vec<Uuid>) -> Result<()> {
     // Step 1: Early return if no IDs provided
@@ -507,8 +618,14 @@ pub async fn delete_many<MC: DMC>(db: &ModelManager, ids: Vec<Uuid>) -> Result<(
 ///
 /// # Example
 /// ```rust
-/// let list_options = ListOptions { limit: Some(10), offset: Some(20), ..Default::default() };
-/// let (computed_options, page) = compute_list_options::<UserModel>(Some(list_options))?;
+/// use jd_core::{base::rest::compute_list_options, ModelManager};
+/// use modql::filter::ListOptions;
+/// 
+/// fn example() -> Result<(), Box<dyn std::error::Error>> {
+///     let list_options = ListOptions { limit: Some(10), offset: Some(20), ..Default::default() };
+///     let (computed_options, page) = compute_list_options::<UserModel>(Some(list_options))?;
+///     Ok(())
+/// }
 /// ```
 pub fn compute_list_options<MC: DMC>(
     list_options: Option<ListOptions>,
@@ -543,9 +660,21 @@ pub fn compute_list_options<MC: DMC>(
 ///
 /// # Example
 /// ```rust
-/// let ids = vec![user_id1, user_id2];
-/// let input = UpdateUserInput { status: "active".to_string() };
-/// update_many::<UserModel, _>(db, ids, input).await?;
+/// use jd_core::{base::rest::update_many, ModelManager};
+/// use sqlx::PgPool;
+/// use uuid::Uuid;
+/// 
+/// async fn example(db: &ModelManager) -> Result<(), Box<dyn std::error::Error>> {
+///     #[derive(serde::Serialize)]
+///     struct UpdateUserInput { status: String }
+///     
+///     let user_id1 = Uuid::new_v4();
+///     let user_id2 = Uuid::new_v4();
+///     let ids = vec![user_id1, user_id2];
+///     let input = UpdateUserInput { status: "active".to_string() };
+///     update_many::<UserModel, _>(db, ids, input).await?;
+///     Ok(())
+/// }
 /// ```
 pub async fn update_many<MC, I>(db: &ModelManager, ids: Vec<Uuid>, input: I) -> Result<()>
 where
@@ -586,8 +715,18 @@ where
 ///
 /// # Example
 /// ```rust
-/// let filter = UserFilter { email: Some("user@example.com".to_string()) };
-/// let exists = exists::<UserModel, _>(db, Some(filter)).await?;
+/// use jd_core::{base::rest::exists, ModelManager};
+/// use sqlx::PgPool;
+/// use uuid::Uuid;
+/// 
+/// async fn example(db: &ModelManager) -> Result<(), Box<dyn std::error::Error>> {
+///     #[derive(serde::Deserialize)]
+///     struct UserFilter { email: Option<String> }
+///     
+///     let filter = UserFilter { email: Some("user@example.com".to_string()) };
+///     let exists = exists::<UserModel, _>(db, Some(filter)).await?;
+///     Ok(())
+/// }
 /// ```
 pub async fn exists<MC, F>(db: &ModelManager, filter: Option<F>) -> Result<bool>
 where
@@ -625,8 +764,20 @@ where
 ///
 /// # Example
 /// ```rust
-/// let ids = vec![user_id1, user_id2];
-/// let users = find_by_ids::<UserModel, User>(db, ids).await?;
+/// use jd_core::{base::rest::find_by_ids, ModelManager};
+/// use sqlx::PgPool;
+/// use uuid::Uuid;
+/// 
+/// async fn example(db: &ModelManager) -> Result<(), Box<dyn std::error::Error>> {
+///     #[derive(serde::Deserialize)]
+///     struct User { id: Uuid, name: String }
+///     
+///     let user_id1 = Uuid::new_v4();
+///     let user_id2 = Uuid::new_v4();
+///     let ids = vec![user_id1, user_id2];
+///     let users = find_by_ids::<UserModel, User>(db, ids).await?;
+///     Ok(())
+/// }
 /// ```
 pub async fn find_by_ids<MC, O>(db: &ModelManager, ids: Vec<Uuid>) -> Result<Vec<O>>
 where
@@ -665,9 +816,21 @@ where
 ///
 /// # Example
 /// ```rust
-/// let filter = UserFilter { status: Some("inactive".to_string()) };
-/// let input = UpdateUserInput { status: "active".to_string() };
-/// let updated_count = update_by_filter::<UserModel, _, _>(db, filter, input).await?;
+/// use jd_core::{base::rest::update_by_filter, ModelManager};
+/// use sqlx::PgPool;
+/// use uuid::Uuid;
+/// 
+/// async fn example(db: &ModelManager) -> Result<(), Box<dyn std::error::Error>> {
+///     #[derive(serde::Deserialize)]
+///     struct UserFilter { status: Option<String> }
+///     #[derive(serde::Serialize)]
+///     struct UpdateUserInput { status: String }
+///     
+///     let filter = UserFilter { status: Some("inactive".to_string()) };
+///     let input = UpdateUserInput { status: "active".to_string() };
+///     let updated_count = update_by_filter::<UserModel, _, _>(db, filter, input).await?;
+///     Ok(())
+/// }
 /// ```
 pub async fn update_by_filter<MC, I, F>(db: &ModelManager, filter: F, input: I) -> Result<u64>
 where

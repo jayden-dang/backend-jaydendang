@@ -22,8 +22,11 @@ jobs:
           toolchain: stable
           override: true
       
+      - name: Install cargo-nextest
+        run: cargo install cargo-nextest
+      
       - name: Run tests
-        run: cargo test --workspace
+        run: cargo nextest run --workspace
 
   build-and-push:
     needs: test
