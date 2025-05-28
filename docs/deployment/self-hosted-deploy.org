@@ -1,0 +1,291 @@
+# Self-Hosted GitHub Actions Runner Deployment Guide
+
+* This guide describes the process of setting up and maintaining a self-hosted GitHub Actions runner on EC2.
+
+## Table of Contents
+- [[#Prerequisites]]
+- [[#IAM Setup]]
+- [[#EC2 Instance Setup]]
+- [[#Runner Installation]]
+- [[#Workflow Configuration]]
+- [[#Monitoring and Maintenance]]
+- [[#Troubleshooting]]
+
+## Prerequisites
+
+### Required AWS Services
+- AWS Account with appropriate permissions
+- EC2 instance (Ubuntu 22.04 LTS)
+- IAM roles and policies
+- Systems Manager Parameter Store
+
+### Required GitHub Access
+- GitHub repository access
+- Repository admin permissions
+- GitHub Actions enabled
+
+## IAM Setup
+
+### Create IAM Policy
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "ParameterStoreAccess",
+            "Effect": "Allow",
+            "Action": [
+                "ssm:GetParameter",
+                "ssm:GetParameters",
+                "ssm:GetParametersByPath"
+            ],
+            "Resource": [
+                "arn:aws:ssm:*:*:parameter/github/*",
+                "arn:aws:ssm:*:*:parameter/AmazonCloudWatch-*"
+            ]
+        },
+        {
+            "Sid": "CloudWatchAccess",
+            "Effect": "Allow",
+            "Action": [
+                "cloudwatch:PutMetricData",
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents",
+                "logs:DescribeLogStreams"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+```
+
+### Create IAM Role
+1. Go to IAM > Roles > Create role
+2. Select "AWS service" as trusted entity
+3. Choose "EC2" as use case
+4. Attach the following policies:
+   - Custom policy created above
+   - AmazonSSMManagedInstanceCore
+   - CloudWatchAgentServerPolicy
+
+### Create Instance Profile
+1. Create instance profile
+2. Attach the IAM role to the profile
+
+## EC2 Instance Setup
+
+### Instance Specifications
+- AMI: Ubuntu 22.04 LTS
+- Instance Type: t3.large or t3.xlarge
+- Storage: 30GB gp3
+- Security Group:
+  - SSH (port 22)
+  - Custom TCP (port 8080)
+
+### User Data Script
+```bash
+#!/bin/bash
+
+# Update system
+sudo apt-get update
+sudo apt-get upgrade -y
+
+# Install dependencies
+sudo apt-get install -y \
+    git \
+    docker.io \
+    pkg-config \
+    libssl-dev \
+    build-essential \
+    make \
+    tar \
+    gzip \
+    unzip \
+    curl
+
+# Install AWS CLI
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+
+# Setup Docker
+sudo systemctl start docker
+sudo systemctl enable docker
+sudo usermod -aG docker ubuntu
+
+# Install Rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+source $HOME/.cargo/env
+```
+
+## Runner Installation
+
+### Get GitHub Token
+1. Go to GitHub repository
+2. Settings > Actions > Runners
+3. Click "New self-hosted runner"
+4. Copy the token
+
+### Store Token in Parameter Store
+```bash
+aws ssm put-parameter \
+    --name "/github/runner/token" \
+    --type "SecureString" \
+    --value "YOUR_TOKEN" \
+    --description "GitHub Actions Runner Token"
+```
+
+### Install Runner
+```bash
+# Create directory for runner
+mkdir -p actions-runner && cd actions-runner
+
+# Download runner
+curl -o actions-runner-linux-x64-2.311.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.311.0/actions-runner-linux-x64-2.311.0.tar.gz
+
+# Extract
+tar xzf ./actions-runner-linux-x64-2.311.0.tar.gz
+
+# Get token from Parameter Store
+GITHUB_TOKEN=$(aws ssm get-parameter --name "/github/runner/token" --with-decryption --query "Parameter.Value" --output text)
+
+# Configure runner
+./config.sh --url https://github.com/YOUR_USERNAME/YOUR_REPO --token $GITHUB_TOKEN
+
+# Install and start service
+sudo ./svc.sh install
+sudo ./svc.sh start
+```
+
+## Workflow Configuration
+
+### GitHub Actions Workflow
+The workflow file (.github/workflows/main.yml) should be configured to use self-hosted runner:
+
+```yaml
+jobs:
+  test:
+    runs-on: self-hosted
+    steps:
+      # ... steps configuration
+```
+
+## Monitoring and Maintenance
+
+### CloudWatch Agent Setup
+```bash
+# Download CloudWatch agent
+wget https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb
+
+# Install agent
+sudo dpkg -i amazon-cloudwatch-agent.deb
+
+# Configure and start agent
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c ssm:/AmazonCloudWatch-Config
+sudo systemctl start amazon-cloudwatch-agent
+sudo systemctl enable amazon-cloudwatch-agent
+```
+
+### Regular Maintenance
+1. Update system:
+```bash
+sudo apt-get update
+sudo apt-get upgrade -y
+```
+
+2. Update Rust:
+```bash
+rustup update
+```
+
+3. Clean Docker:
+```bash
+docker system prune -af --volumes
+```
+
+4. Rotate GitHub token:
+- Create new token
+- Update in Parameter Store
+- Restart runner service
+
+## Troubleshooting
+
+### Common Issues
+
+#### Runner Offline
+```bash
+# Check service status
+sudo systemctl status actions.runner.*
+
+# Restart service
+sudo systemctl restart actions.runner.*
+
+# Check logs
+sudo journalctl -u actions.runner.* -f
+```
+
+#### Build Failures
+```bash
+# Check disk space
+df -h
+
+# Check memory
+free -m
+
+# Check Docker
+docker system df
+```
+
+#### Permission Issues
+```bash
+# Check AWS credentials
+aws sts get-caller-identity
+
+# Check SSM access
+aws ssm get-parameter --name "/github/runner/token" --with-decryption
+```
+
+### Logs Location
+- Runner logs: /var/log/actions.runner.*
+- Docker logs: /var/log/docker
+- System logs: /var/log/syslog
+
+## Security Best Practices
+
+1. Regular Updates
+- System updates
+- Security patches
+- Dependency updates
+
+2. Access Control
+- Limit SSH access
+- Use security groups
+- Regular security audits
+
+3. Monitoring
+- Set up CloudWatch alarms
+- Monitor resource usage
+- Track failed builds
+
+4. Backup
+- Regular configuration backups
+- Document all changes
+- Keep recovery procedures
+
+## Cost Optimization
+
+1. Instance Management
+- Use appropriate instance size
+- Consider spot instances
+- Auto shutdown when idle
+
+2. Resource Cleanup
+- Regular Docker cleanup
+- Remove old builds
+- Monitor storage usage
+
+3. Monitoring Costs
+- Set up billing alerts
+- Track resource usage
+- Optimize based on metrics 
