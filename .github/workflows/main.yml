@@ -26,19 +26,6 @@ jobs:
       - name: Check format
         run: cargo fmt --all -- --check
 
-      - name: Notify test status
-        if: always()
-        uses: Ilshidur/action-discord@master
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-        with:
-          args: |
-            Test job ${{ job.status }} for commit ${{ github.sha }}
-            Repository: ${{ github.event.repository.name }}
-            Branch: ${{ github.ref }}
-            Commit: ${{ github.sha }}
-            Author: ${{ github.actor }}
-
   build-and-push:
     needs: test
     runs-on: self-hosted
@@ -113,20 +100,12 @@ jobs:
           echo "Application failed to become healthy"
           exit 1
 
-      - name: Notify deployment status
-        if: always()
-        uses: Ilshidur/action-discord@master
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-        with:
-          args: |
-            Deployment ${{ job.status }} for commit ${{ github.sha }}
-            Repository: ${{ github.event.repository.name }}
-            Environment: Production
-            URL: https://jaydendang.com
-            Branch: ${{ github.ref }}
-            Commit: ${{ github.sha }}
-            Author: ${{ github.actor }}
+      - name: Notify successful deployment
+        if: success()
+        run: |
+          curl -H "Content-Type: application/json" \
+               -d "{\"content\":\"✅ Deployment successful!\nRepository: ${{ github.event.repository.name }}\nEnvironment: Production\nURL: https://jaydendang.com\nBranch: ${{ github.ref }}\nCommit: ${{ github.sha }}\nAuthor: ${{ github.actor }}\"}" \
+               ${{ secrets.DISCORD_WEBHOOK }}
 
   cleanup:
     needs: deploy
@@ -139,13 +118,7 @@ jobs:
 
       - name: Notify cleanup status
         if: always()
-        uses: Ilshidur/action-discord@master
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-        with:
-          args: |
-            Cleanup job ${{ job.status }}
-            Repository: ${{ github.event.repository.name }}
-            Branch: ${{ github.ref }}
-            Commit: ${{ github.sha }}
-            Author: ${{ github.actor }}
+        run: |
+          curl -H "Content-Type: application/json" \
+               -d "{\"content\":\"Cleanup job ${{ job.status }}\nRepository: ${{ github.event.repository.name }}\nBranch: ${{ github.ref }}\nCommit: ${{ github.sha }}\nAuthor: ${{ github.actor }}\"}" \
+               ${{ secrets.DISCORD_WEBHOOK }}
