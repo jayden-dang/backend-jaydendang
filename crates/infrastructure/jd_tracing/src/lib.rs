@@ -5,10 +5,10 @@ use std::env;
 use tracing::Level;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{
+    EnvFilter,
     fmt::{self, format::FmtSpan, time::SystemTime},
     layer::{Layer, SubscriberExt},
     util::SubscriberInitExt,
-    EnvFilter,
 };
 /// Environment types for different deployment stages
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -161,7 +161,6 @@ impl TracingConfig {
     }
 }
 
-
 /// Initialize tracing with improved configuration
 pub fn tracing_init() -> Result<()> {
     tracing_init_with_config(TracingConfig::from_environment(Environment::from_env()))
@@ -176,11 +175,7 @@ pub fn tracing_init_with_config(config: TracingConfig) -> Result<()> {
     let fmt_layer = fmt::layer()
         .with_target(true)
         .with_thread_names(config.enable_thread_names)
-        .with_span_events(if config.enable_span_events {
-            FmtSpan::CLOSE
-        } else {
-            FmtSpan::NONE
-        })
+        .with_span_events(if config.enable_span_events { FmtSpan::CLOSE } else { FmtSpan::NONE })
         .with_timer(SystemTime::default());
 
     let fmt_layer: Box<dyn Layer<_> + Send + Sync> = if config.use_json_format {
@@ -215,4 +210,3 @@ pub fn tracing_init_with_config(config: TracingConfig) -> Result<()> {
 pub fn tracing_init_test() -> Result<()> {
     tracing_init_with_config(TracingConfig::testing())
 }
-

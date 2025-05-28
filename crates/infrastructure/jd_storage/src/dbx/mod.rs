@@ -6,9 +6,9 @@ use tokio::sync::Mutex;
 use tracing::{trace, warn};
 
 use sqlx::{
+    IntoArguments, Pool, Postgres, Transaction,
     prelude::FromRow,
     query::{Query, QueryAs},
-    IntoArguments, Pool, Postgres, Transaction,
 };
 
 use crate::Db;

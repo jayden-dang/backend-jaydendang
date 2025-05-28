@@ -1,6 +1,6 @@
 pub mod macros_utils;
 
-use crate::{error::Error, Result};
+use crate::{Result, error::Error};
 mod utils;
 use modql::{
     field::HasSeaFields,
@@ -9,10 +9,10 @@ use modql::{
 
 use sea_query::{Condition, Expr, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
-use sqlx::{postgres::PgRow, prelude::FromRow, Row};
+use sqlx::{Row, postgres::PgRow, prelude::FromRow};
 use utils::{prepare_fields_for_create, prepare_fields_for_update};
 
-use crate::{ctx::Ctx, ModelManager};
+use crate::{ModelManager, ctx::Ctx};
 
 use super::{CommonId, DMC, LIST_LIMIT_DEFAULT, LIST_LIMIT_MAX};
 
@@ -228,11 +228,7 @@ where
     let count = mm.dbx().execute(sqlx_query).await?;
 
     // -- Check result
-    if count == 0 {
-        Err(Error::EntityNotFound { entity: MC::TABLE, id })
-    } else {
-        Ok(())
-    }
+    if count == 0 { Err(Error::EntityNotFound { entity: MC::TABLE, id }) } else { Ok(()) }
 }
 
 pub async fn ctx_delete<MC>(_ctx: &Ctx, mm: &ModelManager, id: i64) -> Result<()>
@@ -251,11 +247,7 @@ where
     let count = mm.dbx().execute(sqlx_query).await?;
 
     // -- Check result
-    if count == 0 {
-        Err(Error::EntityNotFound { entity: MC::TABLE, id })
-    } else {
-        Ok(())
-    }
+    if count == 0 { Err(Error::EntityNotFound { entity: MC::TABLE, id }) } else { Ok(()) }
 }
 
 pub async fn ctx_delete_many<MC>(_ctx: &Ctx, mm: &ModelManager, ids: Vec<i64>) -> Result<u64>

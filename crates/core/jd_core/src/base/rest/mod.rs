@@ -3,7 +3,7 @@ pub mod macros_utils;
 use std::collections::HashSet;
 
 use crate::Result;
-use crate::{error::Error, ModelManager};
+use crate::{ModelManager, error::Error};
 use modql::{
     field::HasSeaFields,
     filter::{FilterGroups, ListOptions},
@@ -13,7 +13,7 @@ use sea_query_binder::{SqlxBinder, SqlxValues};
 use sqlx::{postgres::PgRow, prelude::FromRow};
 use uuid::Uuid;
 
-use super::{PaginationMetadata, DMC, LIST_LIMIT_DEFAULT, LIST_LIMIT_MAX};
+use super::{DMC, LIST_LIMIT_DEFAULT, LIST_LIMIT_MAX, PaginationMetadata};
 
 #[derive(Debug, Clone)]
 pub struct PgEnum {
@@ -35,7 +35,7 @@ pub struct PgEnum {
 /// use jd_core::{base::rest::create, ModelManager};
 /// use sqlx::PgPool;
 /// use uuid::Uuid;
-/// 
+///
 /// async fn example(db: &ModelManager) -> Result<(), Box<dyn std::error::Error>> {
 ///     #[derive(serde::Serialize)]
 ///     struct CreateUserInput { name: String }
@@ -115,7 +115,7 @@ where
 /// use jd_core::{base::rest::create_many, ModelManager};
 /// use sqlx::PgPool;
 /// use uuid::Uuid;
-/// 
+///
 /// async fn example(db: &ModelManager) -> Result<(), Box<dyn std::error::Error>> {
 ///     #[derive(serde::Serialize)]
 ///     struct CreateUserInput { name: String }
@@ -182,7 +182,7 @@ where
 /// use jd_core::{base::rest::get_by_id, ModelManager};
 /// use sqlx::PgPool;
 /// use uuid::Uuid;
-/// 
+///
 /// async fn example(db: &ModelManager) -> Result<(), Box<dyn std::error::Error>> {
 ///     #[derive(serde::Deserialize)]
 ///     struct User { id: Uuid, name: String }
@@ -232,7 +232,7 @@ where
 /// use modql::filter::ListOptions;
 /// use sqlx::PgPool;
 /// use uuid::Uuid;
-/// 
+///
 /// async fn example(db: &ModelManager) -> Result<(), Box<dyn std::error::Error>> {
 ///     #[derive(serde::Deserialize)]
 ///     struct UserFilter { status: Option<String> }
@@ -295,7 +295,7 @@ where
 /// use jd_core::{base::rest::get_by_sth, ModelManager};
 /// use sqlx::PgPool;
 /// use uuid::Uuid;
-/// 
+///
 /// async fn example(db: &ModelManager) -> Result<(), Box<dyn std::error::Error>> {
 ///     #[derive(serde::Deserialize)]
 ///     struct UserFilter { email: Option<String> }
@@ -354,7 +354,7 @@ where
 /// use modql::filter::ListOptions;
 /// use sqlx::PgPool;
 /// use uuid::Uuid;
-/// 
+///
 /// async fn example(db: &ModelManager) -> Result<(), Box<dyn std::error::Error>> {
 ///     #[derive(serde::Deserialize)]
 ///     struct UserFilter { status: Option<String> }
@@ -423,7 +423,7 @@ where
 /// use jd_core::{base::rest::count, ModelManager};
 /// use sqlx::PgPool;
 /// use uuid::Uuid;
-/// 
+///
 /// async fn example(db: &ModelManager) -> Result<(), Box<dyn std::error::Error>> {
 ///     #[derive(serde::Deserialize)]
 ///     struct UserFilter { status: Option<String> }
@@ -479,7 +479,7 @@ where
 /// use jd_core::{base::rest::update, ModelManager};
 /// use sqlx::PgPool;
 /// use uuid::Uuid;
-/// 
+///
 /// async fn example(db: &ModelManager) -> Result<(), Box<dyn std::error::Error>> {
 ///     #[derive(serde::Serialize)]
 ///     struct UpdateUserInput { status: String }
@@ -511,11 +511,7 @@ where
     let sqlx_query = sqlx::query_with(&sql, values);
     let result = db.dbx().execute(sqlx_query).await?;
 
-    if result == 0 {
-        Err(Error::EntityNotFound { entity: MC::TABLE, id: 0 })
-    } else {
-        Ok(())
-    }
+    if result == 0 { Err(Error::EntityNotFound { entity: MC::TABLE, id: 0 }) } else { Ok(()) }
 }
 
 /// Deletes a single record by its ID
@@ -532,7 +528,7 @@ where
 /// use jd_core::{base::rest::delete, ModelManager};
 /// use sqlx::PgPool;
 /// use uuid::Uuid;
-/// 
+///
 /// async fn example(db: &ModelManager) -> Result<(), Box<dyn std::error::Error>> {
 ///     let user_id = Uuid::new_v4();
 ///     delete::<UserModel>(db, user_id).await?;
@@ -554,11 +550,7 @@ where
     let sqlx_query = sqlx::query_with(&sql, values);
     let result = db.dbx().execute(sqlx_query).await?;
 
-    if result == 0 {
-        Err(Error::EntityNotFound { entity: MC::TABLE, id: 0 })
-    } else {
-        Ok(())
-    }
+    if result == 0 { Err(Error::EntityNotFound { entity: MC::TABLE, id: 0 }) } else { Ok(()) }
 }
 
 /// Deletes multiple records by their IDs
@@ -575,7 +567,7 @@ where
 /// use jd_core::{base::rest::delete_many, ModelManager};
 /// use sqlx::PgPool;
 /// use uuid::Uuid;
-/// 
+///
 /// async fn example(db: &ModelManager) -> Result<(), Box<dyn std::error::Error>> {
 ///     let user_id1 = Uuid::new_v4();
 ///     let user_id2 = Uuid::new_v4();
@@ -601,11 +593,7 @@ pub async fn delete_many<MC: DMC>(db: &ModelManager, ids: Vec<Uuid>) -> Result<(
     let sqlx_query = sqlx::query_with(&sql, values);
     let result = db.dbx().execute(sqlx_query).await?;
 
-    if result == 0 {
-        Err(Error::EntityNotFound { entity: MC::TABLE, id: 0 })
-    } else {
-        Ok(())
-    }
+    if result == 0 { Err(Error::EntityNotFound { entity: MC::TABLE, id: 0 }) } else { Ok(()) }
 }
 
 /// Computes list options for pagination
@@ -620,7 +608,7 @@ pub async fn delete_many<MC: DMC>(db: &ModelManager, ids: Vec<Uuid>) -> Result<(
 /// ```rust
 /// use jd_core::{base::rest::compute_list_options, ModelManager};
 /// use modql::filter::ListOptions;
-/// 
+///
 /// fn example() -> Result<(), Box<dyn std::error::Error>> {
 ///     let list_options = ListOptions { limit: Some(10), offset: Some(20), ..Default::default() };
 ///     let (computed_options, page) = compute_list_options::<UserModel>(Some(list_options))?;
@@ -663,7 +651,7 @@ pub fn compute_list_options<MC: DMC>(
 /// use jd_core::{base::rest::update_many, ModelManager};
 /// use sqlx::PgPool;
 /// use uuid::Uuid;
-/// 
+///
 /// async fn example(db: &ModelManager) -> Result<(), Box<dyn std::error::Error>> {
 ///     #[derive(serde::Serialize)]
 ///     struct UpdateUserInput { status: String }
@@ -697,11 +685,7 @@ where
     let sqlx_query = sqlx::query_with(&sql, values);
     let result = db.dbx().execute(sqlx_query).await?;
 
-    if result == 0 {
-        Err(Error::EntityNotFound { entity: MC::TABLE, id: 0 })
-    } else {
-        Ok(())
-    }
+    if result == 0 { Err(Error::EntityNotFound { entity: MC::TABLE, id: 0 }) } else { Ok(()) }
 }
 
 /// Checks if any record exists in the database matching the given filter
@@ -718,7 +702,7 @@ where
 /// use jd_core::{base::rest::exists, ModelManager};
 /// use sqlx::PgPool;
 /// use uuid::Uuid;
-/// 
+///
 /// async fn example(db: &ModelManager) -> Result<(), Box<dyn std::error::Error>> {
 ///     #[derive(serde::Deserialize)]
 ///     struct UserFilter { email: Option<String> }
@@ -767,7 +751,7 @@ where
 /// use jd_core::{base::rest::find_by_ids, ModelManager};
 /// use sqlx::PgPool;
 /// use uuid::Uuid;
-/// 
+///
 /// async fn example(db: &ModelManager) -> Result<(), Box<dyn std::error::Error>> {
 ///     #[derive(serde::Deserialize)]
 ///     struct User { id: Uuid, name: String }
@@ -819,7 +803,7 @@ where
 /// use jd_core::{base::rest::update_by_filter, ModelManager};
 /// use sqlx::PgPool;
 /// use uuid::Uuid;
-/// 
+///
 /// async fn example(db: &ModelManager) -> Result<(), Box<dyn std::error::Error>> {
 ///     #[derive(serde::Deserialize)]
 ///     struct UserFilter { status: Option<String> }

@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use derive_more::From;
 use serde::Serialize;
-use serde_with::{serde_as, DisplayFromStr};
+use serde_with::{DisplayFromStr, serde_as};
 use validator::ValidationErrors;
 
 #[serde_as]

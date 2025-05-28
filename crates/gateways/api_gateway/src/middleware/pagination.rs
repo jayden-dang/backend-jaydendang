@@ -4,11 +4,7 @@ use serde::Serialize;
 #[serde(tag = "type")]
 pub enum PaginationType {
     #[serde(rename = "cursor")]
-    Cursor {
-        next_cursor: Option<String>,
-        prev_cursor: Option<String>,
-        has_more: bool,
-    },
+    Cursor { next_cursor: Option<String>, prev_cursor: Option<String>, has_more: bool },
     #[serde(rename = "offset")]
     Offset {
         current_page: u32,
@@ -45,13 +41,13 @@ impl Default for PaginationMetadata {
 }
 
 impl PaginationMetadata {
-    pub fn new_cursor(next_cursor: Option<String>, prev_cursor: Option<String>, has_more: bool) -> Self {
+    pub fn new_cursor(
+        next_cursor: Option<String>,
+        prev_cursor: Option<String>,
+        has_more: bool,
+    ) -> Self {
         Self {
-            pagination_type: PaginationType::Cursor {
-                next_cursor,
-                prev_cursor,
-                has_more,
-            },
+            pagination_type: PaginationType::Cursor { next_cursor, prev_cursor, has_more },
             order_by: None,
             order_direction: None,
         }
@@ -95,11 +91,7 @@ pub struct ResponseMetadata {
 
 impl ResponseMetadata {
     pub fn new(timestamp: String, content_type: String) -> Self {
-        Self {
-            timestamp,
-            content_type,
-            pagination: None,
-        }
+        Self { timestamp, content_type, pagination: None }
     }
 
     pub fn with_pagination(mut self, pagination: PaginationMetadata) -> Self {

@@ -1,6 +1,6 @@
 use jd_domain::{
-    user_domain::{AccountStatus, EducationLevel, ExperienceLevel, ProfileVisibility, UserGender},
     Id,
+    user_domain::{AccountStatus, EducationLevel, ExperienceLevel, ProfileVisibility, UserGender},
 };
 use modql::field::Fields;
 use serde::{Deserialize, Serialize};

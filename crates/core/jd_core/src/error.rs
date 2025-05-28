@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use jd_storage::dbx;
 use serde::Serialize;
-use serde_with::{serde_as, DisplayFromStr};
+use serde_with::{DisplayFromStr, serde_as};
 use sqlx::error::DatabaseError;
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -58,14 +58,10 @@ pub enum Error {
     ),
 
     #[error("Invalid enum value: {value}")]
-    InvalidEnumValue {
-        value: String,
-    },
+    InvalidEnumValue { value: String },
 
     #[error("Column not found: {column}")]
-    ColumnNotFound {
-        column: String,
-    },
+    ColumnNotFound { column: String },
 }
 
 impl Error {

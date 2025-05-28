@@ -1,6 +1,6 @@
 use crate::{
-    domain::user_repository_trait::UserRepository, error::ErrorMapper, Error, ProfileDmc, Result,
-    UsersDmc,
+    Error, ProfileDmc, Result, UsersDmc, domain::user_repository_trait::UserRepository,
+    error::ErrorMapper,
 };
 use async_trait::async_trait;
 use jd_contracts::user::dtos::{
@@ -12,8 +12,8 @@ use jd_contracts::user::dtos::{
     responses::create_profile_response::CreateUserProfileResponse,
 };
 use jd_core::{
-    base::{self},
     AppState,
+    base::{self},
 };
 use jd_utils::ensure;
 

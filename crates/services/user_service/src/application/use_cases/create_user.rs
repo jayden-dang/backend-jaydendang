@@ -1,4 +1,4 @@
-use crate::{domain::user_repository_trait::UserRepository, Result};
+use crate::{Result, domain::user_repository_trait::UserRepository};
 use jd_contracts::user::dtos::{
     records::user_record::UserRecord,
     requests::{

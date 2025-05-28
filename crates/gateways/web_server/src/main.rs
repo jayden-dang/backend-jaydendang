@@ -3,7 +3,7 @@ use api_gateway::{
     v1_routes,
 };
 
-use axum::{http::StatusCode, middleware, response::IntoResponse, Json, Router};
+use axum::{Json, Router, http::StatusCode, middleware, response::IntoResponse};
 use dotenv::dotenv;
 use jd_core::AppState;
 use serde_json::json;

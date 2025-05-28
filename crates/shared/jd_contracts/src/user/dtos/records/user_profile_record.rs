@@ -1,6 +1,6 @@
 use jd_domain::{
-    user_domain::{AccountStatus, EducationLevel, ExperienceLevel, ProfileVisibility, UserGender},
     Id,
+    user_domain::{AccountStatus, EducationLevel, ExperienceLevel, ProfileVisibility, UserGender},
 };
 use jd_utils::time::Rfc3339;
 use modql::field::Fields;

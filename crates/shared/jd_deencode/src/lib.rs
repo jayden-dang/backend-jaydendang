@@ -4,8 +4,8 @@
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
-    parse::Parse, parse2, parse_macro_input, punctuated::Punctuated, Attribute, Data, DataEnum,
-    DeriveInput, Expr, ExprLit, Lit, Meta, MetaList, MetaNameValue, Token,
+    Attribute, Data, DataEnum, DeriveInput, Expr, ExprLit, Lit, Meta, MetaList, MetaNameValue,
+    Token, parse::Parse, parse_macro_input, parse2, punctuated::Punctuated,
 };
 
 struct MetaListParser(Punctuated<Meta, Token![,]>);

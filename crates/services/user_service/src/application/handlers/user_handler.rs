@@ -1,12 +1,12 @@
 use crate::{
+    Error, Result,
     application::use_cases::{CreateUserUseCase, GetUserUseCase},
     domain::user_repository_trait::UserRepository,
     infrastructure::database::user_repository_impl::UserRepositoryImpl,
-    Error, Result,
 };
 use axum::{
-    extract::{Path, Query, State},
     Json,
+    extract::{Path, Query, State},
 };
 use jd_contracts::user::dtos::{
     records::user_record::UserRecord,

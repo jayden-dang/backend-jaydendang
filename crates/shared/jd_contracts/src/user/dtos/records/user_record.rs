@@ -1,10 +1,10 @@
 use jd_domain::{
-    user_domain::user::{DomainValidation, Email, HashedPassword, User, Username},
     Id,
+    user_domain::user::{DomainValidation, Email, HashedPassword, User, Username},
 };
 use jd_utils::{
     regex::USERNAME_REGEX,
-    time::{now_utc, Rfc3339},
+    time::{Rfc3339, now_utc},
 };
 use modql::field::Fields;
 use serde::{Deserialize, Serialize};
