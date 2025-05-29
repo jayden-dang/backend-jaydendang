@@ -1,17 +1,13 @@
-FROM rust:1.87.0-bullseye AS builder
+FROM --platform=linux/amd64 rust:1.87.0-bullseye AS builder
 
 # Add metadata labels
 LABEL maintainer="Jayden Dang <jayden.dangvu@gmail.com>"
 LABEL version="0.0.1"
 LABEL description="Web server for Jayden Blog"
 
-# Add build arguments
-ARG APP_USER=appuser
-ARG APP_UID=1000
-
 WORKDIR /app
 
-# Install build dependencies and security tools
+# Install build dependencies
 RUN apt-get update && apt-get install -y \
     pkg-config \
     libssl-dev \
@@ -40,7 +36,7 @@ COPY crates/shared/jd_rpc_core/Cargo.toml ./crates/shared/jd_rpc_core/
 COPY crates/shared/jd_streams/Cargo.toml ./crates/shared/jd_streams/
 COPY crates/shared/jd_utils/Cargo.toml ./crates/shared/jd_utils/
 
-# Create dummy lib.rs files for library crates and main.rs for web_server
+# Create dummy source files for dependency caching
 RUN mkdir -p crates/core/jd_core/src && \
     echo "pub fn dummy() {}" > crates/core/jd_core/src/lib.rs && \
     mkdir -p crates/gateways/api_gateway/src && \
@@ -74,63 +70,48 @@ RUN mkdir -p crates/core/jd_core/src && \
     mkdir -p crates/shared/jd_utils/src && \
     echo "pub fn dummy() {}" > crates/shared/jd_utils/src/lib.rs
 
-# Build dependencies with caching
+# Build dependencies
 RUN --mount=type=cache,target=/app/target \
     --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
-    rustup default stable && \
-    rustup update && \
     cargo build --release
 
-# Run security audit with warnings allowed
-RUN cargo audit --deny warnings || true
-
-# Now copy the actual source code
+# Copy actual source code
 COPY . .
 
-# Build the application with static linking for better compatibility
+# Build the application (native AMD64)
 RUN --mount=type=cache,target=/app/target \
     --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
-    rustup default stable && \
-    rustup update && \
-    RUSTFLAGS="-C target-cpu=native -C link-arg=-static-libgcc" \
     cargo build --workspace --release && \
-    find target/release -maxdepth 1 -type f -executable -exec cp {} ./app \; && \
+    echo "=== Built binaries ===" && \
+    ls -la target/release/ && \
+    echo "=== Copying web_server binary ===" && \
+    cp target/release/web_server ./app && \
+    ls -la ./app && \
     strip ./app
 
-# Redis stage for development
-FROM redis:7.2-alpine AS redis
+# Runtime stage - Ubuntu for compatibility
+FROM --platform=linux/amd64 ubuntu:22.04 AS deploy
 
-# Production stage - USE SAME BASE AS BUILDER (Debian Bullseye)
-FROM debian:bullseye-slim AS deploy
-
-# Install runtime dependencies with compatible OpenSSL
+# Install runtime dependencies
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     curl \
-    libssl1.1 \
+    libssl3 \
     libpq5 \
     && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user first
+# Create non-root user
 RUN useradd -m -u 1000 appuser
-
-# Copy Redis binary for development
-COPY --from=redis /usr/local/bin/redis-server /usr/local/bin/
-COPY --from=redis /usr/local/bin/redis-cli /usr/local/bin/
-
-# Create Redis directory and set permissions
-RUN mkdir -p /var/lib/redis && \
-    chown -R appuser:appuser /var/lib/redis
 
 WORKDIR /deploy
 
 # Copy binary from builder
-COPY --from=builder /app/app ./
+COPY --from=builder /app/app ./app
 
-# Set proper permissions
-RUN chown -R appuser:appuser /deploy
+# Set permissions
+RUN chmod +x ./app && chown -R appuser:appuser /deploy
 
 # Switch to non-root user
 USER appuser
@@ -138,16 +119,10 @@ USER appuser
 # Set environment variables
 ENV RUST_LOG=info
 ENV RUST_BACKTRACE=1
-ENV DATABASE_URL=postgresql://jayden:postgres@localhost:5432/jaydenblog
-ENV REDIS_URL=redis://localhost:6379
 
-# Add health check with more detailed configuration
+# Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8080/health || exit 1
 
-# Add proper signal handling
-STOPSIGNAL SIGTERM
-
-# Add proper entrypoint
+# Run application
 ENTRYPOINT ["./app"]
-CMD []

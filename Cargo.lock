@@ -322,6 +322,7 @@ dependencies = [
  "sqlx",
  "strum 0.26.3",
  "strum_macros 0.26.4",
+ "sui-sdk",
  "thiserror 2.0.12",
  "time",
  "tokio",

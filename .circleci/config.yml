@@ -3,23 +3,7 @@ version: 2.1
 orbs:
   docker: circleci/docker@2.5.0
 
-executors:
-  self-hosted:
-    machine: true
-
 commands:
-  setup-rust:
-    description: "Setup Rust environment"
-    steps:
-      - run:
-          name: Install Rust
-          command: |
-            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-            echo "source $HOME/.cargo/env" >> $HOME/.bashrc
-            source $HOME/.cargo/env
-            rustup default stable
-            rustup update
-
   health-check:
     description: "Check application health"
     steps:
@@ -28,13 +12,13 @@ commands:
           command: |
             for i in {1..30}; do
               if curl -f http://$EC2_HOST:8080/health; then
-                echo "Application is healthy"
+                echo "✅ Application is healthy"
                 exit 0
               fi
-              echo "Waiting for application to be healthy... ($i/30)"
+              echo "⏳ Waiting for application to be healthy... ($i/30)"
               sleep 10
             done
-            echo "Application failed to become healthy"
+            echo "❌ Application failed to become healthy"
             exit 1
 
   notify-discord:
@@ -46,10 +30,33 @@ commands:
     steps:
       - run:
           name: Notify Discord
+          when: always
           command: |
+            if [ "<< parameters.status >>" = "success" ]; then
+              EMOJI="✅"
+              COLOR="3066993"
+            else
+              EMOJI="❌"
+              COLOR="15158332"
+            fi
+
             curl -H "Content-Type: application/json" \
-                 -d "{\"content\":\"✅ Deployment $CIRCLE_JOB $<< parameters.status >>!\nRepository: $CIRCLE_PROJECT_REPONAME\nEnvironment: Production\nURL: https://jaydendang.com\nBranch: $CIRCLE_BRANCH\nCommit: $CIRCLE_SHA1\nAuthor: $CIRCLE_USERNAME\"}" \
-                 $DISCORD_WEBHOOK
+                 -d "{
+                   \"embeds\": [{
+                     \"title\": \"$EMOJI Deployment << parameters.status >>!\",
+                     \"color\": $COLOR,
+                     \"fields\": [
+                       {\"name\": \"Repository\", \"value\": \"$CIRCLE_PROJECT_REPONAME\", \"inline\": true},
+                       {\"name\": \"Branch\", \"value\": \"$CIRCLE_BRANCH\", \"inline\": true},
+                       {\"name\": \"Environment\", \"value\": \"Production\", \"inline\": true},
+                       {\"name\": \"Commit\", \"value\": \"[\`${CIRCLE_SHA1:0:7}\`](https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/commit/$CIRCLE_SHA1)\", \"inline\": true},
+                       {\"name\": \"Author\", \"value\": \"$CIRCLE_USERNAME\", \"inline\": true},
+                       {\"name\": \"URL\", \"value\": \"[https://jaydendang.com](https://jaydendang.com)\", \"inline\": true}
+                     ],
+                     \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)\"
+                   }]
+                 }" \
+                 $DISCORD_WEBHOOK || echo "Discord notification failed"
 
 jobs:
   test:
@@ -58,38 +65,44 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install Rust
+          name: Setup Rust
           command: |
             rustup default stable
             rustup update
-      # Uncomment nếu muốn chạy tests
+      # Uncomment if you want to run tests
       # - run:
       #     name: Run tests
       #     command: cargo test
 
   build-and-push:
-    machine: true
+    machine:
+      image: ubuntu-2204:2023.10.1
     steps:
       - checkout
-      # DEBUG Environment Variables
+
       - run:
-          name: Debug environment
+          name: Debug Environment
           command: |
+            echo "🔍 Environment Debug:"
             echo "DOCKER_USERNAME: $DOCKER_USERNAME"
             echo "DOCKER_PASSWORD length: ${#DOCKER_PASSWORD}"
             echo "DOCKER_IMAGE: $DOCKER_IMAGE"
-      # MANUAL DOCKER LOGIN
+            echo "CIRCLE_SHA1: $CIRCLE_SHA1"
+
       - run:
-          name: Login to Docker Hub
+          name: Docker Login
           command: |
             if [ -z "$DOCKER_USERNAME" ] || [ -z "$DOCKER_PASSWORD" ]; then
-              echo "Error: DOCKER_USERNAME or DOCKER_PASSWORD not set"
+              echo "❌ Error: DOCKER_USERNAME or DOCKER_PASSWORD not set"
               exit 1
             fi
             echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+            echo "✅ Docker login successful"
+
       - docker/build:
           image: ${DOCKER_IMAGE}
           tag: ${CIRCLE_SHA1},latest
+
       - docker/push:
           image: ${DOCKER_IMAGE}
           tag: ${CIRCLE_SHA1},latest
@@ -99,52 +112,66 @@ jobs:
       - image: cimg/base:stable
     steps:
       - checkout
+
       - add_ssh_keys:
           fingerprints:
             - "SHA256:ENhurBCbrBDltZ/4Q4bMgpvZ5CHicezLiHniatYkhQU"
+
       - run:
-          name: Deploy to EC2 via SSH
+          name: Deploy to Ubuntu EC2
           command: |
-            ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST "
+            echo "🚀 Starting deployment to Ubuntu EC2..."
+
+            ssh -o StrictHostKeyChecking=no ubuntu@$EC2_HOST "
+              echo '🔧 Environment Setup'
               export DOCKER_USERNAME='$DOCKER_USERNAME'
               export DOCKER_PASSWORD='$DOCKER_PASSWORD'
               export DOCKER_IMAGE='$DOCKER_IMAGE'
               export CIRCLE_SHA1='$CIRCLE_SHA1'
 
-              # Ensure PostgreSQL is running
-              if ! sudo systemctl is-active --quiet postgresql; then
-                echo 'Setting up PostgreSQL...'
-                sudo dnf install -y postgresql15-server postgresql15 || true
-                sudo postgresql-setup --initdb || true
-                sudo systemctl start postgresql
-                sudo systemctl enable postgresql
-
-                # Setup database and user
-                sudo -u postgres psql -c \"CREATE USER IF NOT EXISTS jayden WITH PASSWORD 'postgres';\" || true
-                sudo -u postgres psql -c \"CREATE DATABASE IF NOT EXISTS jaydenblog OWNER jayden;\" || true
-                sudo -u postgres psql -c \"GRANT ALL PRIVILEGES ON DATABASE jaydenblog TO jayden;\" || true
-              fi
-
-              # Login to Docker Hub on EC2
+              echo '🐳 Docker Login on EC2'
               echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin
 
-              # Stop and remove existing containers
-              docker stop jaydenblog redis || true
-              docker rm jaydenblog redis || true
+              echo '🛑 Stopping existing containers'
+              docker stop jaydenblog postgres redis 2>/dev/null || true
+              docker rm jaydenblog postgres redis 2>/dev/null || true
 
-              # Start Redis
+              echo '🗄️  Starting PostgreSQL'
+              docker run -d \
+                --name postgres \
+                --restart unless-stopped \
+                --network host \
+                -e POSTGRES_USER=jayden \
+                -e POSTGRES_PASSWORD=postgres \
+                -e POSTGRES_DB=jaydenblog \
+                -v postgres_data:/var/lib/postgresql/data \
+                postgres:15-alpine
+
+              echo '🔴 Starting Redis'
               docker run -d \
                 --name redis \
                 --restart unless-stopped \
                 --network host \
-                -v /var/lib/redis:/data \
+                -v redis_data:/data \
                 redis:7.2-alpine
 
-              # Wait for Redis to start
-              sleep 5
+              echo '⏳ Waiting for databases to be ready...'
+              sleep 15
 
-              # Pull and run new app container with additional libs
+              # Wait for PostgreSQL to be ready
+              for i in {1..30}; do
+                if docker exec postgres pg_isready -U jayden -d jaydenblog; then
+                  echo '✅ PostgreSQL is ready!'
+                  break
+                fi
+                echo \"⏳ Waiting for PostgreSQL... (\$i/30)\"
+                sleep 2
+              done
+
+              echo '📦 Pulling latest application image'
               docker pull \$DOCKER_IMAGE:\$CIRCLE_SHA1
+
+              echo '🚀 Starting application'
               docker run -d \
                 --name jaydenblog \
                 --restart unless-stopped \
@@ -154,19 +181,22 @@ jobs:
                 -e REDIS_URL=redis://localhost:6379 \
                 -e RUST_LOG=info \
                 -e RUST_BACKTRACE=1 \
-                \$DOCKER_IMAGE:\$CIRCLE_SHA1 /bin/bash -c 'apt-get update && apt-get install -y libssl1.1 && ./app'
+                \$DOCKER_IMAGE:\$CIRCLE_SHA1
 
-              # Show status and logs for debugging
+              echo '📊 Deployment Status'
               echo '=== Container Status ==='
-              docker ps -a
+              docker ps -a | grep -E '(postgres|redis|jaydenblog)'
 
-              echo '=== Application Logs ==='
-              docker logs jaydenblog --tail 50
+              echo '=== Application Logs (last 20 lines) ==='
+              sleep 10
+              docker logs jaydenblog --tail 20
 
-              echo '=== Deployment completed ==='
+              echo '✅ Deployment completed!'
             "
+
       - health-check
-      - notify-discord
+      - notify-discord:
+          status: "success"
 
   cleanup:
     docker:
@@ -174,36 +204,42 @@ jobs:
     steps:
       - add_ssh_keys:
           fingerprints:
-            - "YOUR_SSH_KEY_FINGERPRINT_HERE"  # Thay bằng fingerprint thực tế
+            - "SHA256:ENhurBCbrBDltZ/4Q4bMgpvZ5CHicezLiHniatYkhQU"
+
       - run:
-          name: Cleanup Docker resources on EC2
+          name: Cleanup Docker Resources
           command: |
-            ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST "
-              echo '=== Before cleanup ==='
+            echo "🧹 Starting cleanup on EC2..."
+
+            ssh -o StrictHostKeyChecking=no ubuntu@$EC2_HOST "
+              echo '📊 Disk usage before cleanup:'
               df -h
               docker system df
 
-              echo '=== Cleaning up old images (keep latest 3) ==='
+              echo '🗑️  Cleaning up old images (keeping latest 3)'
               # Keep only latest 3 versions of our app image
-              docker images $DOCKER_IMAGE --format 'table {{.Repository}}:{{.Tag}}\t{{.CreatedAt}}' | tail -n +2 | sort -k2 -r | tail -n +4 | awk '{print \$1}' | xargs -r docker rmi || true
+              docker images $DOCKER_IMAGE --format 'table {{.Repository}}:{{.Tag}}\t{{.CreatedAt}}' | \
+                tail -n +2 | sort -k2 -r | tail -n +4 | awk '{print \$1}' | \
+                xargs -r docker rmi 2>/dev/null || true
 
-              echo '=== Cleaning up unused resources ==='
-              # Remove unused images, containers, networks (but keep volumes for data persistence)
+              echo '🧽 Cleaning up unused resources'
+              # Remove unused images, containers, networks (preserve volumes for data)
               docker system prune -f
-
-              # Remove dangling images only
               docker image prune -f
 
               # Clean up old container logs (older than 7 days)
               find /var/lib/docker/containers/ -name '*.log' -mtime +7 -delete 2>/dev/null || true
 
-              echo '=== After cleanup ==='
+              echo '📊 Disk usage after cleanup:'
               df -h
               docker system df
 
-              echo '=== Current running containers ==='
+              echo '🐳 Running containers:'
               docker ps
+
+              echo '✅ Cleanup completed!'
             "
+
       - notify-discord:
           status: "cleanup completed"
 
@@ -212,21 +248,30 @@ workflows:
   build-test-deploy:
     jobs:
       - test
+
       - build-and-push:
           requires:
             - test
           filters:
             branches:
               only: main
+
       - deploy:
           requires:
             - build-and-push
           filters:
             branches:
               only: main
+          context:
+            - default  # Add your context name if using
+
       - cleanup:
           requires:
             - deploy
           filters:
             branches:
               only: main
+          # Run cleanup 1 hour after deployment
+          # Uncomment the schedule below for automatic cleanup
+          # schedule:
+          #   cron: "0 */6 * * *"  # Every 6 hours

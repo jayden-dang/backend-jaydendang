@@ -26,3 +26,4 @@ impl SuiClient {
     Ok(self.client.api_version().to_string())
   }
 }
+
