@@ -14,6 +14,9 @@ pub enum Error {
   #[error("Cannot create model manager provider: {0}")]
   CantCreateModelManagerProvider(String),
 
+  #[error("Configuration error: {0}")]
+  Config(#[from] jd_utils::error::Error),
+
   #[error("List limit exceeded. Maximum: {max}, Requested: {actual}")]
   ListLimitOverMax { max: i64, actual: i64 },
 

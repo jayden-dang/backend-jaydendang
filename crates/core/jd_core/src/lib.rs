@@ -1,6 +1,8 @@
 use std::sync::Arc;
+use tracing::info;
 
 use jd_storage::{dbx::Dbx, new_db_pool};
+use jd_utils::config::Config;
 use redis::Client as RedisClient;
 
 pub mod ctx;
@@ -45,9 +47,14 @@ pub struct AppState {
 impl AppState {
   pub async fn new() -> Result<Self> {
     let mm = Arc::new(ModelManager::new().await?);
-    let redis = Arc::new(RedisClient::open("redis://127.0.0.1/")?);
+    let config = Config::from_env()?;
+
+    info!("Initializing Redis with address: {}", config.redis.addr);
+    let redis = Arc::new(RedisClient::open(config.redis.addr)?);
+
+    info!("Initializing Sui client with environment: {}", config.sui.env);
     let sui_client = Arc::new(
-      sui_client::SuiClient::new()
+      sui_client::SuiClient::new(&config.sui)
         .await
         .map_err(|ex| Error::CantCreateSuiClient(ex.to_string()))?,
     );

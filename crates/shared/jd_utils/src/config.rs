@@ -14,9 +14,21 @@ pub struct Postgres {
 }
 
 #[derive(Deserialize)]
+pub struct Redis {
+  pub addr: String,
+}
+
+#[derive(Deserialize)]
+pub struct SuiConfig {
+  pub env: String,
+}
+
+#[derive(Deserialize)]
 pub struct Config {
   pub web: WebConfig,
   pub postgres: Postgres,
+  pub redis: Redis,
+  pub sui: SuiConfig,
 }
 
 impl Config {

@@ -1,4 +1,5 @@
 use anyhow::Result;
+use jd_utils::config::SuiConfig;
 use sui_sdk::SuiClientBuilder;
 
 pub struct SuiClient {
@@ -6,9 +7,14 @@ pub struct SuiClient {
 }
 
 impl SuiClient {
-  pub async fn new() -> Result<Self> {
-    // Connect to Sui testnet by default
-    let client = SuiClientBuilder::default().build_testnet().await?;
+  pub async fn new(config: &SuiConfig) -> Result<Self> {
+    let client = match config.env.to_lowercase().as_str() {
+      "mainnet" => SuiClientBuilder::default().build_mainnet().await?,
+      "testnet" => SuiClientBuilder::default().build_testnet().await?,
+      "devnet" => SuiClientBuilder::default().build_devnet().await?,
+      "local" => SuiClientBuilder::default().build_localnet().await?,
+      _ => return Err(anyhow::anyhow!("Invalid Sui environment: {}", config.env)),
+    };
 
     Ok(Self { client })
   }

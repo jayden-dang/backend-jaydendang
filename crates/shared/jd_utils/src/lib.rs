@@ -1,5 +1,5 @@
 pub mod config;
-mod error;
+pub mod error;
 pub mod macros;
 pub mod regex;
 pub mod time;

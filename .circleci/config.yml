@@ -111,6 +111,20 @@ jobs:
               export DOCKER_IMAGE='$DOCKER_IMAGE'
               export CIRCLE_SHA1='$CIRCLE_SHA1'
 
+              # Ensure PostgreSQL is running
+              if ! sudo systemctl is-active --quiet postgresql; then
+                echo 'Setting up PostgreSQL...'
+                sudo dnf install -y postgresql15-server postgresql15 || true
+                sudo postgresql-setup --initdb || true
+                sudo systemctl start postgresql
+                sudo systemctl enable postgresql
+
+                # Setup database and user
+                sudo -u postgres psql -c \"CREATE USER IF NOT EXISTS jayden WITH PASSWORD 'postgres';\" || true
+                sudo -u postgres psql -c \"CREATE DATABASE IF NOT EXISTS jaydenblog OWNER jayden;\" || true
+                sudo -u postgres psql -c \"GRANT ALL PRIVILEGES ON DATABASE jaydenblog TO jayden;\" || true
+              fi
+
               # Login to Docker Hub on EC2
               echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin
 
@@ -129,7 +143,7 @@ jobs:
               # Wait for Redis to start
               sleep 5
 
-              # Pull and run new app container
+              # Pull and run new app container with additional libs
               docker pull \$DOCKER_IMAGE:\$CIRCLE_SHA1
               docker run -d \
                 --name jaydenblog \
@@ -140,7 +154,7 @@ jobs:
                 -e REDIS_URL=redis://localhost:6379 \
                 -e RUST_LOG=info \
                 -e RUST_BACKTRACE=1 \
-                \$DOCKER_IMAGE:\$CIRCLE_SHA1
+                \$DOCKER_IMAGE:\$CIRCLE_SHA1 /bin/bash -c 'apt-get update && apt-get install -y libssl1.1 && ./app'
 
               # Show status and logs for debugging
               echo '=== Container Status ==='
@@ -160,7 +174,7 @@ jobs:
     steps:
       - add_ssh_keys:
           fingerprints:
-            - "SHA256:ENhurBCbrBDltZ/4Q4bMgpvZ5CHicezLiHniatYkhQU"
+            - "YOUR_SSH_KEY_FINGERPRINT_HERE"  # Thay bằng fingerprint thực tế
       - run:
           name: Cleanup Docker images on EC2
           command: |
