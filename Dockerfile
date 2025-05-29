@@ -88,35 +88,30 @@ RUN cargo audit --deny warnings || true
 # Now copy the actual source code
 COPY . .
 
-# Build the application with optimizations and strip debug symbols
+# Build the application with static linking for better compatibility
 RUN --mount=type=cache,target=/app/target \
     --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     rustup default stable && \
     rustup update && \
-    RUSTFLAGS="-C target-cpu=native" cargo build --workspace --release && \
+    RUSTFLAGS="-C target-cpu=native -C link-arg=-static-libgcc" \
+    cargo build --workspace --release && \
     find target/release -maxdepth 1 -type f -executable -exec cp {} ./app \; && \
     strip ./app
 
 # Redis stage for development
 FROM redis:7.2-alpine AS redis
 
-# Production stage
-FROM amazonlinux:2023 AS deploy
+# Production stage - USE SAME BASE AS BUILDER (Debian Bullseye)
+FROM debian:bullseye-slim AS deploy
 
-# Install runtime dependencies
-RUN set -eux; \
-    dnf update -y && dnf install -y \
+# Install runtime dependencies with compatible OpenSSL
+RUN apt-get update && apt-get install -y \
     ca-certificates \
-    curl-minimal \
-    bind-utils \
-    iputils \
-    iproute \
-    htop \
-    jq \
-    shadow-utils \
-    && dnf clean all \
-    && rm -rf /var/cache/dnf/*
+    curl \
+    libssl1.1 \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user first
 RUN useradd -m -u 1000 appuser
@@ -145,9 +140,6 @@ ENV RUST_LOG=info
 ENV RUST_BACKTRACE=1
 ENV DATABASE_URL=postgresql://jayden:postgres@localhost:5432/jaydenblog
 ENV REDIS_URL=redis://localhost:6379
-
-# Add security headers
-ENV RUSTFLAGS="-C target-feature=+crt-static -C link-arg=-s"
 
 # Add health check with more detailed configuration
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \

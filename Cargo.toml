@@ -58,3 +58,4 @@ uuid = { version = "1" , features = ["v4", "fast-rng"]}
 
 # -- Trace
 tracing = "0.1"
+

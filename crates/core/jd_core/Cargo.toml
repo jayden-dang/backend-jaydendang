@@ -24,5 +24,5 @@ uuid = { workspace = true, features = ["serde"] }
 redis = "0.31.0"
 thiserror.workspace = true
 
-[dev-dependencies]
-tokio = { workspace = true, features = ["full"] }
+sui-sdk = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk" }
+anyhow = "1.0"

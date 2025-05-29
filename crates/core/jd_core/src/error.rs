@@ -62,6 +62,9 @@ pub enum Error {
 
   #[error("Column not found: {column}")]
   ColumnNotFound { column: String },
+
+  #[error("Failed to create Sui client: {0}")]
+  CantCreateSuiClient(String),
 }
 
 impl Error {

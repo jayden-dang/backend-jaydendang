@@ -17,7 +17,7 @@ use jd_utils::{
 };
 
 mod error;
-
+mod routes;
 #[tokio::main]
 async fn main() -> error::Result<()> {
   dotenv().ok();
@@ -30,6 +30,7 @@ async fn main() -> error::Result<()> {
 
   let app = Router::new()
     .merge(v1_routes(app_state.clone()))
+    .merge(routes::sui_routes::sui_routes().await)
     .layer(middleware::map_response(mw_res_map::mw_map_response))
     .layer(middleware::from_fn_with_state(app_state.clone(), mw_ctx_resolve))
     .layer(CookieManagerLayer::new())
