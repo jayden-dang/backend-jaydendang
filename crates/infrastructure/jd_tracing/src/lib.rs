@@ -136,21 +136,28 @@ impl TracingConfig {
         Environment::Production => {
           // Only essential logs in production
           format!(
-            "{},sqlx=warn,hyper=warn,tokio=warn,h2=warn,tower=warn,reqwest=warn",
+            "{},sqlx=warn,hyper=warn,tokio=warn,h2=warn,tower=warn,reqwest=warn,rustls=warn,jsonrpsee=warn",
             self.default_level.as_str().to_lowercase()
           )
         }
         Environment::Staging => {
-          // More detailed for staging
-          format!("{},sqlx=info,hyper=info", self.default_level.as_str().to_lowercase())
+          // More detailed for staging but filter noise
+          format!(
+            "{},sqlx=info,hyper=info,h2=warn,rustls=warn,jsonrpsee=info", 
+            self.default_level.as_str().to_lowercase()
+          )
         }
         Environment::Testing => {
           // Minimal for tests
           "warn,jd_=error".to_string()
         }
         Environment::Development => {
-          // All logs for development
-          "trace".to_string()
+          // Application logs at debug/trace, but external deps at info/warn to reduce noise
+          format!(
+            "debug,jd_=trace,api_gateway=trace,user_service=trace,sui_service=trace,\
+             sqlx=info,hyper=warn,tokio=warn,h2=warn,tower=warn,reqwest=info,\
+             rustls=warn,jsonrpsee=info,jsonrpsee_http_client=warn,fastcrypto=warn"
+          )
         }
       }
     };
@@ -178,7 +185,7 @@ pub fn tracing_init_with_config(config: TracingConfig) -> Result<()> {
     .with_target(true)
     .with_thread_names(config.enable_thread_names)
     .with_span_events(if config.enable_span_events { FmtSpan::CLOSE } else { FmtSpan::NONE })
-    .with_timer(SystemTime::default());
+    .with_timer(SystemTime);
 
   let fmt_layer: Box<dyn Layer<_> + Send + Sync> = if config.use_json_format {
     Box::new(fmt_layer.json())

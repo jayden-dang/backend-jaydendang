@@ -49,7 +49,6 @@ impl AppState {
     let mm = Arc::new(ModelManager::new().await?);
     let config = Config::from_env()?;
 
-    info!("Initializing Redis with address: {}", config.redis.addr);
     let redis = Arc::new(RedisClient::open(config.redis.addr)?);
 
     info!("Initializing Sui client with environment: {}", config.sui.env);

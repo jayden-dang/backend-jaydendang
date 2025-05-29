@@ -4,13 +4,24 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+# -- Database
 sqlx.workspace = true
-tokio.workspace = true
-tracing.workspace = true
 
-# Members
-jd_utils = { path = "../../shared/jd_utils" }
-derive_more.workspace = true
+# -- Async & Utilities
+tokio.workspace = true
+
+# -- Serialization
 serde.workspace = true
 serde_with.workspace = true
+
+# -- Utilities
+derive_more.workspace = true
+
+# -- Error Handling
 thiserror.workspace = true
+
+# -- Logging
+tracing.workspace = true
+
+# -- Internal Dependencies
+jd_utils = { path = "../../shared/jd_utils" }

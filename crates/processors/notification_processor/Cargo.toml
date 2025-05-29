@@ -4,3 +4,5 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+# -- This crate is ready for notification processing dependencies
+# -- Add dependencies here as needed

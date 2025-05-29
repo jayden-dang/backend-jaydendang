@@ -4,54 +4,153 @@ CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
 [config] ## we want most/all of our tasks to run in the context of a workspace
 default_to_workspace = false
 
+# ============================================================================
+# DEVELOPMENT TASKS - Optimized Logging
+# ============================================================================
+
 [tasks.dev]
+description = "Development mode with trace-level application logs, filtered external noise"
 install_crate = "cargo-watch"
 cwd = "./crates/gateways/web_server"
 command = "cargo"
 args = ["watch", "-x", "clippy", "-x", "run"]
-env = { RUST_LOG = "info,jd_=debug,web_server=info,api_gateway=info,jd_storage=trace,sqlx=warn,axum=warn,tokio=warn,h2=warn,tower=warn,reqwest=warn", ENVIRONMENT = "development" }
+
+[tasks.dev.env]
+RUST_LOG = "debug,jd_=trace,api_gateway=trace,user_service=trace,sui_service=trace,web_server=trace,sqlx=info,hyper=warn,tokio=warn,h2=warn,tower=warn,reqwest=info,rustls=warn,jsonrpsee=info,jsonrpsee_http_client=warn,fastcrypto=warn"
+ENVIRONMENT = "development"
+
+[tasks.dev-quiet] 
+description = "Quiet development mode - essential logs only"
+install_crate = "cargo-watch"
+cwd = "./crates/gateways/web_server"
+command = "cargo"
+args = ["watch", "-x", "clippy", "-x", "run"]
+
+[tasks.dev-quiet.env]
+RUST_LOG = "info,jd_=debug,api_gateway=debug,user_service=debug,sui_service=debug,web_server=debug,h2=warn,rustls=warn,jsonrpsee=warn,sqlx=warn,hyper=warn,tokio=warn,tower=warn,reqwest=warn"
+ENVIRONMENT = "development"
 
 [tasks.dev-info]
+description = "Development with info-level application logs"
 install_crate = "cargo-watch"
 cwd = "./crates/gateways/web_server"
 command = "cargo"
 args = ["watch", "-x", "clippy", "-x", "run"]
-env = { RUST_LOG = "info,jd_=info,web_server=info,api_gateway=info,jd_storage=debug,sqlx=warn,axum=warn,tokio=warn,h2=warn,tower=warn,reqwest=warn", ENVIRONMENT = "development" }
+
+[tasks.dev-info.env]
+RUST_LOG = "info,jd_=info,api_gateway=info,user_service=info,sui_service=info,web_server=info,sqlx=info,hyper=warn,tokio=warn,h2=warn,tower=warn,reqwest=info,rustls=warn,jsonrpsee=info"
+ENVIRONMENT = "development"
+
+[tasks.dev-debug]
+description = "Full debug mode - all logs including external dependencies"
+install_crate = "cargo-watch"
+cwd = "./crates/gateways/web_server"
+command = "cargo"
+args = ["watch", "-x", "clippy", "-x", "run"]
+
+[tasks.dev-debug.env]
+RUST_LOG = "trace"
+ENVIRONMENT = "development"
+
+# ============================================================================
+# ENVIRONMENT-SPECIFIC TASKS
+# ============================================================================
 
 [tasks.staging]
+description = "Staging environment with balanced logging"
 install_crate = "cargo-watch"
 cwd = "./crates/gateways/web_server"
 command = "cargo"
 args = ["watch", "-x", "clippy", "-x", "run"]
-env = { RUST_LOG = "info,jd_=info,web_server=info,api_gateway=info,jd_storage=info,sqlx=warn,axum=warn,tokio=warn,h2=warn,tower=warn,reqwest=warn", ENVIRONMENT = "staging" }
+
+[tasks.staging.env]
+RUST_LOG = "debug,jd_=debug,api_gateway=debug,user_service=debug,sui_service=debug,web_server=debug,sqlx=info,hyper=info,h2=warn,rustls=warn,jsonrpsee=info,reqwest=info"
+ENVIRONMENT = "staging"
 
 [tasks.production]
+description = "Production environment with minimal, essential logging"
 install_crate = "cargo-watch"
 cwd = "./crates/gateways/web_server"
 command = "cargo"
 args = ["watch", "-x", "clippy", "-x", "run"]
-env = { RUST_LOG = "warn,jd_=info,web_server=info,api_gateway=info,jd_storage=warn,sqlx=warn,axum=warn,tokio=warn,h2=warn,tower=warn,reqwest=warn", ENVIRONMENT = "production" }
+
+[tasks.production.env]
+RUST_LOG = "info,jd_=info,api_gateway=info,user_service=info,sui_service=info,web_server=info,sqlx=warn,hyper=warn,tokio=warn,h2=warn,tower=warn,reqwest=warn,rustls=warn,jsonrpsee=warn,fastcrypto=warn"
+ENVIRONMENT = "production"
 
 [tasks.test-env]
+description = "Testing environment with minimal output"
 install_crate = "cargo-watch"
 cwd = "./crates/gateways/web_server"
 command = "cargo"
 args = ["watch", "-x", "clippy", "-x", "run"]
-env = { RUST_LOG = "warn,jd_=error", ENVIRONMENT = "testing" }
+
+[tasks.test-env.env]
+RUST_LOG = "warn,jd_=error"
+ENVIRONMENT = "testing"
+
+# ============================================================================
+# SPECIALIZED DEBUG TASKS
+# ============================================================================
+
+[tasks.debug-db]
+description = "Debug database operations"
+install_crate = "cargo-watch"
+cwd = "./crates/gateways/web_server"
+command = "cargo"
+args = ["watch", "-x", "clippy", "-x", "run"]
+
+[tasks.debug-db.env]
+RUST_LOG = "info,jd_=debug,jd_storage=trace,sqlx=debug,sea_query=debug,h2=warn,rustls=warn"
+ENVIRONMENT = "development"
+
+[tasks.debug-sui]
+description = "Debug Sui RPC operations"
+install_crate = "cargo-watch"
+cwd = "./crates/gateways/web_server"
+command = "cargo"
+args = ["watch", "-x", "clippy", "-x", "run"]
+
+[tasks.debug-sui.env]
+RUST_LOG = "info,jd_=debug,sui_service=trace,jsonrpsee=debug,reqwest=debug,fastcrypto=info,h2=info,rustls=warn"
+ENVIRONMENT = "development"
+
+[tasks.debug-auth]
+description = "Debug authentication and middleware"
+install_crate = "cargo-watch"
+cwd = "./crates/gateways/web_server"
+command = "cargo"
+args = ["watch", "-x", "clippy", "-x", "run"]
+
+[tasks.debug-auth.env]
+RUST_LOG = "info,jd_=debug,api_gateway=trace,api_gateway::middleware=trace,user_service=debug,axum=info,tower=info,h2=warn,rustls=warn"
+ENVIRONMENT = "development"
+
+# ============================================================================
+# COMPOSITE TASKS
+# ============================================================================
 
 [tasks.run-all]
-description = "Start all required services and run the application"
+description = "Start all required services and run the application (development mode)"
 dependencies = ["db-start", "redis-up"]
 script = [
-    "echo 'Starting all services...'",
+    "echo '🚀 Starting all services in development mode...'",
     "cargo make dev"
+]
+
+[tasks.run-quiet]
+description = "Start all services with quiet logging"
+dependencies = ["db-start", "redis-up"]
+script = [
+    "echo '🔇 Starting all services with quiet logging...'",
+    "cargo make dev-quiet"
 ]
 
 [tasks.run-staging]
 description = "Start all services and run in staging environment"
 dependencies = ["db-start", "redis-up"]
 script = [
-    "echo 'Starting staging environment...'",
+    "echo '🏗️  Starting staging environment...'",
     "cargo make staging"
 ]
 
@@ -59,11 +158,16 @@ script = [
 description = "Start all services and run in production environment"
 dependencies = ["db-start", "redis-up"]
 script = [
-    "echo 'Starting production environment...'",
+    "echo '🏭 Starting production environment...'",
     "cargo make production"
 ]
 
+# ============================================================================
+# LEGACY TASKS (for backward compatibility)
+# ============================================================================
+
 [tasks.debug]
+description = "Legacy debug task - use dev-debug instead"
 install_crate="cargo-watch"
 cwd = "./crates/gateways/web_server"
 command = "cargo"

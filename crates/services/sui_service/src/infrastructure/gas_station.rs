@@ -120,7 +120,7 @@ impl GasStation {
       total_balance,
       available_objects,
       utilization_rate: if total_objects > 0 {
-        ((total_objects - available_objects) as f64 / total_objects as f64 * 100.0)
+        (total_objects - available_objects) as f64 / total_objects as f64 * 100.0
       } else {
         0.0
       },

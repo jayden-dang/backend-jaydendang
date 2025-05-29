@@ -4,17 +4,23 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-modql.workspace = true
-sea-query.workspace = true
+# -- Serialization
 serde.workspace = true
 serde_with.workspace = true
-derive_more.workspace = true
-time.workspace = true
+
+# -- Database
+modql.workspace = true
+sea-query.workspace = true
 sqlx.workspace = true
 
+# -- Utilities
+derive_more.workspace = true
+uuid = { workspace = true, features = ["serde"] }
+validator.workspace = true
 
-# Members
+# -- Time
+time.workspace = true
+
+# -- Internal Dependencies
 jd_utils = { path = "../jd_utils" }
 jd_typedenum = { path = "../jd_typedenum" }
-uuid = { workspace = true, features = ["serde"] }
-validator = { version = "0.20.0", features = ["derive"] }

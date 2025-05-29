@@ -657,8 +657,8 @@ impl Default for RequestContext {
 
 impl IntoResponse for Error {
   fn into_response(self) -> Response {
-    // Extract request context from extensions or create default
-    let request_context = RequestContext::default(); // TODO: Extract from request extensions
+    // Try to extract request context from current task-local storage or create default
+    let request_context = extract_request_context_or_default();
 
     let (status_code, client_error) = self.client_status_and_error(&request_context);
 
@@ -726,6 +726,91 @@ impl IntoResponse for Error {
 
     response
   }
+}
+
+// ============================================================================
+// Request Context Extraction Utilities
+// ============================================================================
+
+/// Extract RequestContext from current task-local storage or create default
+/// This works with the middleware that stores context in task-local storage
+fn extract_request_context_or_default() -> RequestContext {
+    // Try to get from task-local storage first (best option)
+    if let Some(context) = CURRENT_REQUEST_CONTEXT.try_with(|ctx| ctx.clone()).ok().flatten() {
+        return context;
+    }
+    
+    // Fallback to default if no context is available
+    tracing::warn!("No request context found in task-local storage, using default");
+    RequestContext::default()
+}
+
+// Task-local storage for request context
+tokio::task_local! {
+    static CURRENT_REQUEST_CONTEXT: Option<RequestContext>;
+}
+
+impl RequestContext {
+    /// Create a new RequestContext with generated IDs
+    pub fn new() -> Self {
+        Self {
+            request_id: Some(uuid::Uuid::new_v4().to_string()),
+            trace_id: Some(uuid::Uuid::new_v4().to_string()),
+            user_id: None,
+            client_ip: None,
+            user_agent: None,
+            start_time: std::time::Instant::now(),
+        }
+    }
+
+    /// Create RequestContext from HTTP headers
+    pub fn from_headers(headers: &axum::http::HeaderMap) -> Self {
+        let request_id = headers
+            .get("x-request-id")
+            .and_then(|h| h.to_str().ok())
+            .map(String::from)
+            .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
+
+        let trace_id = headers
+            .get("x-trace-id")
+            .and_then(|h| h.to_str().ok())
+            .map(String::from)
+            .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
+
+        let user_agent = headers
+            .get("user-agent")
+            .and_then(|h| h.to_str().ok())
+            .map(String::from);
+
+        Self {
+            request_id: Some(request_id),
+            trace_id: Some(trace_id),
+            user_id: None, // Will be set by auth middleware
+            client_ip: None, // Will be set by IP extraction middleware
+            user_agent,
+            start_time: std::time::Instant::now(),
+        }
+    }
+
+    /// Set the current request context in task-local storage
+    pub async fn run_with_context<F, R>(self, future: F) -> R
+    where
+        F: std::future::Future<Output = R>,
+    {
+        CURRENT_REQUEST_CONTEXT.scope(Some(self), future).await
+    }
+
+    /// Update user information (called by auth middleware)
+    pub fn with_user_id(mut self, user_id: String) -> Self {
+        self.user_id = Some(user_id);
+        self
+    }
+
+    /// Update client IP (called by IP extraction middleware)
+    pub fn with_client_ip(mut self, client_ip: String) -> Self {
+        self.client_ip = Some(client_ip);
+        self
+    }
 }
 
 // ============================================================================

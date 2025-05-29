@@ -4,14 +4,22 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-sea-query.workspace = true
-time.workspace = true
-sqlx.workspace = true
+# -- Serialization
 serde.workspace = true
-modql.workspace = true
-uuid.workspace = true
-validator = { version = "0.20.0", features = ["derive"] }
+serde_with.workspace = true
 
+# -- Database
+sea-query.workspace = true
+sqlx.workspace = true
+modql.workspace = true
+
+# -- Time
+time.workspace = true
+
+# -- Utilities
+uuid.workspace = true
+validator.workspace = true
+
+# -- Internal Dependencies
 jd_utils = { path = "../jd_utils" }
 jd_domain = { path = "../jd_domain" }
-serde_with.workspace = true

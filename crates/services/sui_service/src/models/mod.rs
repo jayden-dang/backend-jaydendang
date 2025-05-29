@@ -1,10 +1,10 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
-use sui_sdk::types::{base_types::ObjectID, dynamic_field::DynamicFieldInfo, object::Data};
-use sui_types::{base_types::SuiAddress, transaction::{Transaction, TransactionData}};
-use uuid::Uuid;
 use chrono::{DateTime, Utc};
+use sui_sdk::types::{base_types::ObjectID, dynamic_field::DynamicFieldInfo, object::Data};
+use sui_types::transaction::Transaction;
+use uuid::Uuid;
 
 pub mod requests;
 
@@ -38,8 +38,8 @@ pub struct DynamicFieldPage {
 // Gas Station Models - Custom JSON-friendly structs
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GasData {
-  pub budget: String,  // JSON usually sends numbers as strings
-  pub price: String,   // JSON usually sends numbers as strings
+  pub budget: String, // JSON usually sends numbers as strings
+  pub price: String,  // JSON usually sends numbers as strings
 }
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -3,7 +3,6 @@ use crate::Result;
 use crate::models::{SponsorRequest, SponsorResponse, GasPoolStatus, UserStats};
 use sui_sdk::rpc_types::Coin;
 use sui_types::base_types::{ObjectID, SuiAddress};
-use sui_types::transaction::TransactionData;
 use uuid::Uuid;
 use std::str::FromStr;
 

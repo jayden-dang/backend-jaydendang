@@ -31,39 +31,103 @@ members = [
   "crates/shared/jd_utils"
 ]
 
-
 [workspace.dependencies]
-# -- Serde
-serde_with = {version = "3", features = ["time_0_3"] }
+# ============================================================================
+# SERIALIZATION & DATA HANDLING
+# ============================================================================
 serde = { version = "1", features = ["derive"] }
+serde_with = { version = "3", features = ["time_0_3"] }
+serde_json = "1.0.140"
 
-# -- Data
-modql = { version = "0.4.1", features = ["with-sea-query"]}
-sqlx = { version = "0.8", features = [ "macros", "runtime-tokio", "postgres", "uuid", "chrono" ] }
+# ============================================================================
+# DATABASE & STORAGE
+# ============================================================================
+sqlx = { version = "0.8", features = ["macros", "runtime-tokio", "postgres", "uuid", "chrono"] }
+modql = { version = "0.4.1", features = ["with-sea-query"] }
 sea-query = "0.32"
-sea-query-binder = { version = "0.7", features = ["sqlx-postgres", "with-uuid", "with-time" ] }
+sea-query-binder = { version = "0.7", features = ["sqlx-postgres", "with-uuid", "with-time"] }
 
-# -- Error Handling
-thiserror = "2"
-
-# -- Web
-axum = {version = "0.8", features = ["macros"]}
-tower-http = { version = "0.6", features = ["fs"] }
-tower-cookies = "0.11"
-tokio = { version = "1.45.0", features = ["full"] }
-
-# -- Redis
+# ============================================================================
+# CACHING & MESSAGING
+# ============================================================================
 redis = { version = "0.31.0", features = ["tokio-comp"] }
 
-# -- Time
-time = {version = "0.3", features = ["formatting", "parsing", "serde"]}
-chrono = { version = "0.4", features = ["serde"] }
+# ============================================================================
+# TIME & DATE HANDLING
+# ============================================================================
+time = { version = "0.3", features = ["formatting", "parsing", "serde"] }
+chrono = { version = "0.4.41", features = ["serde"] }
 
-# -- Others
-derive_more = {version = "2", features = ["from", "display"] }
-uuid = { version = "1" , features = ["v4", "fast-rng"]}
+# ============================================================================
+# WEB FRAMEWORK & HTTP
+# ============================================================================
+axum = { version = "0.8", features = ["macros"] }
+tower-http = { version = "0.6", features = ["fs", "cors"] }
+tower-cookies = "0.11"
+tokio = { version = "1.45.0", features = ["full"] }
+hyper = { version = "1.0", features = ["full"] }
+reqwest = { version = "0.12.15", features = ["json"] }
 
-# -- Trace
+# ============================================================================
+# ASYNC & UTILITIES
+# ============================================================================
+async-trait = "0.1.88"
+futures = "0.3.31"
+
+# ============================================================================
+# ERROR HANDLING
+# ============================================================================
+thiserror = "2"
+anyhow = "1.0"
+color-eyre = "0.6.4"
+
+# ============================================================================
+# VALIDATION & PARSING
+# ============================================================================
+validator = { version = "0.20.0", features = ["derive"] }
+regex = "1.11.1"
+
+# ============================================================================
+# UTILITY & MACROS
+# ============================================================================
+derive_more = { version = "2", features = ["from", "display"] }
+uuid = { version = "1.16.0", features = ["v4", "fast-rng", "serde"] }
+strum = "0.26"
+strum_macros = "0.27.1"
+
+# ============================================================================
+# LOGGING & TRACING
+# ============================================================================
 tracing = "0.1"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt", "json"] }
+tracing-error = "0.2.1"
 
+# ============================================================================
+# PROCEDURAL MACROS & CODE GENERATION
+# ============================================================================
+syn = { version = "2.0", features = ["full"] }
+quote = "1.0"
+proc-macro2 = "1.0"
+
+# ============================================================================
+# CONFIGURATION & ENVIRONMENT
+# ============================================================================
+config = "0.15.11"
+dotenv = "0.15.0"
+lazy_static = "1.4"
+
+# ============================================================================
+# CRYPTOGRAPHY & ENCODING
+# ============================================================================
+base64 = "0.22"
+hex = "0.4"
+blake2 = "0.10"
+bcs = "0.1"
+
+# ============================================================================
+# BLOCKCHAIN & SUI INTEGRATION
+# ============================================================================
 sui-sdk = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk" }
+sui-keys = { git = "https://github.com/mystenlabs/sui", package = "sui-keys" }
+sui-types = { git = "https://github.com/mystenlabs/sui", package = "sui-types" }
+fastcrypto = { git = "https://github.com/MystenLabs/fastcrypto", package = "fastcrypto", features = ["copy_key"] }
