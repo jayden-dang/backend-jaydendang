@@ -20,47 +20,6 @@ commands:
             rustup default stable
             rustup update
 
-  deploy-application:
-    description: "Deploy application to EC2"
-    steps:
-      - run:
-          name: Login to Docker Hub for deployment
-          command: |
-            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-      - run:
-          name: Deploy application
-          command: |
-            # Stop and remove existing containers if they exist
-            docker stop jaydenblog redis || true
-            docker rm jaydenblog redis || true
-
-            # Start Redis
-            docker run -d \
-              --name redis \
-              --restart unless-stopped \
-              --network host \
-              -v /var/lib/redis:/data \
-              redis:7.2-alpine \
-              redis-server /etc/redis/redis.conf
-
-            # Run new container with database and Redis connection
-            docker run -d \
-              --name jaydenblog \
-              --restart unless-stopped \
-              -p 8080:8080 \
-              --network host \
-              --log-driver json-file \
-              --log-opt max-size=10m \
-              --log-opt max-file=3 \
-              -e DATABASE_URL=postgresql://jayden:postgres@localhost:5432/jaydenblog \
-              -e REDIS_URL=redis://localhost:6379 \
-              -e RUST_LOG=info \
-              -e RUST_BACKTRACE=1 \
-              ${DOCKER_IMAGE}:${CIRCLE_SHA1}
-
-            # Clean up old images
-            docker image prune -f
-
   health-check:
     description: "Check application health"
     steps:
@@ -68,7 +27,7 @@ commands:
           name: Health check
           command: |
             for i in {1..30}; do
-              if curl -f http://localhost:8080/health; then
+              if curl -f http://$EC2_HOST:8080/health; then
                 echo "Application is healthy"
                 exit 0
               fi
@@ -127,19 +86,73 @@ jobs:
           tag: ${CIRCLE_SHA1},latest
 
   deploy:
-    executor: self-hosted
+    docker:
+      - image: cimg/base:stable
     steps:
       - checkout
-      - deploy-application
+      - add_ssh_keys:
+          fingerprints:
+            - "YOUR_SSH_KEY_FINGERPRINT_HERE"  # Thay bằng fingerprint thực tế
+      - run:
+          name: Deploy to EC2 via SSH
+          command: |
+            ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST << 'ENDSSH'
+              # Login to Docker Hub on EC2
+              echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+
+              # Stop and remove existing containers
+              docker stop jaydenblog redis || true
+              docker rm jaydenblog redis || true
+
+              # Start Redis
+              docker run -d \
+                --name redis \
+                --restart unless-stopped \
+                --network host \
+                -v /var/lib/redis:/data \
+                redis:7.2-alpine
+
+              # Wait for Redis to start
+              sleep 5
+
+              # Pull and run new app container
+              docker pull $DOCKER_IMAGE:$CIRCLE_SHA1
+              docker run -d \
+                --name jaydenblog \
+                --restart unless-stopped \
+                -p 8080:8080 \
+                --network host \
+                -e DATABASE_URL=postgresql://jayden:postgres@localhost:5432/jaydenblog \
+                -e REDIS_URL=redis://localhost:6379 \
+                -e RUST_LOG=info \
+                -e RUST_BACKTRACE=1 \
+                $DOCKER_IMAGE:$CIRCLE_SHA1
+
+              # Show status and logs for debugging
+              echo "=== Container Status ==="
+              docker ps -a
+
+              echo "=== Application Logs ==="
+              docker logs jaydenblog --tail 50
+
+              echo "=== Deployment completed ==="
+            ENDSSH
       - health-check
       - notify-discord
 
   cleanup:
-    executor: self-hosted
+    docker:
+      - image: cimg/base:stable
     steps:
+      - add_ssh_keys:
+          fingerprints:
+            - "SHA256:ENhurBCbrBDltZ/4Q4bMgpvZ5CHicezLiHniatYkhQU"
       - run:
-          name: Cleanup Docker images
-          command: docker system prune -af --volumes
+          name: Cleanup Docker images on EC2
+          command: |
+            ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST << 'ENDSSH'
+              docker system prune -af --volumes
+            ENDSSH
       - notify-discord:
           status: "cleanup completed"
 
