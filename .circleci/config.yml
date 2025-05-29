@@ -20,34 +20,6 @@ commands:
             rustup default stable
             rustup update
 
-  # install-nextest:
-  #   description: "Install cargo-nextest"
-  #   steps:
-  #     - run:
-  #         name: Install cargo-nextest
-  #         command: |
-  #           source $HOME/.cargo/env
-  #           cargo install cargo-nextest
-
-  # run-tests:
-  #   description: "Run tests and checks"
-  #   steps:
-  #     - run:
-  #         name: Run tests
-  #         command: |
-  #           source $HOME/.cargo/env
-  #           cargo nextest run --workspace
-  #     - run:
-  #         name: Run clippy
-  #         command: |
-  #           source $HOME/.cargo/env
-  #           cargo clippy --workspace --all-targets --all-features
-  #     - run:
-  #         name: Check format
-  #         command: |
-  #           source $HOME/.cargo/env
-  #           cargo fmt --all -- --check
-
   deploy-application:
     description: "Deploy application to EC2"
     steps:
@@ -122,13 +94,15 @@ jobs:
     steps:
       - checkout
       - setup-rust
-      # - install-nextest
-      # - run-tests
 
   build-and-push:
     executor: self-hosted
     steps:
       - checkout
+      # THÊM BƯỚC LOGIN DOCKER HUB
+      - docker/check:
+          docker-username: DOCKER_USERNAME
+          docker-password: DOCKER_PASSWORD
       - docker/build:
           image: ${DOCKER_IMAGE}
           tag: ${CIRCLE_SHA1},latest
@@ -183,6 +157,7 @@ workflows:
           filters:
             branches:
               only: main
+
   build-workflow:
     jobs:
       - build
