@@ -53,13 +53,22 @@ commands:
 
 jobs:
   test:
-    executor: self-hosted
+    docker:
+      - image: cimg/rust:1.70
     steps:
       - checkout
-      - setup-rust
+      - run:
+          name: Install Rust
+          command: |
+            rustup default stable
+            rustup update
+      # Uncomment nếu muốn chạy tests
+      # - run:
+      #     name: Run tests
+      #     command: cargo test
 
   build-and-push:
-    executor: self-hosted
+    machine: true
     steps:
       - checkout
       # DEBUG Environment Variables
@@ -97,6 +106,11 @@ jobs:
           name: Deploy to EC2 via SSH
           command: |
             ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST "
+              export DOCKER_USERNAME='$DOCKER_USERNAME'
+              export DOCKER_PASSWORD='$DOCKER_PASSWORD'
+              export DOCKER_IMAGE='$DOCKER_IMAGE'
+              export CIRCLE_SHA1='$CIRCLE_SHA1'
+
               # Login to Docker Hub on EC2
               echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin
 
@@ -184,6 +198,3 @@ workflows:
           filters:
             branches:
               only: main
-  build-workflow:
-    jobs:
-      - build
