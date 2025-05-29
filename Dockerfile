@@ -34,7 +34,7 @@ COPY crates/processors/analytics_processor/Cargo.toml ./crates/processors/analyt
 COPY crates/processors/notification_processor/Cargo.toml ./crates/processors/notification_processor/
 COPY crates/services/user_service/Cargo.toml ./crates/services/user_service/
 COPY crates/shared/jd_contracts/Cargo.toml ./crates/shared/jd_contracts/
-COPY crates/shared/jd_deencode/Cargo.toml ./crates/shared/jd_deencode/
+COPY crates/shared/jd_typedenum/Cargo.toml ./crates/shared/jd_typedenum/
 COPY crates/shared/jd_domain/Cargo.toml ./crates/shared/jd_domain/
 COPY crates/shared/jd_rpc_core/Cargo.toml ./crates/shared/jd_rpc_core/
 COPY crates/shared/jd_streams/Cargo.toml ./crates/shared/jd_streams/
@@ -63,8 +63,8 @@ RUN mkdir -p crates/core/jd_core/src && \
     echo "pub fn dummy() {}" > crates/services/user_service/src/lib.rs && \
     mkdir -p crates/shared/jd_contracts/src && \
     echo "pub fn dummy() {}" > crates/shared/jd_contracts/src/lib.rs && \
-    mkdir -p crates/shared/jd_deencode/src && \
-    echo '#[proc_macro_derive(Dummy)] pub fn dummy(_: proc_macro::TokenStream) -> proc_macro::TokenStream { proc_macro::TokenStream::new() }' > crates/shared/jd_deencode/src/lib.rs && \
+    mkdir -p crates/shared/jd_typedenum/src && \
+    echo '#[proc_macro_derive(Dummy)] pub fn dummy(_: proc_macro::TokenStream) -> proc_macro::TokenStream { proc_macro::TokenStream::new() }' > crates/shared/jd_typedenum/src/lib.rs && \
     mkdir -p crates/shared/jd_domain/src && \
     echo "pub fn dummy() {}" > crates/shared/jd_domain/src/lib.rs && \
     mkdir -p crates/shared/jd_rpc_core/src && \
