@@ -61,7 +61,7 @@ commands:
 jobs:
   test:
     docker:
-      - image: cimg/rust:1.70
+      - image: cimg/rust:1.87  # Match với Dockerfile version
     steps:
       - checkout
       - run:
@@ -102,6 +102,7 @@ jobs:
       - docker/build:
           image: ${DOCKER_IMAGE}
           tag: ${CIRCLE_SHA1},latest
+          platform: linux/amd64  # Đảm bảo build cho đúng platform
 
       - docker/push:
           image: ${DOCKER_IMAGE}
@@ -132,39 +133,52 @@ jobs:
               echo '🐳 Docker Login on EC2'
               echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin
 
+              echo '🔌 Create custom network if not exists'
+              docker network create jaydenblog-network 2>/dev/null || echo 'Network already exists'
+
               echo '🛑 Stopping existing containers'
-              docker stop jaydenblog postgres redis 2>/dev/null || true
-              docker rm jaydenblog postgres redis 2>/dev/null || true
+              docker stop jaydenblog jd-database redis 2>/dev/null || true
+              docker rm jaydenblog jd-database redis 2>/dev/null || true
 
               echo '🗄️  Starting PostgreSQL'
               docker run -d \
-                --name postgres \
+                --name jd-database \
                 --restart unless-stopped \
-                --network host \
+                --network jaydenblog-network \
                 -e POSTGRES_USER=jayden \
                 -e POSTGRES_PASSWORD=postgres \
                 -e POSTGRES_DB=jaydenblog \
                 -v postgres_data:/var/lib/postgresql/data \
-                postgres:15-alpine
+                postgres:16-alpine
 
               echo '🔴 Starting Redis'
               docker run -d \
                 --name redis \
                 --restart unless-stopped \
-                --network host \
+                --network jaydenblog-network \
                 -v redis_data:/data \
                 redis:7.2-alpine
 
               echo '⏳ Waiting for databases to be ready...'
-              sleep 15
+              sleep 20
 
               # Wait for PostgreSQL to be ready
               for i in {1..30}; do
-                if docker exec postgres pg_isready -U jayden -d jaydenblog; then
+                if docker exec jd-database pg_isready -U jayden -d jaydenblog; then
                   echo '✅ PostgreSQL is ready!'
                   break
                 fi
                 echo \"⏳ Waiting for PostgreSQL... (\$i/30)\"
+                sleep 3
+              done
+
+              # Wait for Redis to be ready
+              for i in {1..10}; do
+                if docker exec redis redis-cli ping | grep -q PONG; then
+                  echo '✅ Redis is ready!'
+                  break
+                fi
+                echo \"⏳ Waiting for Redis... (\$i/10)\"
                 sleep 2
               done
 
@@ -175,21 +189,30 @@ jobs:
               docker run -d \
                 --name jaydenblog \
                 --restart unless-stopped \
+                --network jaydenblog-network \
                 -p 8080:8080 \
-                --network host \
-                -e DATABASE_URL=postgresql://jayden:postgres@localhost:5432/jaydenblog \
-                -e REDIS_URL=redis://localhost:6379 \
+                -e DATABASE_URL=postgres://jayden:postgres@jd-database:5432/jaydenblog \
+                -e REDIS_URL=redis://redis:6379/ \
+                -e WEB_ADDR=0.0.0.0:8080 \
                 -e RUST_LOG=info \
                 -e RUST_BACKTRACE=1 \
                 \$DOCKER_IMAGE:\$CIRCLE_SHA1
 
+              echo '⏳ Waiting for application to start...'
+              sleep 15
+
               echo '📊 Deployment Status'
               echo '=== Container Status ==='
-              docker ps -a | grep -E '(postgres|redis|jaydenblog)'
+              docker ps -a | grep -E '(jd-database|redis|jaydenblog)'
 
-              echo '=== Application Logs (last 20 lines) ==='
-              sleep 10
-              docker logs jaydenblog --tail 20
+              echo '=== Network Status ==='
+              docker network inspect jaydenblog-network | grep -A 5 Containers || true
+
+              echo '=== Application Logs (last 30 lines) ==='
+              docker logs jaydenblog --tail 30 2>/dev/null || echo 'No logs yet'
+
+              echo '=== Database Connection Test ==='
+              docker exec jd-database psql -U jayden -d jaydenblog -c 'SELECT version();' || echo 'DB connection failed'
 
               echo '✅ Deployment completed!'
             "
@@ -218,7 +241,7 @@ jobs:
 
               echo '🗑️  Cleaning up old images (keeping latest 3)'
               # Keep only latest 3 versions of our app image
-              docker images $DOCKER_IMAGE --format 'table {{.Repository}}:{{.Tag}}\t{{.CreatedAt}}' | \
+              docker images \$DOCKER_IMAGE --format 'table {{.Repository}}:{{.Tag}}\t{{.CreatedAt}}' | \
                 tail -n +2 | sort -k2 -r | tail -n +4 | awk '{print \$1}' | \
                 xargs -r docker rmi 2>/dev/null || true
 
@@ -228,7 +251,7 @@ jobs:
               docker image prune -f
 
               # Clean up old container logs (older than 7 days)
-              find /var/lib/docker/containers/ -name '*.log' -mtime +7 -delete 2>/dev/null || true
+              sudo find /var/lib/docker/containers/ -name '*.log' -mtime +7 -delete 2>/dev/null || true
 
               echo '📊 Disk usage after cleanup:'
               df -h

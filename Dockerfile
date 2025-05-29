@@ -103,7 +103,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     libssl3 \
     libpq5 \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*Creates a default .env file in the image
 
 # Create non-root user
 RUN useradd -m -u 1000 appuser
@@ -113,15 +113,32 @@ WORKDIR /deploy
 # Copy binary from builder
 COPY --from=builder /app/app ./app
 
+# Create default .env file trong image
+RUN echo 'DATABASE_URL=postgres://jayden:postgres@localhost:5432/jaydenblog' > .env && \
+    echo 'REDIS_URL=redis://localhost:6379/' >> .env && \
+    echo 'WEB_ADDR=0.0.0.0:8080' >> .env && \
+    echo 'RUST_LOG=info' >> .env && \
+    echo 'RUST_BACKTRACE=1' >> .env
+
 # Set permissions
 RUN chmod +x ./app && chown -R appuser:appuser /deploy
 
 # Switch to non-root user
 USER appuser
 
-# Set environment variables
+# Set environment variables (backup nếu .env không work)
+ENV DATABASE_URL=postgres://jayden:postgres@localhost:5432/jaydenblog
+ENV REDIS_URL=redis://localhost:6379/
+ENV WEB_ADDR=0.0.0.0:8080
+ENV HOST=0.0.0.0
+ENV PORT=8080
+ENV BIND=0.0.0.0:8080
+ENV SERVER_ADDR=0.0.0.0:8080
 ENV RUST_LOG=info
 ENV RUST_BACKTRACE=1
+
+# Expose port
+EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
