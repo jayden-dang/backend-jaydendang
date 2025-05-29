@@ -1,4 +1,5 @@
-use anyhow::Result;
+use crate::Result;
+use crate::error::Error;
 use jd_utils::config::SuiConfig;
 use sui_sdk::SuiClientBuilder;
 
@@ -13,7 +14,9 @@ impl SuiClient {
       "testnet" => SuiClientBuilder::default().build_testnet().await?,
       "devnet" => SuiClientBuilder::default().build_devnet().await?,
       "local" => SuiClientBuilder::default().build_localnet().await?,
-      _ => return Err(anyhow::anyhow!("Invalid Sui environment: {}", config.env)),
+      _ => {
+        return Err(Error::CantCreateSuiClient(format!("Invalid Sui environment: {}", config.env)));
+      }
     };
 
     Ok(Self { client })

@@ -101,7 +101,7 @@ jobs:
       - checkout
       - add_ssh_keys:
           fingerprints:
-            - "YOUR_SSH_KEY_FINGERPRINT_HERE"  # Thay bằng fingerprint thực tế
+            - "SHA256:ENhurBCbrBDltZ/4Q4bMgpvZ5CHicezLiHniatYkhQU"
       - run:
           name: Deploy to EC2 via SSH
           command: |
@@ -176,18 +176,36 @@ jobs:
           fingerprints:
             - "YOUR_SSH_KEY_FINGERPRINT_HERE"  # Thay bằng fingerprint thực tế
       - run:
-          name: Cleanup Docker images on EC2
+          name: Cleanup Docker resources on EC2
           command: |
-            ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST "docker system prune -af --volumes"
+            ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST "
+              echo '=== Before cleanup ==='
+              df -h
+              docker system df
+
+              echo '=== Cleaning up old images (keep latest 3) ==='
+              # Keep only latest 3 versions of our app image
+              docker images $DOCKER_IMAGE --format 'table {{.Repository}}:{{.Tag}}\t{{.CreatedAt}}' | tail -n +2 | sort -k2 -r | tail -n +4 | awk '{print \$1}' | xargs -r docker rmi || true
+
+              echo '=== Cleaning up unused resources ==='
+              # Remove unused images, containers, networks (but keep volumes for data persistence)
+              docker system prune -f
+
+              # Remove dangling images only
+              docker image prune -f
+
+              # Clean up old container logs (older than 7 days)
+              find /var/lib/docker/containers/ -name '*.log' -mtime +7 -delete 2>/dev/null || true
+
+              echo '=== After cleanup ==='
+              df -h
+              docker system df
+
+              echo '=== Current running containers ==='
+              docker ps
+            "
       - notify-discord:
           status: "cleanup completed"
-
-  build:
-    docker:
-      - image: cimg/base:current
-    resource_class: jayden-dang/jayden
-    steps:
-      - run: echo "Hi I'm on a Container Runner!"
 
 workflows:
   version: 2

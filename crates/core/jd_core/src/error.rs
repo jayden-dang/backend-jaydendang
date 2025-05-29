@@ -60,6 +60,13 @@ pub enum Error {
     redis::RedisError,
   ),
 
+  #[error("Sui SDK error: {0}")]
+  SuiSdk(
+    #[from]
+    #[serde_as(as = "DisplayFromStr")]
+    sui_sdk::error::Error,
+  ),
+
   #[error("Invalid enum value: {value}")]
   InvalidEnumValue { value: String },
 

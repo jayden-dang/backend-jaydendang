@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use tracing::info;
+mod sui;
 
 use jd_storage::{dbx::Dbx, new_db_pool};
 use jd_utils::config::Config;
@@ -9,7 +10,6 @@ pub mod ctx;
 mod error;
 pub use error::{Error, Result};
 pub mod base;
-pub mod sui_client;
 
 #[derive(Clone)]
 pub struct ModelManager {
@@ -39,7 +39,7 @@ impl ModelManager {
 pub struct AppState {
   pub mm: Arc<ModelManager>,
   pub redis: Arc<RedisClient>,
-  pub sui_client: Arc<sui_client::SuiClient>,
+  pub sui_client: Arc<sui::sui_client::SuiClient>,
   // TODO: S3 Service
   // TODO: Email Service
 }
@@ -54,7 +54,7 @@ impl AppState {
 
     info!("Initializing Sui client with environment: {}", config.sui.env);
     let sui_client = Arc::new(
-      sui_client::SuiClient::new(&config.sui)
+      sui::sui_client::SuiClient::new(&config.sui)
         .await
         .map_err(|ex| Error::CantCreateSuiClient(ex.to_string()))?,
     );
@@ -71,7 +71,7 @@ impl AppState {
     &self.redis
   }
 
-  pub fn sui_client(&self) -> &sui_client::SuiClient {
+  pub fn sui_client(&self) -> &sui::sui_client::SuiClient {
     &self.sui_client
   }
 }

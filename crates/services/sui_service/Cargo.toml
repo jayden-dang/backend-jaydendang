@@ -1,0 +1,10 @@
+[package]
+name = "sui_service"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+thiserror = "1.0"
+jd_core = { path = "../../core/jd_core" }
+jd_utils = { path = "../../utils/jd_utils" }
+sui_sdk.workspace = true
