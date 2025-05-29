@@ -96,7 +96,7 @@ jobs:
       - run:
           name: Deploy to EC2 via SSH
           command: |
-            ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST << 'ENDSSH'
+            ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST 'bash -s' << 'EOF'
               # Login to Docker Hub on EC2
               echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
 
@@ -136,7 +136,7 @@ jobs:
               docker logs jaydenblog --tail 50
 
               echo "=== Deployment completed ==="
-            ENDSSH
+            EOF
       - health-check
       - notify-discord
 
@@ -150,9 +150,9 @@ jobs:
       - run:
           name: Cleanup Docker images on EC2
           command: |
-            ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST << 'ENDSSH'
+            ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST 'bash -s' << 'EOF'
               docker system prune -af --volumes
-            ENDSSH
+            EOF
       - notify-discord:
           status: "cleanup completed"
 
