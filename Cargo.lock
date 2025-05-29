@@ -7869,6 +7869,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "axum",
+ "futures",
  "jd_core",
  "jd_utils",
  "serde",

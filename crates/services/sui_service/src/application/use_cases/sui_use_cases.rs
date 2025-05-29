@@ -1,5 +1,11 @@
+use crate::error::Error;
+use crate::Result;
+use sui_sdk::rpc_types::Coin;
+use sui_sdk::types::base_types::SuiAddress;
+
 use crate::domain::sui_repository_trait::SuiRepository;
 
+#[derive(Clone)]
 pub struct SuiUseCases<R: SuiRepository> {
   pub repository: R,
 }
@@ -9,8 +15,11 @@ impl<R: SuiRepository> SuiUseCases<R> {
     Self { repository }
   }
 
-  // Read operations
-  // pub async fn get_object(&self, object_id: ObjectID) -> Result<ObjectInfo> {
-  //     self.repository.get_object(object_id).await
-  // }
+  pub async fn fetch_coin(&self, sender: String) -> Result<Coin> {
+    self
+      .repository
+      .fetch_coin(sender)
+      .await?
+      .ok_or_else(|| Error::InvalidRequest("Coin not found".into()))
+  }
 }
