@@ -96,9 +96,9 @@ jobs:
       - run:
           name: Deploy to EC2 via SSH
           command: |
-            ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST 'bash -s' << 'EOF'
+            ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST "
               # Login to Docker Hub on EC2
-              echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+              echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin
 
               # Stop and remove existing containers
               docker stop jaydenblog redis || true
@@ -116,7 +116,7 @@ jobs:
               sleep 5
 
               # Pull and run new app container
-              docker pull $DOCKER_IMAGE:$CIRCLE_SHA1
+              docker pull \$DOCKER_IMAGE:\$CIRCLE_SHA1
               docker run -d \
                 --name jaydenblog \
                 --restart unless-stopped \
@@ -126,17 +126,17 @@ jobs:
                 -e REDIS_URL=redis://localhost:6379 \
                 -e RUST_LOG=info \
                 -e RUST_BACKTRACE=1 \
-                $DOCKER_IMAGE:$CIRCLE_SHA1
+                \$DOCKER_IMAGE:\$CIRCLE_SHA1
 
               # Show status and logs for debugging
-              echo "=== Container Status ==="
+              echo '=== Container Status ==='
               docker ps -a
 
-              echo "=== Application Logs ==="
+              echo '=== Application Logs ==='
               docker logs jaydenblog --tail 50
 
-              echo "=== Deployment completed ==="
-            EOF
+              echo '=== Deployment completed ==='
+            "
       - health-check
       - notify-discord
 
@@ -150,9 +150,7 @@ jobs:
       - run:
           name: Cleanup Docker images on EC2
           command: |
-            ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST 'bash -s' << 'EOF'
-              docker system prune -af --volumes
-            EOF
+            ssh -o StrictHostKeyChecking=no ec2-user@$EC2_HOST "docker system prune -af --volumes"
       - notify-discord:
           status: "cleanup completed"
 
