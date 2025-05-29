@@ -27,8 +27,8 @@ commands:
           name: Deploy application
           command: |
             # Stop and remove existing containers if they exist
-            docker stop jaydenblog redis || true
-            docker rm jaydenblog redis || true
+            docker stop jayden redis || true
+            docker rm jayden redis || true
 
             # Start Redis
             docker run -d \
@@ -41,7 +41,7 @@ commands:
 
             # Run new container with database and Redis connection
             docker run -d \
-              --name jaydenblog \
+              --name jayden \
               --restart unless-stopped \
               -p 8080:8080 \
               --network host \
@@ -99,10 +99,22 @@ jobs:
     executor: self-hosted
     steps:
       - checkout
-      # THÊM BƯỚC LOGIN DOCKER HUB
-      - docker/check:
-          docker-username: DOCKER_USERNAME
-          docker-password: DOCKER_PASSWORD
+      # DEBUG Environment Variables
+      - run:
+          name: Debug environment
+          command: |
+            echo "DOCKER_USERNAME: $DOCKER_USERNAME"
+            echo "DOCKER_PASSWORD length: ${#DOCKER_PASSWORD}"
+            echo "DOCKER_IMAGE: $DOCKER_IMAGE"
+      # MANUAL DOCKER LOGIN
+      - run:
+          name: Login to Docker Hub
+          command: |
+            if [ -z "$DOCKER_USERNAME" ] || [ -z "$DOCKER_PASSWORD" ]; then
+              echo "Error: DOCKER_USERNAME or DOCKER_PASSWORD not set"
+              exit 1
+            fi
+            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
       - docker/build:
           image: ${DOCKER_IMAGE}
           tag: ${CIRCLE_SHA1},latest
@@ -157,7 +169,6 @@ workflows:
           filters:
             branches:
               only: main
-
   build-workflow:
     jobs:
       - build
