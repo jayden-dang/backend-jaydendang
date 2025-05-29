@@ -1,20 +1,24 @@
+use serde::{Deserialize, Serialize};
+
 use sui_sdk::types::{
   base_types::{ObjectID, SuiAddress},
   coin::Coin,
   dynamic_field::DynamicFieldInfo,
-  object::ObjectRead,
+  object::{Data, ObjectRead},
   sui_object::SuiObjectData,
 };
 
-#[derive(Debug)]
+pub mod requests;
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CoinBalance {
   pub coin_type: String,
-  pub coin_object_count: usize,
+  pub coin_object_count: u64,
   pub total_balance: u64,
-  pub locked_balance: std::collections::HashMap<ObjectID, u64>,
+  pub locked_balance: u64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ObjectInfo {
   pub object_id: ObjectID,
   pub version: u64,
@@ -23,10 +27,10 @@ pub struct ObjectInfo {
   pub owner: String,
   pub previous_transaction: String,
   pub storage_rebate: u64,
-  pub content: Option<SuiObjectData>,
+  pub content: Data,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct DynamicFieldPage {
   pub data: Vec<DynamicFieldInfo>,
   pub next_cursor: Option<ObjectID>,

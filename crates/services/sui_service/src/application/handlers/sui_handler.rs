@@ -1,28 +1,17 @@
 use crate::{
     application::use_cases::sui_use_cases::SuiUseCases,
     domain::sui_repository_trait::SuiRepository,
+    models::{CoinBalance, DynamicFieldPage, ObjectInfo, requests::*},
     Result,
 };
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     Json,
 };
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct GetEventsRequest {
-    pub event_type: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct GetObjectRequest {
-    pub object_id: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct GetBalanceRequest {
-    pub address: String,
-}
+use sui_sdk::types::{
+    base_types::{ObjectID, SuiAddress, TransactionDigest},
+    event::{Event, EventFilter, EventPage},
+};
 
 pub struct SuiHandler<R: SuiRepository> {
     use_cases: SuiUseCases<R>,
@@ -33,23 +22,35 @@ impl<R: SuiRepository> SuiHandler<R> {
         Self { use_cases }
     }
 
-    pub async fn get_api_version(&self) -> Result<Json<String>> {
-        let version = self.use_cases.get_api_version().await?;
-        Ok(Json(version))
-    }
-
-    pub async fn get_events(&self, Json(req): Json<GetEventsRequest>) -> Result<Json<Vec<String>>> {
-        let events = self.use_cases.get_events(req.event_type).await?;
-        Ok(Json(events))
-    }
-
-    pub async fn get_object(&self, Json(req): Json<GetObjectRequest>) -> Result<Json<String>> {
+    // Read operations
+    pub async fn get_object(&self, Json(req): Json<GetObjectRequest>) -> Result<Json<ObjectInfo>> {
         let object = self.use_cases.get_object(req.object_id).await?;
         Ok(Json(object))
     }
 
-    pub async fn get_balance(&self, Json(req): Json<GetBalanceRequest>) -> Result<Json<String>> {
-        let balance = self.use_cases.get_balance(req.address).await?;
+    pub async fn get_coin_balance(&self, Json(req): Json<GetCoinBalanceRequest>) -> Result<Json<CoinBalance>> {
+        let balance = self.use_cases.get_coin_balance(req.address, &req.coin_type).await?;
         Ok(Json(balance))
     }
-} 
+
+    pub async fn get_dynamic_fields(&self, Json(req): Json<GetDynamicFieldsRequest>) -> Result<Json<DynamicFieldPage>> {
+        let fields = self.use_cases.get_dynamic_fields(req.parent_object_id, req.cursor, req.limit).await?;
+        Ok(Json(fields))
+    }
+
+    // Event operations
+    pub async fn get_events(&self, Json(req): Json<GetEventsRequest>) -> Result<Json<EventPage>> {
+        let events = self.use_cases.get_events(req.filter, req.cursor, req.limit, req.descending_order).await?;
+        Ok(Json(events))
+    }
+
+    pub async fn get_events_by_transaction(&self, Json(req): Json<GetEventsByTransactionRequest>) -> Result<Json<Vec<Event>>> {
+        let events = self.use_cases.get_events_by_transaction(req.digest).await?;
+        Ok(Json(events))
+    }
+
+    pub async fn get_events_by_module(&self, Json(req): Json<GetEventsByModuleRequest>) -> Result<Json<EventPage>> {
+        let events = self.use_cases.get_events_by_module(req.package, req.module, req.cursor, req.limit).await?;
+        Ok(Json(events))
+    }
+}
