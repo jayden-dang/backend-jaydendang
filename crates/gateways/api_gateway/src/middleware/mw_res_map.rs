@@ -1,16 +1,16 @@
 use crate::Result;
 use crate::{
   error::Error,
-  log::{LogEntry, LogRequest, LogResponse, log_request},
+  log::{log_request, LogEntry, LogRequest, LogResponse},
 };
 use axum::body::to_bytes;
 use axum::{
-  Json,
   http::{Method, StatusCode, Uri},
   response::{IntoResponse, Response},
+  Json,
 };
 use jd_utils::time::{format_time, now_utc};
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use tracing::{error, info};
 use uuid::Uuid;
 

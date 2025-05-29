@@ -1,6 +1,6 @@
 use axum::{
-  Router,
   routing::{get, post},
+  Router,
 };
 use jd_core::AppState;
 use user_service::{

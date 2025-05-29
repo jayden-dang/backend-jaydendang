@@ -1,11 +1,9 @@
-use axum::{Json, extract::State, response::IntoResponse};
+use axum::{extract::State, response::IntoResponse, routing::get, Json, Router};
 use jd_core::AppState;
 use serde_json::json;
 
-pub async fn sui_routes() -> axum::Router {
-  axum::Router::new()
-    .route("/api/v1/sui/version", axum::routing::get(get_sui_version))
-    .with_state(AppState::new().await.unwrap())
+pub fn sui_router() -> Router<AppState> {
+  Router::new().route("/version", get(get_sui_version))
 }
 
 async fn get_sui_version(State(state): State<AppState>) -> impl IntoResponse {
