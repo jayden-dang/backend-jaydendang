@@ -1,36 +1,13 @@
-# Dockerfile.postgres
 FROM postgres:16-alpine
 
-# Set environment variables
 ENV POSTGRES_USER=jayden
 ENV POSTGRES_PASSWORD=postgres
 ENV POSTGRES_DB=jaydenblog
 
-# Create directory for initialization scripts
 RUN mkdir -p /docker-entrypoint-initdb.d
 
-# Copy initialization scripts
+# Chỉ cần copy SQL files - PostgreSQL tự chạy
 COPY sql/*.sql /docker-entrypoint-initdb.d/
 
-# Create a script to conditionally run initialization
-RUN echo '#!/bin/sh\n\
-if [ "$INIT_DB" = "true" ]; then\n\
-  echo "Running database initialization scripts..."\n\
-  for f in /docker-entrypoint-initdb.d/*.sql; do\n\
-    echo "Running $f..."\n\
-    psql -U $POSTGRES_USER -d $POSTGRES_DB -f "$f"\n\
-  done\n\
-else\n\
-  echo "Skipping database initialization..."\n\
-fi\n\
-exec "$@"' > /docker-entrypoint-initdb.d/init.sh && \
-chmod +x /docker-entrypoint-initdb.d/init.sh
-
-# Copy custom postgresql configuration (optional)
-# COPY ./postgresql.conf /etc/postgresql/postgresql.conf
-
-# Expose PostgreSQL port
 EXPOSE 5432
-
-# Set default command
-CMD ["postgres"]
+# Không cần init.sh, không cần CMD

@@ -1,15 +1,14 @@
-version: '3.8'
-
 services:
   postgres:
+    container_name: jd-postgres
     build:
       context: ../..
       dockerfile: deployment/docker/Dockerfile.postgres
     environment:
       - POSTGRES_USER=jayden
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=jayden-blog
-      - INIT_DB=${INIT_DB:-true}  # Default to true for dev, can be overridden
+      - POSTGRES_DB=jaydenblog
+      - INIT_DB=${INIT_DB:-true}
     ports:
       - "5432:5432"
     volumes:
@@ -19,16 +18,17 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   redis:
     container_name: jd-redis
     image: redis:7
-    restart: always
+    restart: unless-stopped
     ports:
       - "6379:6379"
     volumes:
-      - redis-data:/data
+      - redis_data:/data
 
 volumes:
   postgres_data:
-  redis-data:
+  redis_data:

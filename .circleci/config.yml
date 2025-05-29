@@ -24,11 +24,15 @@ commands:
     description: "Deploy application to EC2"
     steps:
       - run:
+          name: Login to Docker Hub for deployment
+          command: |
+            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+      - run:
           name: Deploy application
           command: |
             # Stop and remove existing containers if they exist
-            docker stop jayden redis || true
-            docker rm jayden redis || true
+            docker stop jaydenblog redis || true
+            docker rm jaydenblog redis || true
 
             # Start Redis
             docker run -d \
@@ -41,7 +45,7 @@ commands:
 
             # Run new container with database and Redis connection
             docker run -d \
-              --name jayden \
+              --name jaydenblog \
               --restart unless-stopped \
               -p 8080:8080 \
               --network host \
