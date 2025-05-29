@@ -9,8 +9,22 @@ jd_core = { path = "../../core/jd_core" }
 jd_utils = { path = "../../shared/jd_utils" }
 # -- Sui SDK
 sui-sdk = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk" }
+sui-keys = { git = "https://github.com/mystenlabs/sui", package = "sui-keys" }
+sui-types = { git = "https://github.com/mystenlabs/sui", package = "sui-types" }
+fastcrypto = { git = "https://github.com/MystenLabs/fastcrypto", package = "fastcrypto", features = ["copy_key"] }
 axum.workspace = true
 thiserror = { workspace = true }
 serde = { workspace = true }
 serde_json = "1.0.140"
 futures = "0.3.31"
+bcs = "0.1"
+anyhow = "1.0"
+redis = { workspace = true }
+chrono = { workspace = true }
+sqlx = { workspace = true }
+uuid = { workspace = true, features = ["v4", "serde"] }
+tracing = "0.1"
+tokio = { version = "1.45.0", features = ["full"] }
+base64 = "0.22"
+hex = "0.4"
+blake2 = "0.10"

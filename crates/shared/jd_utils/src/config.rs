@@ -21,6 +21,9 @@ pub struct Redis {
 #[derive(Deserialize)]
 pub struct SuiConfig {
   pub env: String,
+  pub sponsor_address: Option<String>,
+  pub sponsor_private_key: Option<String>,
+  pub max_gas_budget: Option<u64>,
 }
 
 #[derive(Deserialize)]

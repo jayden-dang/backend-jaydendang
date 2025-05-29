@@ -8,6 +8,7 @@ use dotenv::dotenv;
 use jd_core::AppState;
 use serde_json::json;
 use tower_cookies::CookieManagerLayer;
+use tower_http::cors::{CorsLayer, Any};
 use tracing::info;
 
 use jd_tracing::tracing_init;
@@ -15,6 +16,8 @@ use jd_utils::{
   config,
   time::{format_time, now_utc},
 };
+
+use axum::http::{Method, HeaderValue, HeaderName};
 
 mod error;
 #[tokio::main]
@@ -33,6 +36,18 @@ async fn main() -> error::Result<()> {
     .layer(middleware::from_fn_with_state(app_state.clone(), mw_ctx_resolve))
     .layer(CookieManagerLayer::new())
     .layer(middleware::from_fn(mw_res_timestamp::mw_req_stamp_resolver))
+    .layer(
+      CorsLayer::new()
+        .allow_origin("http://localhost:3000".parse::<HeaderValue>().unwrap())
+        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE, Method::OPTIONS])
+        .allow_headers([
+          HeaderName::from_static("content-type"),
+          HeaderName::from_static("authorization"),
+          HeaderName::from_static("accept"),
+          HeaderName::from_static("x-requested-with"),
+        ])
+        .allow_credentials(true)
+    )
     .fallback(fallback_handler);
   info!("Server is running on port: {}", cfg.web.addr);
 

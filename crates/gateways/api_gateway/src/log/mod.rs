@@ -98,6 +98,34 @@ fn extract_query_params(uri: &Uri) -> Option<Value> {
   })
 }
 
+fn is_error_response(response: &LogResponse) -> bool {
+  // Check if there's an explicit error
+  if response.error.is_some() {
+    return true;
+  }
+
+  // Check response body for error indicators
+  if let Some(body) = &response.body {
+    if let Some(obj) = body.as_object() {
+      // Check for "type": "error"
+      if let Some(type_val) = obj.get("type") {
+        if type_val.as_str() == Some("error") {
+          return true;
+        }
+      }
+      
+      // Check for "status": 1 (error status)
+      if let Some(status_val) = obj.get("status") {
+        if status_val.as_i64() == Some(1) {
+          return true;
+        }
+      }
+    }
+  }
+
+  false
+}
+
 pub async fn log_request(log_entry: LogEntry) -> Result<()> {
   let LogEntry { request, response } = log_entry;
 
@@ -125,6 +153,9 @@ pub async fn log_request(log_entry: LogEntry) -> Result<()> {
     sanitize_value(body);
   }
 
+  // Determine if this is an error response before moving response parts
+  let is_error = is_error_response(&response);
+
   let log = RequestLogLine {
     // Request identification
     id: uuid.to_string(),
@@ -143,13 +174,17 @@ pub async fn log_request(log_entry: LogEntry) -> Result<()> {
 
     // Response context
     response: ResponseContext {
-      status: if response.error.is_some() { "error" } else { "success" }.to_string(),
+      status: if is_error { 
+        "❌ error".to_string() 
+      } else { 
+        "✅ success".to_string() 
+      },
       body: response.body,
       size: response_size,
     },
 
     // Error context (if any)
-    error: if response.error.is_some() {
+    error: if is_error {
       Some(ErrorContext {
         type_: error_type,
         client_type: response.client_error.map(|e| e.message),
@@ -209,37 +244,3 @@ struct ErrorContext {
   client_type: Option<String>,
   data: Option<Value>,
 }
-
-// Usage examples:
-/*
-// Method 1: Using LogEntry struct
-let request = LogRequest {
-    uri,
-    method: req_method,
-    stamp: req_stamp,
-    ctx,
-    body: request_body,
-};
-
-let response = LogResponse {
-    body: response_body,
-    error: web_error,
-    client_error,
-};
-
-let log_entry = LogEntry::new(request, response);
-log_request(log_entry).await?;
-
-// Method 2: Using Builder pattern
-LogRequestBuilder::new()
-    .uri(uri)
-    .method(req_method)
-    .stamp(req_stamp)
-    .ctx(ctx)
-    .web_error(web_error)
-    .client_error(client_error)
-    .request_body(request_body)
-    .response_body(response_body)
-    .log()
-    .await?;
-*/

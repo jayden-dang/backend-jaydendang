@@ -39,7 +39,7 @@ serde = { version = "1", features = ["derive"] }
 
 # -- Data
 modql = { version = "0.4.1", features = ["with-sea-query"]}
-sqlx = { version = "0.8", features = [ "macros", "runtime-tokio", "postgres", "uuid" ] }
+sqlx = { version = "0.8", features = [ "macros", "runtime-tokio", "postgres", "uuid", "chrono" ] }
 sea-query = "0.32"
 sea-query-binder = { version = "0.7", features = ["sqlx-postgres", "with-uuid", "with-time" ] }
 
@@ -52,8 +52,14 @@ tower-http = { version = "0.6", features = ["fs"] }
 tower-cookies = "0.11"
 tokio = { version = "1.45.0", features = ["full"] }
 
-# -- Others
+# -- Redis
+redis = { version = "0.31.0", features = ["tokio-comp"] }
+
+# -- Time
 time = {version = "0.3", features = ["formatting", "parsing", "serde"]}
+chrono = { version = "0.4", features = ["serde"] }
+
+# -- Others
 derive_more = {version = "2", features = ["from", "display"] }
 uuid = { version = "1" , features = ["v4", "fast-rng"]}
 

@@ -14,6 +14,9 @@ pub enum Error {
 
   #[error("Internal error: {0}")]
   Internal(String),
+
+  #[error("Implementation pending: {0}")]
+  ImplementationPending(String),
 }
 
 impl IntoResponse for Error {
@@ -22,6 +25,7 @@ impl IntoResponse for Error {
       Error::SuiClient(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg),
       Error::InvalidRequest(msg) => (StatusCode::BAD_REQUEST, msg),
       Error::Internal(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg),
+      Error::ImplementationPending(msg) => (StatusCode::OK, msg),
     };
 
     (status, error_message).into_response()

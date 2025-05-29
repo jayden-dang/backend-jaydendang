@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 axum.workspace = true
 tower-cookies.workspace = true
+tower-http = { version = "0.6", features = ["cors"] }
 serde.workspace = true
 tracing.workspace = true
 tokio.workspace = true
