@@ -153,6 +153,13 @@ jobs:
       - notify-discord:
           status: "cleanup completed"
 
+  build:
+    docker:
+      - image: cimg/base:current
+    resource_class: jayden-dang/jayden
+    steps:
+      - run: echo "Hi I'm on a Container Runner!"
+
 workflows:
   version: 2
   build-test-deploy:
@@ -176,3 +183,6 @@ workflows:
           filters:
             branches:
               only: main
+  build-workflow:
+    jobs:
+      - build
