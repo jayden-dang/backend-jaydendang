@@ -11,4 +11,3 @@ type Handler = SuiHandler<SuiRepositoryImpl>;
 pub fn sui_router() -> Router<AppState> {
   Router::new().route("/", post(Handler::fetch_coin))
 }
-

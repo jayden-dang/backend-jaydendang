@@ -29,6 +29,7 @@ COPY crates/infrastructure/jd_tracing/Cargo.toml ./crates/infrastructure/jd_trac
 COPY crates/processors/analytics_processor/Cargo.toml ./crates/processors/analytics_processor/
 COPY crates/processors/notification_processor/Cargo.toml ./crates/processors/notification_processor/
 COPY crates/services/user_service/Cargo.toml ./crates/services/user_service/
+COPY crates/services/sui_service/Cargo.toml ./crates/services/sui_service/
 COPY crates/shared/jd_contracts/Cargo.toml ./crates/shared/jd_contracts/
 COPY crates/shared/jd_typedenum/Cargo.toml ./crates/shared/jd_typedenum/
 COPY crates/shared/jd_domain/Cargo.toml ./crates/shared/jd_domain/
@@ -57,6 +58,8 @@ RUN mkdir -p crates/core/jd_core/src && \
     echo "pub fn dummy() {}" > crates/processors/notification_processor/src/lib.rs && \
     mkdir -p crates/services/user_service/src && \
     echo "pub fn dummy() {}" > crates/services/user_service/src/lib.rs && \
+    mkdir -p crates/services/sui_service/src && \
+    echo "pub fn dummy() {}" > crates/services/sui_service/src/lib.rs && \
     mkdir -p crates/shared/jd_contracts/src && \
     echo "pub fn dummy() {}" > crates/shared/jd_contracts/src/lib.rs && \
     mkdir -p crates/shared/jd_typedenum/src && \

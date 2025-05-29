@@ -20,6 +20,7 @@ members = [
 
   # -- Services Application
   "crates/services/user_service",
+  "crates/services/sui_service",
 
   # -- Libraries Application
   "crates/shared/jd_contracts",
