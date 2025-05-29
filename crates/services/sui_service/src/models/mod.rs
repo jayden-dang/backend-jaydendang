@@ -1,12 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use sui_sdk::types::{
-  base_types::{ObjectID, SuiAddress},
-  coin::Coin,
-  dynamic_field::DynamicFieldInfo,
-  object::{Data, ObjectRead},
-  sui_object::SuiObjectData,
-};
+use sui_sdk::types::{base_types::ObjectID, dynamic_field::DynamicFieldInfo, object::Data};
 
 pub mod requests;
 

@@ -4,7 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-thiserror = "1.0"
+async-trait = "0.1.88"
 jd_core = { path = "../../core/jd_core" }
-jd_utils = { path = "../../utils/jd_utils" }
-sui_sdk.workspace = true
+jd_utils = { path = "../../shared/jd_utils" }
+# -- Sui SDK
+sui-sdk = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk" }
+axum.workspace = true
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = "1.0.140"

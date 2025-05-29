@@ -34,3 +34,4 @@ jd_domain = { path = "../../shared/jd_domain" }
 
 # -- Services
 user_service = { path = "../../services/user_service" }
+sui_service = { path = "../../services/sui_service" }

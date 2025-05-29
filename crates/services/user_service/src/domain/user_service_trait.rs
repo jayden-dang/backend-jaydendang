@@ -5,6 +5,7 @@ use jd_contracts::user::dtos::{
 };
 
 #[async_trait]
+#[allow(unused)]
 pub trait UserService: Send + Sync {
   async fn create_user(&self, request: CreateUserRequest) -> Result<UserRecord>;
   async fn get_user(&self, id: &str) -> Result<UserRecord>;

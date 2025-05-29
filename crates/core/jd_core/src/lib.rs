@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use tracing::info;
-mod sui;
+pub mod sui;
 
 use jd_storage::{dbx::Dbx, new_db_pool};
 use jd_utils::config::Config;

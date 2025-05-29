@@ -3,7 +3,7 @@ use axum::{
   response::{IntoResponse, Json, Response},
 };
 use serde::Serialize;
-use serde_with::{DisplayFromStr, serde_as};
+use serde_with::{serde_as, DisplayFromStr};
 use std::sync::Arc;
 use tracing::{error, warn};
 
@@ -23,10 +23,10 @@ impl<T> ErrorMapper<T> for Result<T, jd_core::Error> {
           match (table.as_str(), constraint.as_str()) {
             ("users", "users_email_key") => Err(Error::conflict("Email already exists")),
             ("users", "users_username_key") => Err(Error::conflict("Username already exists")),
-            _ => Err(Error::CoreError(Arc::new(e))),
+            _ => Err(Error::Core(Arc::new(e))),
           }
         }
-        _ => Err(Error::CoreError(Arc::new(e))),
+        _ => Err(Error::Core(Arc::new(e))),
       },
     }
   }
@@ -63,7 +63,7 @@ pub enum Error {
 
   // -- Server Errors (5xx)
   #[error("Internal server error")]
-  InternalServerError {
+  InternalServer {
     #[serde(skip)]
     source: Option<Box<dyn std::error::Error + Send + Sync>>,
     #[serde(skip)]
@@ -74,21 +74,21 @@ pub enum Error {
   ServiceUnavailable { service: String },
 
   #[error("Database error")]
-  DatabaseError {
+  Database {
     #[serde(skip)]
     source: Box<dyn std::error::Error + Send + Sync>,
   },
 
   // -- Core Error Integration
   #[error(transparent)]
-  CoreError(
+  Core(
     #[from]
     #[serde_as(as = "DisplayFromStr")]
     Arc<jd_core::Error>,
   ),
 
   #[error(transparent)]
-  StorageError(
+  Storage(
     #[from]
     #[serde_as(as = "DisplayFromStr")]
     Arc<jd_storage::dbx::Error>,
@@ -111,15 +111,15 @@ impl Clone for Error {
       Self::RateLimitExceeded { resource } => {
         Self::RateLimitExceeded { resource: resource.clone() }
       }
-      Self::InternalServerError { context, .. } => {
-        Self::InternalServerError { source: None, context: context.clone() }
+      Self::InternalServer { context, .. } => {
+        Self::InternalServer { source: None, context: context.clone() }
       }
       Self::ServiceUnavailable { service } => Self::ServiceUnavailable { service: service.clone() },
-      Self::DatabaseError { .. } => {
-        Self::DatabaseError { source: Box::new(std::io::Error::other("cloned error")) }
+      Self::Database { .. } => {
+        Self::Database { source: Box::new(std::io::Error::other("cloned error")) }
       }
-      Self::CoreError(err) => Self::CoreError(err.clone()),
-      Self::StorageError(err) => Self::StorageError(err.clone()),
+      Self::Core(err) => Self::Core(err.clone()),
+      Self::Storage(err) => Self::Storage(err.clone()),
     }
   }
 }
@@ -214,14 +214,14 @@ impl Error {
   }
 
   pub fn internal_error(context: impl Into<String>) -> Self {
-    Self::InternalServerError { source: None, context: context.into() }
+    Self::InternalServer { source: None, context: context.into() }
   }
 
   pub fn internal_with_source(
     source: impl std::error::Error + Send + Sync + 'static,
     context: impl Into<String>,
   ) -> Self {
-    Self::InternalServerError { source: Some(Box::new(source)), context: context.into() }
+    Self::InternalServer { source: Some(Box::new(source)), context: context.into() }
   }
 
   pub fn service_unavailable(service: impl Into<String>) -> Self {
@@ -229,7 +229,7 @@ impl Error {
   }
 
   pub fn database_error(source: impl std::error::Error + Send + Sync + 'static) -> Self {
-    Self::DatabaseError { source: Box::new(source) }
+    Self::Database { source: Box::new(source) }
   }
 
   // -- Error properties
@@ -238,10 +238,10 @@ impl Error {
       Self::ValidationFailed { .. } | Self::EntityNotFound { .. } => ErrorSeverity::Low,
       Self::BadRequest { .. } | Self::Conflict { .. } => ErrorSeverity::Medium,
       Self::AuthenticationFailed { .. } | Self::AccessDenied { .. } => ErrorSeverity::High,
-      Self::InternalServerError { .. } | Self::DatabaseError { .. } => ErrorSeverity::Critical,
+      Self::InternalServer { .. } | Self::Database { .. } => ErrorSeverity::Critical,
       Self::RateLimitExceeded { .. } | Self::ServiceUnavailable { .. } => ErrorSeverity::Medium,
-      Self::CoreError(_) => ErrorSeverity::High,
-      Self::StorageError(_) => ErrorSeverity::High,
+      Self::Core(_) => ErrorSeverity::High,
+      Self::Storage(_) => ErrorSeverity::High,
     }
   }
 
@@ -253,10 +253,10 @@ impl Error {
       Self::EntityNotFound { .. } => ErrorCategory::NotFound,
       Self::Conflict { .. } => ErrorCategory::Conflict,
       Self::RateLimitExceeded { .. } => ErrorCategory::RateLimit,
-      Self::InternalServerError { .. } | Self::DatabaseError { .. } => ErrorCategory::Internal,
+      Self::InternalServer { .. } | Self::Database { .. } => ErrorCategory::Internal,
       Self::ServiceUnavailable { .. } => ErrorCategory::External,
-      Self::CoreError(_) => ErrorCategory::Internal,
-      Self::StorageError(_) => ErrorCategory::Internal,
+      Self::Core(_) => ErrorCategory::Internal,
+      Self::Storage(_) => ErrorCategory::Internal,
     }
   }
 
@@ -323,7 +323,7 @@ impl Error {
       ),
 
       // Server Errors (5xx)
-      Self::InternalServerError { context, .. } => (
+      Self::InternalServer { context, .. } => (
         StatusCode::INTERNAL_SERVER_ERROR,
         "INTERNAL_SERVER_ERROR".to_string(),
         "Internal server error".to_string(),
@@ -335,7 +335,7 @@ impl Error {
         "Service temporarily unavailable".to_string(),
         Some(serde_json::json!({ "service": service })),
       ),
-      Self::DatabaseError { .. } => (
+      Self::Database { .. } => (
         StatusCode::INTERNAL_SERVER_ERROR,
         "DATABASE_ERROR".to_string(),
         "Database error occurred".to_string(),
@@ -343,8 +343,8 @@ impl Error {
       ),
 
       // Core Error Mapping
-      Self::CoreError(core_err) => self.map_core_error(core_err),
-      Self::StorageError(storage_err) => self.map_storage_error(storage_err),
+      Self::Core(core_err) => self.map_core_error(core_err),
+      Self::Storage(storage_err) => self.map_storage_error(storage_err),
     };
 
     let client_error = ClientError {

@@ -1,11 +1,6 @@
 use crate::error::Error;
 use crate::Result;
-use jd_core::sui::SuiClient;
-use sui_sdk::types::{
-  base_types::{ObjectID, TransactionDigest},
-  event::EventFilter,
-  event::EventPage,
-};
+use sui_sdk::types::base_types::{ObjectID, TransactionDigest};
 
 pub struct EventService {
   client: SuiClient,

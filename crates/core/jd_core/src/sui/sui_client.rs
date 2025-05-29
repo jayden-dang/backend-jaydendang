@@ -4,7 +4,7 @@ use jd_utils::config::SuiConfig;
 use sui_sdk::SuiClientBuilder;
 
 pub struct SuiClient {
-  client: sui_sdk::SuiClient,
+  pub client: sui_sdk::SuiClient,
 }
 
 impl SuiClient {
@@ -26,4 +26,3 @@ impl SuiClient {
     Ok(self.client.api_version().to_string())
   }
 }
-

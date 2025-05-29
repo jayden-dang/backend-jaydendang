@@ -8,7 +8,6 @@ pub mod middleware;
 mod sui;
 mod users;
 
-
 pub type Result<T> = std::result::Result<T, error::Error>;
 
 pub fn v1_routes(app_state: AppState) -> Router {
@@ -20,9 +19,4 @@ pub fn v1_routes(app_state: AppState) -> Router {
         .nest("/sui", sui::sui_router()),
     )
     .with_state(app_state)
-}
-
-pub fn app_router() -> Router<AppState> {
-    Router::new()
-        .nest("/api/sui", sui::sui_router())
 }

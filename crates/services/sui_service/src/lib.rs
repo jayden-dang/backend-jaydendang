@@ -7,31 +7,26 @@ pub mod models;
 mod domain;
 mod error;
 
+use application::{handlers::sui_handler::SuiHandler, use_cases::sui_use_cases::SuiUseCases};
 use error::Error;
+use infrastructure::sui_repository_impl::SuiRepositoryImpl;
+use jd_core::sui::sui_client::SuiClient;
 type Result<T> = std::result::Result<T, Error>;
 
-use jd_core::sui::SuiClient;
-use crate::{
-    domain::sui_repository_trait::SuiRepository,
-    infrastructure::sui_repository_impl::SuiRepositoryImpl,
-    application::use_cases::sui_use_cases::SuiUseCases,
-    application::handlers::sui_handler::SuiHandler,
-};
-
 pub struct SuiService {
-    handler: SuiHandler<SuiRepositoryImpl>,
+  handler: SuiHandler<SuiRepositoryImpl>,
 }
 
 impl SuiService {
-    pub async fn new(client: SuiClient) -> Self {
-        let repository = SuiRepositoryImpl::new(client);
-        let use_cases = SuiUseCases::new(repository);
-        let handler = SuiHandler::new(use_cases);
+  pub async fn new(client: SuiClient) -> Self {
+    let repository = SuiRepositoryImpl::new(client);
+    let use_cases = SuiUseCases::new(repository);
+    let handler = SuiHandler::new(use_cases);
 
-        Self { handler }
-    }
+    Self { handler }
+  }
 
-    pub fn handler(&self) -> &SuiHandler<SuiRepositoryImpl> {
-        &self.handler
-    }
+  pub fn handler(&self) -> &SuiHandler<SuiRepositoryImpl> {
+    &self.handler
+  }
 }
