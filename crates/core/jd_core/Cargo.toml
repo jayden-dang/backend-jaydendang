@@ -25,3 +25,4 @@ redis = "0.31.0"
 thiserror.workspace = true
 
 sui-sdk.workspace = true
+

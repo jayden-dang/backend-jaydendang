@@ -15,6 +15,7 @@ sqlx.workspace = true
 derive_more.workspace = true
 uuid = { workspace = true, features = ["serde"] }
 thiserror.workspace = true
+sui-sdk.workspace = true
 
 async-trait = "0.1.88"
 hyper = { version = "1.0", features = ["full"] }
