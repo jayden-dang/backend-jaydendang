@@ -1,19 +1,19 @@
 #+TITLE: API Docs
 #+AUTHOR: Dang Quang Vu
 
-* Test
+* Config
 #+name: host
 #+BEGIN_SRC elisp
 "http://localhost:8080"
 #+END_SRC
 
-#+name: headers
+#+name: header
 #+BEGIN_SRC elisp
 "Content-Type: application/json
 User-Agent: Emacs30"
 #+END_SRC
 
-#+begin_src restclient :var host=host :var headers=headers
+#+begin_src restclient :var host=host :var header=header
 GET :host/api/v1
 #+end_src
 
@@ -22,9 +22,9 @@ GET :host/api/v1
 *** 1. Generate Nonce
 Generate a nonce for wallet signature authentication.
 
-#+begin_src restclient :var host=host :var headers=headers
+#+begin_src restclient :var host=host :var header=header
 POST :host/api/v1/auth/nonce
-:headers
+:header
 {
   "address": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
 }
@@ -34,9 +34,9 @@ POST :host/api/v1/auth/nonce
 Verify wallet signature and get JWT tokens.
 Note: You need to sign the message from step 1 with your Sui wallet.
 
-#+begin_src restclient :var host=host :var headers=headers
+#+begin_src restclient :var host=host :var header=header
 POST :host/api/v1/auth/verify
-:headers
+:header
 {
   "address": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
   "signature": "your_wallet_signature_here",
@@ -47,9 +47,9 @@ POST :host/api/v1/auth/verify
 *** 3. Verify Signature (Test with Mock Data)
 Test endpoint with mock data (will fail signature verification).
 
-#+begin_src restclient :var host=host :var headers=headers
+#+begin_src restclient :var host=host :var header=header
 POST :host/api/v1/auth/verify
-:headers
+:header
 {
   "address": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
   "signature": "mock_signature_for_testing",
@@ -65,9 +65,9 @@ Refresh access token using refresh token.
 "your_refresh_token_here"
 #+END_SRC
 
-#+begin_src restclient :var host=host :var headers=headers :var refresh_token=refresh_token
+#+begin_src restclient :var host=host :var header=header :var refresh_token=refresh_token
 POST :host/api/v1/auth/refresh
-:headers
+:header
 {
   "refresh_token": ":refresh_token"
 }
@@ -81,33 +81,33 @@ Get current authenticated user information. Requires valid JWT token.
 "your_access_token_here"
 #+END_SRC
 
-#+name: auth_headers
+#+name: auth_header
 #+BEGIN_SRC elisp
 "Content-Type: application/json
 Authorization: Bearer your_access_token_here
 User-Agent: Emacs30"
 #+END_SRC
 
-#+begin_src restclient :var host=host :var auth_headers=auth_headers
+#+begin_src restclient :var host=host :var auth_header=auth_header
 GET :host/api/v1/auth/me
-:auth_headers
+:auth_header
 #+end_src
 
 *** 6. Get Current User (Unauthorized)
 Test protected route without authentication token.
 
-#+begin_src restclient :var host=host :var headers=headers
+#+begin_src restclient :var host=host :var header=header
 GET :host/api/v1/auth/me
-:headers
+:header
 #+end_src
 
 ** Auth Service - Error Cases
 *** Invalid Address Format
 Test with invalid Sui address format.
 
-#+begin_src restclient :var host=host :var headers=headers
+#+begin_src restclient :var host=host :var header=header
 POST :host/api/v1/auth/nonce
-:headers
+:header
 {
   "address": "invalid_address"
 }
@@ -116,25 +116,25 @@ POST :host/api/v1/auth/nonce
 *** Empty Request Body
 Test with missing required fields.
 
-#+begin_src restclient :var host=host :var headers=headers
+#+begin_src restclient :var host=host :var header=header
 POST :host/api/v1/auth/nonce
-:headers
+:header
 {}
 #+end_src
 
 *** Invalid JWT Token
 Test protected route with invalid token.
 
-#+name: invalid_auth_headers
+#+name: invalid_auth_header
 #+BEGIN_SRC elisp
 "Content-Type: application/json
 Authorization: Bearer invalid_token_here
 User-Agent: Emacs30"
 #+END_SRC
 
-#+begin_src restclient :var host=host :var invalid_auth_headers=invalid_auth_headers
+#+begin_src restclient :var host=host :var invalid_auth_header=invalid_auth_header
 GET :host/api/v1/auth/me
-:invalid_auth_headers
+:invalid_auth_header
 #+end_src
 
 ** Expected Responses Documentation
@@ -204,23 +204,23 @@ GET :host/api/v1/auth/me
 *** 1. Health Check
 Check if the Sui service is healthy and operational.
 
-#+begin_src restclient :var host=host :var headers=headers
+#+begin_src restclient :var host=host :var header=header
 GET :host/api/v1/sui/health
 #+end_src
 
 *** 2. Test Connection
 Test connection to the Sui network and get latest checkpoint information.
 
-#+begin_src restclient :var host=host :var headers=headers
+#+begin_src restclient :var host=host :var header=header
 GET :host/api/v1/sui/test-connection
 #+end_src
 
 *** 3. Fetch Coin
 Fetch a coin for a specific Sui address.
 
-#+begin_src restclient :var host=host :var headers=headers
+#+begin_src restclient :var host=host :var header=header
 POST :host/api/v1/sui/fetch-coin
-:headers
+:header
 "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
 #+end_src
 
@@ -228,9 +228,9 @@ POST :host/api/v1/sui/fetch-coin
 *** 1. Create User
 Create a new user account.
 
-#+begin_src restclient :var host=host :var headers=headers
+#+begin_src restclient :var host=host :var header=header
 POST :host/api/v1/users
-:headers
+:header
 {
   "email": "user@example.com",
   "username": "testuser123",
@@ -243,9 +243,9 @@ POST :host/api/v1/users
 *** 2. Get User by Username (RPC)
 Get user information by username using RPC call.
 
-#+begin_src restclient :var host=host :var headers=headers
+#+begin_src restclient :var host=host :var header=header
 POST :host/api/v1/rpc
-:headers
+:header
 {
   "method": "get_user_by_username",
   "params": {
@@ -257,9 +257,9 @@ POST :host/api/v1/rpc
 *** 3. Get User by ID (RPC)
 Get user information by user ID using RPC call.
 
-#+begin_src restclient :var host=host :var headers=headers
+#+begin_src restclient :var host=host :var header=header
 POST :host/api/v1/rpc
-:headers
+:header
 {
   "method": "get_user_by_id",
   "params": {

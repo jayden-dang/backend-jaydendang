@@ -1,8 +1,8 @@
 use crate::domain::sui_repository_trait::SuiRepository;
-use crate::{Result, error::Error};
+use crate::{error::Error, Result};
+use std::str::FromStr;
 use sui_sdk::rpc_types::SuiEvent;
 use sui_sdk::types::base_types::TransactionDigest;
-use std::str::FromStr;
 
 /// Use cases for event operations on Sui blockchain
 #[derive(Clone)]
