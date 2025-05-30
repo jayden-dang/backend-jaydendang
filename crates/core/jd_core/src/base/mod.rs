@@ -2,9 +2,11 @@ use modql::SIden;
 use sea_query::{Iden, SeaRc, TableRef};
 use serde::Serialize;
 
+pub mod bmc_macros;
+pub mod error;
+pub mod handlers;
 pub mod rest;
 pub mod rpc;
-pub mod bmc_macros;
 
 // -->>> Region:: START  --->>>  Constants
 const LIST_LIMIT_DEFAULT: i64 = 20;

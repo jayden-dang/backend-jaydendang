@@ -5,10 +5,10 @@ use std::env;
 use tracing::Level;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{
+  EnvFilter,
   fmt::{self, format::FmtSpan, time::SystemTime},
   layer::{Layer, SubscriberExt},
   util::SubscriberInitExt,
-  EnvFilter,
 };
 /// Environment types for different deployment stages
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -153,15 +153,14 @@ impl TracingConfig {
         }
         Environment::Development => {
           // Application logs at debug/trace, but external deps at info/warn to reduce noise
-          format!(
-            "debug,jd_=trace,api_gateway=trace,user_service=trace,sui_service=trace,\
+          "debug,jd_=trace,api_gateway=trace,user_service=trace,sui_service=trace,\
              hyper=warn,tokio=warn,tokio::runtime::worker=off,h2=warn,tower=warn,reqwest=info,\
              rustls=warn,jsonrpsee=info,jsonrpsee_http_client=warn,fastcrypto=warn,\
              auth_service::infrastructure::signature_verifier=debug,\
              api_gateway::middleware::mw_request_context=warn,\
              api_gateway::middleware::mw_res_map=info,\
              api_gateway::log=info"
-          )
+            .to_string()
         }
       }
     };

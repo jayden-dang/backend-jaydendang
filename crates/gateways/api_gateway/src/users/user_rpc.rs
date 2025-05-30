@@ -1,113 +1,110 @@
-use jd_core::ModelManager;
+use jd_contracts::user::dtos::requests::{
+  create_user_request::CreateUserRequest, user_filter::UserFilter,
+};
 use jd_core::ctx::Ctx;
-use jd_core::Result;
-use serde::{Deserialize, Serialize};
-use modql::filter::{FilterNodes, OpValsString, OpValsInt64};
-use serde_json::{json, Value};
+use jd_core::{AppState, Result};
+use serde_json::{Value, json};
+use user_service::{
+  application::use_cases::{CreateUserUseCase, GetUserUseCase},
+  infrastructure::database::user_repository_impl::UserRepositoryImpl,
+};
 
-// Simple types for RPC demo
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UserRpcEntity {
-    pub id: i64,
-    pub wallet_address: String,
-    pub nonce: Option<String>,
-}
+// Note: For proper RPC integration, we should pass AppState instead of ModelManager
+// For now, we'll work with what we have, but this is a design limitation
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UserForCreate {
-    pub wallet_address: String,
-}
+// Real RPC handler using user_service
+pub async fn handle_user_rpc(
+  method: &str,
+  params: Value,
+  _ctx: Ctx,
+  app_state: AppState,
+) -> Result<Value> {
+  match method {
+    "get_user_by_username" => {
+      let username = params
+        .get("username")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| jd_core::Error::RpcError("Missing username parameter".to_string()))?;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UserForUpdate {
-    pub wallet_address: Option<String>,
-}
+      let repository = UserRepositoryImpl::new(app_state.clone());
+      let use_case = GetUserUseCase::new(repository);
 
-#[derive(FilterNodes, Default, Deserialize)]
-pub struct UserFilter {
-    pub id: Option<OpValsInt64>,
-    pub wallet_address: Option<OpValsString>,
-}
+      let user = use_case
+        .execute_by_username(username.to_string())
+        .await
+        .map_err(|e| jd_core::Error::RpcError(format!("Failed to get user: {}", e)))?;
 
-// Simple manual RPC handler
-pub async fn handle_user_rpc(method: &str, params: Value, _ctx: Ctx, _mm: ModelManager) -> Result<Value> {
-    match method {
-        "get_user" => {
-            let id: i64 = params.get("id")
-                .and_then(|v| v.as_i64())
-                .ok_or_else(|| jd_core::Error::RpcError("Missing id parameter".to_string()))?;
-            
-            let user = UserRpcEntity {
-                id,
-                wallet_address: "0x1234567890abcdef".to_string(),
-                nonce: Some("test-nonce".to_string()),
-            };
-            
-            Ok(json!({ "data": user }))
-        },
-        "list_users" => {
-            let users = vec![
-                UserRpcEntity {
-                    id: 1,
-                    wallet_address: "0x1234567890abcdef".to_string(),
-                    nonce: Some("test-nonce-1".to_string()),
-                },
-                UserRpcEntity {
-                    id: 2,
-                    wallet_address: "0xabcdef1234567890".to_string(),
-                    nonce: Some("test-nonce-2".to_string()),
-                },
-            ];
-            
-            Ok(json!({ "data": users }))
-        },
-        "create_user" => {
-            let data: UserForCreate = serde_json::from_value(
-                params.get("data")
-                    .ok_or_else(|| jd_core::Error::RpcError("Missing data parameter".to_string()))?
-                    .clone()
-            ).map_err(|e| jd_core::Error::RpcError(format!("Invalid data format: {}", e)))?;
-            
-            let user = UserRpcEntity {
-                id: 1,
-                wallet_address: data.wallet_address,
-                nonce: Some("new-nonce".to_string()),
-            };
-            
-            Ok(json!({ "data": user }))
-        },
-        "update_user" => {
-            let _id: i64 = params.get("id")
-                .and_then(|v| v.as_i64())
-                .ok_or_else(|| jd_core::Error::RpcError("Missing id parameter".to_string()))?;
-            
-            let data: UserForUpdate = serde_json::from_value(
-                params.get("data")
-                    .ok_or_else(|| jd_core::Error::RpcError("Missing data parameter".to_string()))?
-                    .clone()
-            ).map_err(|e| jd_core::Error::RpcError(format!("Invalid data format: {}", e)))?;
-            
-            let user = UserRpcEntity {
-                id: _id,
-                wallet_address: data.wallet_address.unwrap_or_else(|| "0xupdated".to_string()),
-                nonce: Some("updated-nonce".to_string()),
-            };
-            
-            Ok(json!({ "data": user }))
-        },
-        "delete_user" => {
-            let id: i64 = params.get("id")
-                .and_then(|v| v.as_i64())
-                .ok_or_else(|| jd_core::Error::RpcError("Missing id parameter".to_string()))?;
-            
-            let user = UserRpcEntity {
-                id,
-                wallet_address: "0xdeleted".to_string(),
-                nonce: None,
-            };
-            
-            Ok(json!({ "data": user }))
-        },
-        _ => Err(jd_core::Error::RpcError(format!("Unknown method: {}", method)))
+      Ok(json!({ "data": user }))
     }
+    "get_user_by_email" => {
+      let email = params
+        .get("email")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| jd_core::Error::RpcError("Missing email parameter".to_string()))?;
+
+      let repository = UserRepositoryImpl::new(app_state.clone());
+      let use_case = GetUserUseCase::new(repository);
+
+      let user = use_case
+        .execute_by_email(email.to_string())
+        .await
+        .map_err(|e| jd_core::Error::RpcError(format!("Failed to get user: {}", e)))?;
+
+      Ok(json!({ "data": user }))
+    }
+    "get_user_by_filter" => {
+      let filter_data = params
+        .get("filter")
+        .ok_or_else(|| jd_core::Error::RpcError("Missing filter parameter".to_string()))?;
+
+      let filter: UserFilter = serde_json::from_value(filter_data.clone())
+        .map_err(|e| jd_core::Error::RpcError(format!("Invalid filter format: {}", e)))?;
+
+      let repository = UserRepositoryImpl::new(app_state.clone());
+      let use_case = GetUserUseCase::new(repository);
+
+      let user = use_case
+        .execute_by_wow(filter)
+        .await
+        .map_err(|e| jd_core::Error::RpcError(format!("Failed to get user: {}", e)))?;
+
+      Ok(json!({ "data": user }))
+    }
+    "create_user" => {
+      let data: CreateUserRequest = serde_json::from_value(
+        params
+          .get("data")
+          .ok_or_else(|| jd_core::Error::RpcError("Missing data parameter".to_string()))?
+          .clone(),
+      )
+      .map_err(|e| jd_core::Error::RpcError(format!("Invalid data format: {}", e)))?;
+
+      let repository = UserRepositoryImpl::new(app_state.clone());
+      let use_case = CreateUserUseCase::new(repository);
+
+      let user = use_case
+        .execute(data)
+        .await
+        .map_err(|e| jd_core::Error::RpcError(format!("Failed to create user: {}", e)))?;
+
+      Ok(json!({ "data": user }))
+    }
+    "get_user_by_active_status" => {
+      let is_active = params
+        .get("is_active")
+        .and_then(|v| v.as_bool())
+        .ok_or_else(|| jd_core::Error::RpcError("Missing is_active parameter".to_string()))?;
+
+      let repository = UserRepositoryImpl::new(app_state.clone());
+      let use_case = GetUserUseCase::new(repository);
+
+      let user = use_case
+        .execute_by_is_active(is_active)
+        .await
+        .map_err(|e| jd_core::Error::RpcError(format!("Failed to get user: {}", e)))?;
+
+      Ok(json!({ "data": user }))
+    }
+    _ => Err(jd_core::Error::RpcError(format!("Unknown method: {}", method))),
+  }
 }

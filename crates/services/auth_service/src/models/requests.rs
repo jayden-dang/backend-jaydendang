@@ -13,10 +13,10 @@ pub struct VerifyRequest {
   #[validate(length(min = 66, max = 66, message = "Address must be 66 characters"))]
   #[validate(custom(function = "validate_sui_address"))]
   pub address: String,
-  
+
   #[validate(length(min = 1, message = "Signature cannot be empty"))]
   pub signature: String,
-  
+
   #[validate(length(min = 1, message = "Public key cannot be empty"))]
   pub public_key: String,
 }
@@ -33,4 +33,4 @@ fn validate_sui_address(address: &str) -> Result<(), validator::ValidationError>
   } else {
     Err(validator::ValidationError::new("invalid_sui_address"))
   }
-} 
+}

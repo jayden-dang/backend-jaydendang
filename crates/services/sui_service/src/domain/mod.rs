@@ -1,2 +1,2 @@
 // Domain layer module
-pub mod sui_repository_trait;
+pub(crate) mod sui_repository_trait;

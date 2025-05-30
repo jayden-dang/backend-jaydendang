@@ -1,15 +1,15 @@
+use auth::auth_router;
 use axum::Router;
 use jd_core::AppState;
 use users::user_router;
-use auth::auth_router;
 
+mod auth;
 mod error;
 mod log;
 pub mod middleware;
+mod routes_rpc;
 mod sui;
 mod users;
-mod auth;
-mod routes_rpc;
 
 pub type Result<T> = std::result::Result<T, error::Error>;
 

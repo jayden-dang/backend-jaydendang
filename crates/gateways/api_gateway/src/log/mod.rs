@@ -113,7 +113,7 @@ fn is_error_response(response: &LogResponse) -> bool {
           return true;
         }
       }
-      
+
       // Check for "status": 1 (error status)
       if let Some(status_val) = obj.get("status") {
         if status_val.as_i64() == Some(1) {
@@ -174,11 +174,7 @@ pub async fn log_request(log_entry: LogEntry) -> Result<()> {
 
     // Response context
     response: ResponseContext {
-      status: if is_error { 
-        "❌ error".to_string() 
-      } else { 
-        "✅ success".to_string() 
-      },
+      status: if is_error { "❌ error".to_string() } else { "✅ success".to_string() },
       body: response.body,
       size: response_size,
     },

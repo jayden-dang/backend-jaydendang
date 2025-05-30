@@ -9,9 +9,11 @@ sqlx.workspace = true
 
 # -- Async & Utilities
 tokio.workspace = true
+async-trait.workspace = true
 
 # -- Serialization
 serde.workspace = true
+serde_json.workspace = true
 serde_with.workspace = true
 
 # -- Utilities

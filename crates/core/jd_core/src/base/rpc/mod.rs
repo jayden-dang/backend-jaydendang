@@ -1,6 +1,6 @@
+pub mod handlers;
 pub mod macros_utils;
 pub mod prelude;
-pub mod handlers;
 mod rpc_params;
 mod rpc_result;
 mod utils;

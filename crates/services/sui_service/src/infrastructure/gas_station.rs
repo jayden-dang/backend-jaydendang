@@ -1,14 +1,14 @@
+use anyhow::Result;
 use std::collections::HashMap;
 use tokio::sync::RwLock;
-use anyhow::Result;
-use tracing::{info};
+use tracing::info;
 
+use sui_sdk::rpc_types::{SuiObjectDataOptions, SuiObjectResponseQuery};
 use sui_sdk::{SuiClient, SuiClientBuilder};
 use sui_types::{
   base_types::{ObjectID, SuiAddress},
   gas_coin::GasCoin,
 };
-use sui_sdk::rpc_types::{SuiObjectDataOptions, SuiObjectResponseQuery};
 
 use crate::models::GasPoolStatus;
 
@@ -34,17 +34,11 @@ impl GasStation {
     max_gas_budget: u64,
   ) -> Result<Self> {
     // Initialize SUI client
-    let sui_client = SuiClientBuilder::default()
-      .build(sui_rpc_url)
-      .await?;
+    let sui_client = SuiClientBuilder::default().build(sui_rpc_url).await?;
 
     // Initialize gas pool
-    let gas_station = Self {
-      sui_client,
-      sponsor_address,
-      gas_pool: RwLock::new(HashMap::new()),
-      max_gas_budget,
-    };
+    let gas_station =
+      Self { sui_client, sponsor_address, gas_pool: RwLock::new(HashMap::new()), max_gas_budget };
 
     // Load gas objects
     gas_station.refresh_gas_pool().await?;
@@ -59,9 +53,7 @@ impl GasStation {
       .get_owned_objects(
         self.sponsor_address,
         Some(SuiObjectResponseQuery::new_with_options(
-          SuiObjectDataOptions::new()
-            .with_type()
-            .with_content(),
+          SuiObjectDataOptions::new().with_type().with_content(),
         )),
         None,
         None,
@@ -126,4 +118,4 @@ impl GasStation {
       },
     }
   }
-} 
+}

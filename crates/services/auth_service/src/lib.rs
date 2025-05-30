@@ -1,8 +1,8 @@
 // -->>> Region:: START  --->>>  Public Modules
 pub mod application;
+pub mod domain;
 pub mod infrastructure;
 pub mod models;
-pub mod domain;
 // <<<-- Region:: END    <<<---  Public Modules
 
 mod error;
@@ -26,4 +26,4 @@ impl DMC for AuthUserDmc {
   const TABLE: &'static str = "users";
   const ID: &'static str = "address";
   const ENUM_COLUMNS: &'static [&'static str] = &[];
-} 
+}

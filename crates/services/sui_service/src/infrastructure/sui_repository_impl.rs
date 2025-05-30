@@ -1,13 +1,13 @@
 use crate::infrastructure::gas_station::GasStation;
 use crate::models::{GasPoolStatus, UserStats};
-use crate::{domain::sui_repository_trait::SuiRepository, error::Error, Result};
+use crate::{Result, domain::sui_repository_trait::SuiRepository, error::Error};
 use async_trait::async_trait;
 use blake2::{Blake2b, Digest};
 use fastcrypto::{
   ed25519::Ed25519KeyPair,
   traits::{KeyPair, ToFromBytes},
 };
-use futures::{future, StreamExt};
+use futures::{StreamExt, future};
 use jd_core::AppState;
 use jd_utils::time;
 use redis::AsyncCommands;
@@ -62,11 +62,9 @@ impl SuiRepositoryImpl {
     let mut keystore = InMemKeystore::default();
 
     // Parse private key (handle both with and without 0x prefix)
-    let key_str = if sponsor_private_key.starts_with("0x") {
-      &sponsor_private_key[2..]
-    } else {
-      sponsor_private_key
-    };
+    let key_str = sponsor_private_key
+      .strip_prefix("0x")
+      .unwrap_or(sponsor_private_key);
 
     let key_bytes = hex::decode(key_str)
       .map_err(|e| Error::Internal(format!("Invalid private key format: {}", e)))?;
@@ -195,14 +193,14 @@ impl SuiRepository for SuiRepositoryImpl {
     };
 
     // Extract sender and gas data using pattern matching
-    let (sender, gas_budget) = match &tx_data {
+    let (_sender, gas_budget) = match &tx_data {
       TransactionData::V1(tx) => (tx.sender, tx.gas_data.budget),
     };
 
     let sponsor_address = gas_station.sponsor_address;
 
     // Get an available gas object for the required budget
-    let gas_object_id = match gas_station.get_available_gas(gas_budget).await {
+    let _gas_object_id = match gas_station.get_available_gas(gas_budget).await {
       Ok(id) => id,
       Err(e) => {
         tracing::error!("Failed to get gas object: {}", e);
@@ -253,8 +251,7 @@ impl SuiRepository for SuiRepositoryImpl {
     // 3. Ensure the transaction structure supports sponsored transactions
 
     // Add sponsor signature
-    let mut all_signatures = vec![];
-    all_signatures.push(signature);
+    let all_signatures = vec![signature];
 
     // Create the final transaction
     let final_transaction = Transaction::from_data(sponsored_tx_data, all_signatures);

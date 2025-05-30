@@ -21,12 +21,19 @@ modql.workspace = true
 
 # -- Web & Async
 axum.workspace = true
+async-trait.workspace = true
 
 # -- Caching
 redis.workspace = true
 
 # -- Logging
 tracing.workspace = true
+
+# -- Validation
+validator.workspace = true
+
+# -- Time
+chrono.workspace = true
 
 # -- Macros
 strum_macros.workspace = true

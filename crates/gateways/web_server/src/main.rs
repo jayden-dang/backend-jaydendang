@@ -5,11 +5,10 @@ use api_gateway::{
   v1_routes,
 };
 
-use axum::{http::StatusCode, middleware, response::IntoResponse, Extension, Json, Router};
+use axum::{http::StatusCode, middleware, response::IntoResponse, Json, Router};
 use dotenv::dotenv;
 use jd_core::AppState;
 use serde_json::json;
-use std::sync::Arc;
 use tower_cookies::CookieManagerLayer;
 use tower_http::cors::CorsLayer;
 use tracing::info;
@@ -22,7 +21,6 @@ use jd_utils::{
 
 use axum::http::{HeaderName, HeaderValue, Method};
 
-
 mod error;
 
 #[tokio::main]
@@ -34,7 +32,6 @@ async fn main() -> error::Result<()> {
   let app_state = AppState::new().await.expect("Failed to create app state");
 
   let cfg = config::Config::from_env().expect("Loading env failed");
-
 
   let app = Router::new()
     .merge(v1_routes(app_state.clone()))

@@ -17,12 +17,7 @@ impl Nonce {
     let now = Utc::now();
     let expires_at = now + Duration::minutes(5); // 5 minute expiration
 
-    Self {
-      address,
-      nonce,
-      created_at: now,
-      expires_at,
-    }
+    Self { address, nonce, created_at: now, expires_at }
   }
 
   /// Check if the nonce has expired
@@ -39,11 +34,14 @@ impl Nonce {
   fn generate_nonce_string() -> String {
     let mut rng = rand::thread_rng();
     let bytes: [u8; 32] = rng.r#gen();
-    bytes.iter().map(|b| format!("{:02x}", b)).collect::<String>()
+    bytes
+      .iter()
+      .map(|b| format!("{:02x}", b))
+      .collect::<String>()
   }
 
   /// Validate nonce format (64 hex characters)
   pub fn is_valid_format(nonce: &str) -> bool {
     nonce.len() == 64 && nonce.chars().all(|c| c.is_ascii_hexdigit())
   }
-} 
+}

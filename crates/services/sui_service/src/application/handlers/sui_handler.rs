@@ -1,13 +1,13 @@
+use crate::Result;
 use crate::infrastructure::sui_repository_impl::SuiRepositoryImpl;
 use crate::models::{GasPoolStatus, SponsorRequest, SponsorResponse, UserStats};
-use crate::Result;
 use axum::{
-  extract::{Path, State},
   Json,
+  extract::{Path, State},
 };
 use jd_core::AppState;
 use jd_utils::config::Config;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::str::FromStr;
 use sui_sdk::rpc_types::Coin;
 use sui_types::base_types::SuiAddress;
@@ -50,7 +50,7 @@ impl<R: SuiRepository> SuiHandler<R> {
           return Err(crate::error::Error::Internal(format!(
             "Unsupported Sui environment: {}",
             config.sui.env
-          )))
+          )));
         }
       };
 
@@ -170,7 +170,7 @@ impl<R: SuiRepository> SuiHandler<R> {
               return Ok(Json(json!({
                 "status": "error",
                 "message": format!("Unsupported Sui environment: {}", config.sui.env)
-              })))
+              })));
             }
           };
 

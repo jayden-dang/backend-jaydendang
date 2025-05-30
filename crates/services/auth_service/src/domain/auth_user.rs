@@ -1,8 +1,8 @@
-use time::OffsetDateTime;
-use serde::{Deserialize, Serialize};
 use modql::field::Fields;
 use modql::filter::{FilterNodes, OpValsString};
+use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
+use time::OffsetDateTime;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow, Fields)]
 pub struct AuthUser {
@@ -42,13 +42,7 @@ pub struct AuthUserFilter {
 impl AuthUser {
   pub fn new(address: String, public_key: String) -> Self {
     let now = OffsetDateTime::now_utc();
-    Self {
-      address,
-      public_key,
-      created_at: now,
-      last_login: now,
-      login_count: 1,
-    }
+    Self { address, public_key, created_at: now, last_login: now, login_count: 1 }
   }
 
   pub fn update_login(&mut self) {
@@ -61,7 +55,7 @@ impl AuthUser {
     if !address.starts_with("0x") {
       return false;
     }
-    
+
     let hex_part = &address[2..];
     hex_part.len() == 64 && hex_part.chars().all(|c| c.is_ascii_hexdigit())
   }
@@ -85,4 +79,4 @@ impl AuthUser {
       login_count: Some(self.login_count + 1),
     }
   }
-} 
+}

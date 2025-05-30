@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use base64::{engine::general_purpose, Engine as _};
+use base64::{Engine as _, engine::general_purpose};
 use fastcrypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
 use fastcrypto::hash::Blake2b256;
 use fastcrypto::hash::HashFunction;
@@ -105,7 +105,7 @@ impl SignatureVerifier for SignatureVerifierImpl {
 
     // Method 4: Try different hash functions (wallet might use different crypto)
     use sha2::{Digest, Sha256};
-    use sha3::{Digest as Sha3Digest, Keccak256};
+    use sha3::Keccak256;
 
     // Try SHA-256
     let sha256_hash = Sha256::digest(&sui_message);

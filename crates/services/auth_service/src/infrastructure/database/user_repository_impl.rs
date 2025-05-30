@@ -1,9 +1,9 @@
 use async_trait::async_trait;
-use jd_core::{base::rest, AppState};
+use jd_core::{AppState, base::rest};
 
+use crate::AuthUserDmc;
 use crate::domain::{AuthUser, AuthUserFilter, AuthUserForUpdate, UserRepository};
 use crate::error::{Error, Result};
-use crate::AuthUserDmc;
 
 pub struct UserRepositoryImpl {
   state: AppState,
@@ -22,7 +22,7 @@ impl UserRepository for UserRepositoryImpl {
 
     let _created: AuthUser = rest::create::<AuthUserDmc, _, _>(&self.state.mm, input)
       .await
-      .map_err(|e| Error::database_error(&e.as_ref()))?;
+      .map_err(|e| Error::database_error(e.as_ref()))?;
 
     Ok(())
   }
@@ -34,7 +34,7 @@ impl UserRepository for UserRepositoryImpl {
       Ok(user) => Ok(Some(user)),
       Err(e) => match e {
         jd_core::Error::EntityNotFound { .. } => Ok(None),
-        _ => Err(Error::database_error(&e.as_ref())),
+        _ => Err(Error::database_error(e.as_ref())),
       },
     }
   }
@@ -51,7 +51,7 @@ impl UserRepository for UserRepositoryImpl {
     let updated_count =
       rest::update_by_filter::<AuthUserDmc, _, _>(&self.state.mm, filter, update_input)
         .await
-        .map_err(|e| Error::database_error(&e.to_string()))?;
+        .map_err(|e| Error::database_error(e.as_ref()))?;
 
     if updated_count == 0 {
       return Err(Error::database_error("User not found for update"));

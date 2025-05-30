@@ -1,6 +1,8 @@
 use tracing::{error, info, warn};
 
-use crate::domain::{AuthUser, JwtManager, NonceRepository, SignatureVerifier, TokenPair, UserRepository};
+use crate::domain::{
+  AuthUser, JwtManager, NonceRepository, SignatureVerifier, TokenPair, UserRepository,
+};
 use crate::error::{Error, Result};
 
 pub struct VerifySignatureUseCase<N: NonceRepository, U: UserRepository, S: SignatureVerifier> {
@@ -11,18 +13,8 @@ pub struct VerifySignatureUseCase<N: NonceRepository, U: UserRepository, S: Sign
 }
 
 impl<N: NonceRepository, U: UserRepository, S: SignatureVerifier> VerifySignatureUseCase<N, U, S> {
-  pub fn new(
-    nonce_repo: N,
-    user_repo: U,
-    signature_verifier: S,
-    jwt_secret: String,
-  ) -> Self {
-    Self {
-      nonce_repo,
-      user_repo,
-      signature_verifier,
-      jwt_manager: JwtManager::new(jwt_secret),
-    }
+  pub fn new(nonce_repo: N, user_repo: U, signature_verifier: S, jwt_secret: String) -> Self {
+    Self { nonce_repo, user_repo, signature_verifier, jwt_manager: JwtManager::new(jwt_secret) }
   }
 
   pub async fn execute(

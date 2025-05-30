@@ -10,11 +10,7 @@ use crate::application::use_cases::{
 };
 use crate::domain::{AuthUser, NonceRepository, SignatureVerifier, UserRepository};
 use crate::error::{Error, Result};
-use crate::infrastructure::{
-  NonceRepositoryImpl,
-  SignatureVerifierImpl,
-  UserRepositoryImpl,
-};
+use crate::infrastructure::{NonceRepositoryImpl, SignatureVerifierImpl, UserRepositoryImpl};
 use crate::models::{
   NonceRequest, NonceResponse, RefreshRequest, RefreshResponse, UserInfo, VerifyRequest,
   VerifyResponse,
@@ -35,12 +31,7 @@ impl<N: NonceRepository, U: UserRepository, S: SignatureVerifier> AuthHandler<N,
     refresh_token: RefreshTokenUseCase,
     validate_token: ValidateTokenUseCase<U>,
   ) -> Self {
-    Self {
-      generate_nonce,
-      verify_signature,
-      refresh_token,
-      validate_token,
-    }
+    Self { generate_nonce, verify_signature, refresh_token, validate_token }
   }
 
   pub async fn generate_nonce(
@@ -55,10 +46,8 @@ impl<N: NonceRepository, U: UserRepository, S: SignatureVerifier> AuthHandler<N,
     let use_case = GenerateNonceUseCase::new(nonce_repo);
     let nonce = use_case.execute(&request.address).await?;
 
-    let response = NonceResponse {
-      nonce: nonce.nonce.clone(),
-      message: nonce.get_signing_message(),
-    };
+    let response =
+      NonceResponse { nonce: nonce.nonce.clone(), message: nonce.get_signing_message() };
 
     Ok(ResponseJson(response))
   }
@@ -76,22 +65,14 @@ impl<N: NonceRepository, U: UserRepository, S: SignatureVerifier> AuthHandler<N,
     let signature_verifier = SignatureVerifierImpl::new();
     let jwt_secret = state.config.auth_jwt_secret.clone();
 
-    let use_case = VerifySignatureUseCase::new(
-      nonce_repo,
-      user_repo,
-      signature_verifier,
-      jwt_secret,
-    );
+    let use_case =
+      VerifySignatureUseCase::new(nonce_repo, user_repo, signature_verifier, jwt_secret);
 
     let (user, tokens) = use_case
       .execute(&request.address, &request.signature, &request.public_key)
       .await?;
 
-    let response = VerifyResponse {
-      success: true,
-      user: UserInfo::from(user),
-      tokens,
-    };
+    let response = VerifyResponse { success: true, user: UserInfo::from(user), tokens };
 
     Ok(ResponseJson(response))
   }
@@ -121,7 +102,7 @@ impl<N: NonceRepository, U: UserRepository, S: SignatureVerifier> AuthHandler<N,
     let auth_header = headers
       .get("authorization")
       .and_then(|h| h.to_str().ok())
-      .ok_or_else(|| Error::missing_auth_header())?;
+      .ok_or_else(Error::missing_auth_header)?;
 
     let user_repo = UserRepositoryImpl::new(state.clone());
     let jwt_secret = state.config.auth_jwt_secret.clone();
@@ -135,9 +116,7 @@ impl<N: NonceRepository, U: UserRepository, S: SignatureVerifier> AuthHandler<N,
     Ok(request)
   }
 
-  pub async fn get_current_user(
-    Extension(user): Extension<AuthUser>,
-  ) -> ResponseJson<UserInfo> {
+  pub async fn get_current_user(Extension(user): Extension<AuthUser>) -> ResponseJson<UserInfo> {
     ResponseJson(UserInfo::from(user))
   }
 }

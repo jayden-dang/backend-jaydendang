@@ -1,7 +1,4 @@
-use axum::{
-  routing::get,
-  Router,
-};
+use axum::{Router, routing::get};
 mod sponsor_routes;
 use jd_core::AppState;
 use sui_service::application::handlers::sui_handler::SuiHandler;
@@ -15,4 +12,3 @@ pub fn sui_router() -> Router<AppState> {
     .route("/", get(Handler::fetch_coin))
     .merge(sponsor_routes::sponsor_router())
 }
-

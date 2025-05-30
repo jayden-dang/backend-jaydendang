@@ -1,16 +1,19 @@
-use axum::{
-  Router,
-  routing::{post, get},
-  extract::{State, Json, Extension},
-  response::Json as ResponseJson,
-};
-use jd_core::AppState;
 use auth_service::{
   application::handlers::AuthHandler,
-  infrastructure::{NonceRepositoryImpl, UserRepositoryImpl, SignatureVerifierImpl},
-  models::{NonceRequest, NonceResponse, VerifyRequest, VerifyResponse, RefreshRequest, RefreshResponse, UserInfo},
   domain::AuthUser,
+  infrastructure::{NonceRepositoryImpl, SignatureVerifierImpl, UserRepositoryImpl},
+  models::{
+    NonceRequest, NonceResponse, RefreshRequest, RefreshResponse, UserInfo, VerifyRequest,
+    VerifyResponse,
+  },
 };
+use axum::{
+  Router,
+  extract::{Extension, Json, State},
+  response::Json as ResponseJson,
+  routing::{get, post},
+};
+use jd_core::AppState;
 
 pub fn auth_router() -> Router<AppState> {
   Router::new()
@@ -27,7 +30,8 @@ async fn generate_nonce(
   AuthHandler::<NonceRepositoryImpl, UserRepositoryImpl, SignatureVerifierImpl>::generate_nonce(
     State(state),
     Json(request),
-  ).await
+  )
+  .await
 }
 
 async fn verify_signature(
@@ -37,7 +41,8 @@ async fn verify_signature(
   AuthHandler::<NonceRepositoryImpl, UserRepositoryImpl, SignatureVerifierImpl>::verify_signature(
     State(state),
     Json(request),
-  ).await
+  )
+  .await
 }
 
 async fn refresh_token(
@@ -47,13 +52,13 @@ async fn refresh_token(
   AuthHandler::<NonceRepositoryImpl, UserRepositoryImpl, SignatureVerifierImpl>::refresh_token(
     State(state),
     Json(request),
-  ).await
+  )
+  .await
 }
 
-async fn get_current_user(
-  Extension(user): Extension<AuthUser>,
-) -> ResponseJson<UserInfo> {
+async fn get_current_user(Extension(user): Extension<AuthUser>) -> ResponseJson<UserInfo> {
   AuthHandler::<NonceRepositoryImpl, UserRepositoryImpl, SignatureVerifierImpl>::get_current_user(
     Extension(user),
-  ).await
+  )
+  .await
 }

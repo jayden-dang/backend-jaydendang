@@ -1,6 +1,6 @@
-use time::OffsetDateTime;
-use serde::{Deserialize, Serialize};
 use crate::domain::{AuthUser, TokenPair};
+use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NonceResponse {
@@ -41,4 +41,4 @@ pub struct VerifyResponse {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RefreshResponse {
   pub access_token: String,
-} 
+}

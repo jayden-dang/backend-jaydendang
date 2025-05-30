@@ -12,19 +12,11 @@ pub struct Error {
 
 impl Error {
   pub fn new(error: &str, code: &str) -> Self {
-    Self {
-      error: error.to_string(),
-      code: code.to_string(),
-      details: None,
-    }
+    Self { error: error.to_string(), code: code.to_string(), details: None }
   }
 
   pub fn with_details(error: &str, code: &str, details: serde_json::Value) -> Self {
-    Self {
-      error: error.to_string(),
-      code: code.to_string(),
-      details: Some(details),
-    }
+    Self { error: error.to_string(), code: code.to_string(), details: Some(details) }
   }
 
   // Nonce related errors
@@ -145,4 +137,4 @@ impl axum::response::IntoResponse for Error {
     let body = axum::Json(self);
     (status, body).into_response()
   }
-} 
+}

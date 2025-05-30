@@ -1,4 +1,5 @@
 pub mod dbx;
+pub mod repository;
 pub mod utils;
 
 use jd_utils::config::Config;

@@ -10,6 +10,7 @@ pub mod ctx;
 mod error;
 pub use error::{Error, Result};
 pub mod base;
+pub use base::error as service_error;
 
 #[derive(Clone, rpc_router::RpcResource)]
 pub struct ModelManager {

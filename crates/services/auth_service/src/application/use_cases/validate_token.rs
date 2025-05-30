@@ -10,10 +10,7 @@ pub struct ValidateTokenUseCase<R: UserRepository> {
 
 impl<R: UserRepository> ValidateTokenUseCase<R> {
   pub fn new(user_repo: R, jwt_secret: String) -> Self {
-    Self {
-      user_repo,
-      jwt_manager: JwtManager::new(jwt_secret),
-    }
+    Self { user_repo, jwt_manager: JwtManager::new(jwt_secret) }
   }
 
   pub async fn execute(&self, token: &str) -> Result<AuthUser> {
@@ -48,7 +45,7 @@ impl<R: UserRepository> ValidateTokenUseCase<R> {
     Ok(user)
   }
 
-  pub fn extract_token_from_header<'a>(auth_header: &'a str) -> Result<&'a str> {
+  pub fn extract_token_from_header(auth_header: &str) -> Result<&str> {
     JwtManager::extract_token_from_header(auth_header)
   }
 }

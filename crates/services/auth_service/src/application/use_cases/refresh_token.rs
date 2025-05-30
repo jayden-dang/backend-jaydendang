@@ -9,9 +9,7 @@ pub struct RefreshTokenUseCase {
 
 impl RefreshTokenUseCase {
   pub fn new(jwt_secret: String) -> Self {
-    Self {
-      jwt_manager: JwtManager::new(jwt_secret),
-    }
+    Self { jwt_manager: JwtManager::new(jwt_secret) }
   }
 
   pub async fn execute(&self, refresh_token: &str) -> Result<String> {
