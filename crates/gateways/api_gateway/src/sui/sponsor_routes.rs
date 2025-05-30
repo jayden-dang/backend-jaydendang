@@ -1,19 +1,14 @@
 use axum::{
   Router,
-  routing::{get, post},
+  routing::get,
 };
 use jd_core::AppState;
 
 use super::Handler;
 
-// Sponsor operations
+// Sponsor operations - simplified to working methods only
 pub fn sponsor_router() -> Router<AppState> {
   Router::new()
     .route("/health", get(Handler::health_check))
-    .route("/debug", get(Handler::debug_config))
-    .route("/gas-station", get(Handler::gas_station))
-    .route("/sponsor", post(Handler::sponsor_transaction))
-    .route("/gas-pool-status", get(Handler::gas_pool_status))
-    .route("/user/{address}/stats", get(Handler::user_stats))
-    .route("/refresh-gas-pool", post(Handler::refresh_gas_pool))
+    .route("/test-connection", get(Handler::test_connection))
 }

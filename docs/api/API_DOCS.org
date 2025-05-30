@@ -18,72 +18,7 @@ GET :host/api/v1
 #+end_src
 
 * Api
-** Create user
-#+begin_src restclient :var host=host :var headers=headers
-POST :host/api/v1/users
-:headers
-{
-  "email": "asdfasdfdjhdfa@gmaial.com",
-  "username": "bcdaaig1aaa",
-  "password_hash": "passawordasdflkaj",
-  "first_name": "first_naame",
-  "last_name": "last_namae"
-}
-#+end_src
-
-#+RESULTS:
-#+BEGIN_SRC js
-{
-  "data": {
-    "created_at": "2025-05-27T02:43:55.324383Z",
-    "email": "asdfasdfdjhdfa@gmaial.com",
-    "email_verified": false,
-    "first_name": "first_naame",
-    "last_name": "last_namae",
-    "password_hash": "passawordasdflkaj",
-    "updated_at": "2025-05-27T02:43:55.324383Z",
-    "user_id": "916aac6f-fdb1-418b-83b1-f8c83db3e8ad",
-    "username": "bcdaaig1aaa"
-  },
-  "error": null,
-  "id": "8b8e4b7f-b7fd-4a79-8c60-a5bd6fbc1934",
-  "meta": {
-    "timestamp": "2025-05-27T02:43:55.389966Z"
-  },
-  "status": 0,
-  "type": "success"
-}
-// POST http://localhost:8080/api/v1/users
-// HTTP/1.1 200 OK
-// content-type: application/json
-// content-length: 453
-// date: Tue, 27 May 2025 02:43:55 GMT
-// Request duration: 0.073929s
-#+END_SRC
-
-#+begin_src restclient :var host=host :var headers=headers
-GET :host/api/v1/users
-#+end_src
-
-#+RESULTS:
-#+BEGIN_SRC js
-{
-  "code": 404,
-  "message": "Route not found",
-  "path": "The requested resource does not exist",
-  "status": "error",
-  "timestamp": "2025-05-25T06:07:49.767722Z"
-}
-// GET http://localhost:8080/api/v1/users
-// HTTP/1.1 404 Not Found
-// content-type: application/json
-// content-length: 146
-// date: Sun, 25 May 2025 06:07:49 GMT
-// Request duration: 0.007698s
-#+END_SRC
-
 ** Auth Service - Sui Wallet Authentication
-
 *** 1. Generate Nonce
 Generate a nonce for wallet signature authentication.
 
@@ -203,7 +138,6 @@ GET :host/api/v1/auth/me
 #+end_src
 
 ** Expected Responses Documentation
-
 *** Nonce Response
 #+BEGIN_SRC json
 {
@@ -265,3 +199,195 @@ GET :host/api/v1/auth/me
   "message": "Invalid address format"
 }
 #+END_SRC
+
+** Sui Service - Blockchain Operations
+*** 1. Health Check
+Check if the Sui service is healthy and operational.
+
+#+begin_src restclient :var host=host :var headers=headers
+GET :host/api/v1/sui/health
+#+end_src
+
+*** 2. Test Connection
+Test connection to the Sui network and get latest checkpoint information.
+
+#+begin_src restclient :var host=host :var headers=headers
+GET :host/api/v1/sui/test-connection
+#+end_src
+
+*** 3. Fetch Coin
+Fetch a coin for a specific Sui address.
+
+#+begin_src restclient :var host=host :var headers=headers
+POST :host/api/v1/sui/fetch-coin
+:headers
+"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+#+end_src
+
+** User Service - User Management
+*** 1. Create User
+Create a new user account.
+
+#+begin_src restclient :var host=host :var headers=headers
+POST :host/api/v1/users
+:headers
+{
+  "email": "user@example.com",
+  "username": "testuser123",
+  "password_hash": "hashed_password_here",
+  "first_name": "John",
+  "last_name": "Doe"
+}
+#+end_src
+
+*** 2. Get User by Username (RPC)
+Get user information by username using RPC call.
+
+#+begin_src restclient :var host=host :var headers=headers
+POST :host/api/v1/rpc
+:headers
+{
+  "method": "get_user_by_username",
+  "params": {
+    "username": "testuser123"
+  }
+}
+#+end_src
+
+*** 3. Get User by ID (RPC)
+Get user information by user ID using RPC call.
+
+#+begin_src restclient :var host=host :var headers=headers
+POST :host/api/v1/rpc
+:headers
+{
+  "method": "get_user_by_id",
+  "params": {
+    "user_id": "916aac6f-fdb1-418b-83b1-f8c83db3e8ad"
+  }
+}
+#+end_src
+
+** Additional API Responses Documentation
+*** Sui Service Responses
+**** Health Check Response
+#+BEGIN_SRC json
+"Sui Service is healthy"
+#+END_SRC
+
+**** Test Connection Response (Success)
+#+BEGIN_SRC json
+{
+  "status": "success",
+  "latest_checkpoint": 12345678,
+  "message": "Successfully connected to Sui network"
+}
+#+END_SRC
+
+**** Test Connection Response (Error)
+#+BEGIN_SRC json
+{
+  "status": "error",
+  "message": "Failed to connect to Sui network: Connection timeout"
+}
+#+END_SRC
+
+**** Fetch Coin Response (Success)
+#+BEGIN_SRC json
+{
+  "coin_object_id": "0xabcdef1234567890abcdef1234567890abcdef12",
+  "version": "12345",
+  "digest": "0x987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba0",
+  "balance": "1000000000",
+  "coin_type": "0x2::sui::SUI",
+  "previous_transaction": "0xfedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321"
+}
+#+END_SRC
+
+**** Fetch Coin Response (Error)
+#+BEGIN_SRC json
+{
+  "error": "InvalidRequest",
+  "message": "Coin not found"
+}
+#+END_SRC
+
+*** User Service Responses
+**** Get User Response (RPC Success)
+#+BEGIN_SRC json
+{
+  "data": {
+    "user_id": "916aac6f-fdb1-418b-83b1-f8c83db3e8ad",
+    "username": "testuser123",
+    "email": "user@example.com",
+    "first_name": "John",
+    "last_name": "Doe",
+    "email_verified": false,
+    "created_at": "2025-05-27T02:43:55.324383Z",
+    "updated_at": "2025-05-27T02:43:55.324383Z"
+  }
+}
+#+END_SRC
+
+**** User Not Found Response (RPC)
+#+BEGIN_SRC json
+{
+  "error": "User not found"
+}
+#+END_SRC
+
+*** General Error Responses
+
+**** 404 Route Not Found
+#+BEGIN_SRC json
+{
+  "code": 404,
+  "message": "Route not found",
+  "path": "The requested resource does not exist",
+  "status": "error",
+  "timestamp": "2025-05-25T06:07:49.767722Z"
+}
+#+END_SRC
+
+**** 500 Internal Server Error
+#+BEGIN_SRC json
+{
+  "error": "Internal Server Error",
+  "message": "An unexpected error occurred"
+}
+#+END_SRC
+
+** API Endpoint Summary
+*** Available Endpoints
+**** Authentication Service
+- =POST /api/v1/auth/nonce= - Generate nonce for wallet authentication
+- =POST /api/v1/auth/verify= - Verify wallet signature and get JWT tokens
+- =POST /api/v1/auth/refresh= - Refresh access token
+- =GET /api/v1/auth/me= - Get current authenticated user (requires JWT)
+
+**** User Service
+- =POST /api/v1/users= - Create new user
+- =POST /api/v1/rpc= - RPC calls for user operations
+  - Method: =get_user_by_username=
+  - Method: =get_user_by_id=
+
+**** Sui Service
+- =GET /api/v1/sui/health= - Health check
+- =GET /api/v1/sui/test-connection= - Test Sui network connection
+- =POST /api/v1/sui/fetch-coin= - Fetch coin for address
+
+*** Authentication
+- Most endpoints require authentication via JWT tokens
+- Use =Authorization: Bearer <token>= header for protected routes
+- Get tokens through the wallet signature verification process
+
+*** Request Format
+- All POST requests require =Content-Type: application/json= header
+- Request bodies should be valid JSON
+- Sui addresses should be 64-character hex strings with =0x= prefix
+
+*** Response Format
+- All responses are in JSON format
+- Success responses include relevant data
+- Error responses include error type and descriptive message
+- RPC responses follow the JSON-RPC 2.0 specification
