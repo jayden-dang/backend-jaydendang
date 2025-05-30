@@ -19,6 +19,7 @@ members = [
   "crates/processors/notification_processor",
 
   # -- Services Application
+  "crates/services/auth_service",
   "crates/services/user_service",
   "crates/services/sui_service",
 
@@ -123,6 +124,8 @@ base64 = "0.22"
 hex = "0.4"
 blake2 = "0.10"
 bcs = "0.1"
+jsonwebtoken = "9.0"
+rand = "0.8"
 
 # ============================================================================
 # BLOCKCHAIN & SUI INTEGRATION

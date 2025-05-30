@@ -1,0 +1,61 @@
+[package]
+name = "auth_service"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# -- Database
+modql.workspace = true
+sea-query.workspace = true
+sea-query-binder.workspace = true
+sqlx.workspace = true
+redis.workspace = true
+
+# -- Serialization
+serde.workspace = true
+serde_with.workspace = true
+serde_json.workspace = true
+
+# -- Web Framework
+axum.workspace = true
+
+# -- Utilities
+derive_more.workspace = true
+uuid.workspace = true
+validator.workspace = true
+
+# -- Macros
+strum_macros.workspace = true
+
+# -- Error Handling
+thiserror.workspace = true
+
+# -- Async & Utilities
+async-trait.workspace = true
+
+# -- Time & Date
+chrono.workspace = true
+time.workspace = true
+
+# -- Logging
+tracing.workspace = true
+
+# -- Cryptography & Encoding
+base64.workspace = true
+hex.workspace = true
+blake2.workspace = true
+jsonwebtoken.workspace = true
+rand.workspace = true
+
+# -- Blockchain & SUI Integration
+sui-sdk.workspace = true
+sui-keys.workspace = true
+sui-types.workspace = true
+fastcrypto.workspace = true
+
+# -- Internal Dependencies
+jd_domain = { path = "../../shared/jd_domain" }
+jd_contracts = { path = "../../shared/jd_contracts" }
+jd_storage = { path = "../../infrastructure/jd_storage" }
+jd_core = { path = "../../core/jd_core" }
+jd_utils = { path = "../../shared/jd_utils" } 

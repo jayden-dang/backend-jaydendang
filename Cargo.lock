@@ -306,6 +306,7 @@ name = "api_gateway"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "auth_service",
  "axum",
  "chrono",
  "derive_more 2.0.1",
@@ -646,6 +647,44 @@ name = "atomic-waker"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
+
+[[package]]
+name = "auth_service"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "axum",
+ "base64 0.22.1",
+ "blake2",
+ "chrono",
+ "derive_more 2.0.1",
+ "fastcrypto 0.1.9",
+ "hex",
+ "jd_contracts",
+ "jd_core",
+ "jd_domain",
+ "jd_storage",
+ "jd_utils",
+ "jsonwebtoken",
+ "modql",
+ "rand 0.8.5",
+ "redis",
+ "sea-query",
+ "sea-query-binder",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "sqlx",
+ "strum_macros 0.27.1",
+ "sui-keys",
+ "sui-sdk",
+ "sui-types",
+ "thiserror 2.0.12",
+ "time",
+ "tracing",
+ "uuid",
+ "validator",
+]
 
 [[package]]
 name = "auto_ops"
@@ -3819,6 +3858,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "jsonwebtoken"
+version = "9.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5a87cc7a48537badeae96744432de36f4be2b4a34a05a5ef32e9dd8a1c169dde"
+dependencies = [
+ "base64 0.22.1",
+ "js-sys",
+ "pem",
+ "ring",
+ "serde",
+ "serde_json",
+ "simple_asn1",
+]
+
+[[package]]
 name = "k256"
 version = "0.11.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6950,6 +7004,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "16e78919e05c9b8e123d435a4ad104b488ad1585631830e413830985c214086e"
 
 [[package]]
+name = "simple_asn1"
+version = "0.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "297f631f50729c8c99b84667867963997ec0b50f32b2a7dbcab828ef0541e8bb"
+dependencies = [
+ "num-bigint 0.4.6",
+ "num-traits",
+ "thiserror 2.0.12",
+ "time",
+]
+
+[[package]]
 name = "siphasher"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9157,6 +9223,7 @@ name = "web_server"
 version = "0.1.0"
 dependencies = [
  "api_gateway",
+ "auth_service",
  "axum",
  "chrono",
  "dotenv",

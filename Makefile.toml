@@ -16,7 +16,6 @@ command = "cargo"
 args = ["watch", "-x", "clippy", "-x", "run"]
 
 [tasks.dev.env]
-RUST_LOG = "debug,jd_=trace,api_gateway=trace,user_service=trace,sui_service=trace,web_server=trace,sqlx=info,hyper=warn,tokio=warn,h2=warn,tower=warn,reqwest=info,rustls=warn,jsonrpsee=info,jsonrpsee_http_client=warn,fastcrypto=warn"
 ENVIRONMENT = "development"
 
 [tasks.dev-quiet] 
@@ -27,7 +26,6 @@ command = "cargo"
 args = ["watch", "-x", "clippy", "-x", "run"]
 
 [tasks.dev-quiet.env]
-RUST_LOG = "info,jd_=debug,api_gateway=debug,user_service=debug,sui_service=debug,web_server=debug,h2=warn,rustls=warn,jsonrpsee=warn,sqlx=warn,hyper=warn,tokio=warn,tower=warn,reqwest=warn"
 ENVIRONMENT = "development"
 
 [tasks.dev-info]
@@ -38,7 +36,6 @@ command = "cargo"
 args = ["watch", "-x", "clippy", "-x", "run"]
 
 [tasks.dev-info.env]
-RUST_LOG = "info,jd_=info,api_gateway=info,user_service=info,sui_service=info,web_server=info,sqlx=info,hyper=warn,tokio=warn,h2=warn,tower=warn,reqwest=info,rustls=warn,jsonrpsee=info"
 ENVIRONMENT = "development"
 
 [tasks.dev-debug]
@@ -49,7 +46,6 @@ command = "cargo"
 args = ["watch", "-x", "clippy", "-x", "run"]
 
 [tasks.dev-debug.env]
-RUST_LOG = "trace"
 ENVIRONMENT = "development"
 
 # ============================================================================
@@ -64,7 +60,6 @@ command = "cargo"
 args = ["watch", "-x", "clippy", "-x", "run"]
 
 [tasks.staging.env]
-RUST_LOG = "debug,jd_=debug,api_gateway=debug,user_service=debug,sui_service=debug,web_server=debug,sqlx=info,hyper=info,h2=warn,rustls=warn,jsonrpsee=info,reqwest=info"
 ENVIRONMENT = "staging"
 
 [tasks.production]
@@ -75,7 +70,6 @@ command = "cargo"
 args = ["watch", "-x", "clippy", "-x", "run"]
 
 [tasks.production.env]
-RUST_LOG = "info,jd_=info,api_gateway=info,user_service=info,sui_service=info,web_server=info,sqlx=warn,hyper=warn,tokio=warn,h2=warn,tower=warn,reqwest=warn,rustls=warn,jsonrpsee=warn,fastcrypto=warn"
 ENVIRONMENT = "production"
 
 [tasks.test-env]
@@ -86,7 +80,6 @@ command = "cargo"
 args = ["watch", "-x", "clippy", "-x", "run"]
 
 [tasks.test-env.env]
-RUST_LOG = "warn,jd_=error"
 ENVIRONMENT = "testing"
 
 # ============================================================================
@@ -101,7 +94,6 @@ command = "cargo"
 args = ["watch", "-x", "clippy", "-x", "run"]
 
 [tasks.debug-db.env]
-RUST_LOG = "info,jd_=debug,jd_storage=trace,sqlx=debug,sea_query=debug,h2=warn,rustls=warn"
 ENVIRONMENT = "development"
 
 [tasks.debug-sui]
@@ -112,7 +104,6 @@ command = "cargo"
 args = ["watch", "-x", "clippy", "-x", "run"]
 
 [tasks.debug-sui.env]
-RUST_LOG = "info,jd_=debug,sui_service=trace,jsonrpsee=debug,reqwest=debug,fastcrypto=info,h2=info,rustls=warn"
 ENVIRONMENT = "development"
 
 [tasks.debug-auth]
@@ -123,7 +114,6 @@ command = "cargo"
 args = ["watch", "-x", "clippy", "-x", "run"]
 
 [tasks.debug-auth.env]
-RUST_LOG = "info,jd_=debug,api_gateway=trace,api_gateway::middleware=trace,user_service=debug,axum=info,tower=info,h2=warn,rustls=warn"
 ENVIRONMENT = "development"
 
 # ============================================================================

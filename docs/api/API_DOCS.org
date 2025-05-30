@@ -81,3 +81,187 @@ GET :host/api/v1/users
 // date: Sun, 25 May 2025 06:07:49 GMT
 // Request duration: 0.007698s
 #+END_SRC
+
+** Auth Service - Sui Wallet Authentication
+
+*** 1. Generate Nonce
+Generate a nonce for wallet signature authentication.
+
+#+begin_src restclient :var host=host :var headers=headers
+POST :host/api/v1/auth/nonce
+:headers
+{
+  "address": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+}
+#+end_src
+
+*** 2. Verify Signature (Success Case)
+Verify wallet signature and get JWT tokens.
+Note: You need to sign the message from step 1 with your Sui wallet.
+
+#+begin_src restclient :var host=host :var headers=headers
+POST :host/api/v1/auth/verify
+:headers
+{
+  "address": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+  "signature": "your_wallet_signature_here",
+  "public_key": "your_public_key_here"
+}
+#+end_src
+
+*** 3. Verify Signature (Test with Mock Data)
+Test endpoint with mock data (will fail signature verification).
+
+#+begin_src restclient :var host=host :var headers=headers
+POST :host/api/v1/auth/verify
+:headers
+{
+  "address": "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+  "signature": "mock_signature_for_testing",
+  "public_key": "mock_public_key_for_testing"
+}
+#+end_src
+
+*** 4. Refresh Token
+Refresh access token using refresh token.
+
+#+name: refresh_token
+#+BEGIN_SRC elisp
+"your_refresh_token_here"
+#+END_SRC
+
+#+begin_src restclient :var host=host :var headers=headers :var refresh_token=refresh_token
+POST :host/api/v1/auth/refresh
+:headers
+{
+  "refresh_token": ":refresh_token"
+}
+#+end_src
+
+*** 5. Get Current User (Protected Route)
+Get current authenticated user information. Requires valid JWT token.
+
+#+name: access_token
+#+BEGIN_SRC elisp
+"your_access_token_here"
+#+END_SRC
+
+#+name: auth_headers
+#+BEGIN_SRC elisp
+"Content-Type: application/json
+Authorization: Bearer your_access_token_here
+User-Agent: Emacs30"
+#+END_SRC
+
+#+begin_src restclient :var host=host :var auth_headers=auth_headers
+GET :host/api/v1/auth/me
+:auth_headers
+#+end_src
+
+*** 6. Get Current User (Unauthorized)
+Test protected route without authentication token.
+
+#+begin_src restclient :var host=host :var headers=headers
+GET :host/api/v1/auth/me
+:headers
+#+end_src
+
+** Auth Service - Error Cases
+*** Invalid Address Format
+Test with invalid Sui address format.
+
+#+begin_src restclient :var host=host :var headers=headers
+POST :host/api/v1/auth/nonce
+:headers
+{
+  "address": "invalid_address"
+}
+#+end_src
+
+*** Empty Request Body
+Test with missing required fields.
+
+#+begin_src restclient :var host=host :var headers=headers
+POST :host/api/v1/auth/nonce
+:headers
+{}
+#+end_src
+
+*** Invalid JWT Token
+Test protected route with invalid token.
+
+#+name: invalid_auth_headers
+#+BEGIN_SRC elisp
+"Content-Type: application/json
+Authorization: Bearer invalid_token_here
+User-Agent: Emacs30"
+#+END_SRC
+
+#+begin_src restclient :var host=host :var invalid_auth_headers=invalid_auth_headers
+GET :host/api/v1/auth/me
+:invalid_auth_headers
+#+end_src
+
+** Expected Responses Documentation
+
+*** Nonce Response
+#+BEGIN_SRC json
+{
+  "nonce": "64_character_hex_string",
+  "message": "Please sign this nonce with your wallet"
+}
+#+END_SRC
+
+*** Verify Response (Success)
+#+BEGIN_SRC json
+{
+  "success": true,
+  "user": {
+    "address": "0x...",
+    "public_key": "...",
+    "created_at": "2025-01-01T00:00:00Z",
+    "last_login": "2025-01-01T00:00:00Z",
+    "login_count": 1
+  },
+  "tokens": {
+    "access_token": "jwt_access_token",
+    "refresh_token": "jwt_refresh_token"
+  }
+}
+#+END_SRC
+
+*** Refresh Response
+#+BEGIN_SRC json
+{
+  "access_token": "new_jwt_access_token"
+}
+#+END_SRC
+
+*** Current User Response
+#+BEGIN_SRC json
+{
+  "user": {
+    "address": "0x...",
+    "public_key": "...",
+    "created_at": "2025-01-01T00:00:00Z",
+    "last_login": "2025-01-01T00:00:00Z",
+    "login_count": 5
+  }
+}
+#+END_SRC
+
+*** Error Response (401 Unauthorized)
+#+BEGIN_SRC json
+{
+  "error": "Unauthorized",
+  "message": "Invalid or missing authentication token"
+}
+#+END_SRC
+
+*** Error Response (400 Bad Request)
+#+BEGIN_SRC json
+{
+  "error": "Bad Request",
+  "message": "Invalid address format"
+}
+#+END_SRC

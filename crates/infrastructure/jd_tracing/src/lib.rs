@@ -155,8 +155,12 @@ impl TracingConfig {
           // Application logs at debug/trace, but external deps at info/warn to reduce noise
           format!(
             "debug,jd_=trace,api_gateway=trace,user_service=trace,sui_service=trace,\
-             sqlx=info,hyper=warn,tokio=warn,h2=warn,tower=warn,reqwest=info,\
-             rustls=warn,jsonrpsee=info,jsonrpsee_http_client=warn,fastcrypto=warn"
+             sqlx=info,hyper=warn,tokio=warn,tokio::runtime::worker=off,h2=warn,tower=warn,reqwest=info,\
+             rustls=warn,jsonrpsee=info,jsonrpsee_http_client=warn,fastcrypto=warn,\
+             auth_service::infrastructure::signature_verifier=debug,\
+             api_gateway::middleware::mw_request_context=warn,\
+             api_gateway::middleware::mw_res_map=info,\
+             api_gateway::log=info"
           )
         }
       }
@@ -182,10 +186,12 @@ pub fn tracing_init_with_config(config: TracingConfig) -> Result<()> {
   let env_filter = config.create_env_filter()?;
 
   let fmt_layer = fmt::layer()
-    .with_target(true)
-    .with_thread_names(config.enable_thread_names)
+    .with_target(false)
+    .with_thread_names(false)
     .with_span_events(if config.enable_span_events { FmtSpan::CLOSE } else { FmtSpan::NONE })
-    .with_timer(SystemTime);
+    .with_timer(SystemTime)
+    .with_file(false)
+    .with_line_number(false);
 
   let fmt_layer: Box<dyn Layer<_> + Send + Sync> = if config.use_json_format {
     Box::new(fmt_layer.json())
