@@ -5,10 +5,10 @@ use std::env;
 use tracing::Level;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{
-  EnvFilter,
   fmt::{self, format::FmtSpan, time::SystemTime},
   layer::{Layer, SubscriberExt},
   util::SubscriberInitExt,
+  EnvFilter,
 };
 /// Environment types for different deployment stages
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -107,8 +107,8 @@ impl TracingConfig {
       enable_colors: true,
       enable_timestamps: false,
       use_json_format: false,
-      enable_thread_names: true,
-      enable_span_events: true,
+      enable_thread_names: false,
+      enable_span_events: false,
       custom_filter: None,
     }
   }
@@ -143,7 +143,7 @@ impl TracingConfig {
         Environment::Staging => {
           // More detailed for staging but filter noise
           format!(
-            "{},sqlx=info,hyper=info,h2=warn,rustls=warn,jsonrpsee=info", 
+            "{},sqlx=info,hyper=info,h2=warn,rustls=warn,jsonrpsee=info",
             self.default_level.as_str().to_lowercase()
           )
         }
@@ -155,7 +155,7 @@ impl TracingConfig {
           // Application logs at debug/trace, but external deps at info/warn to reduce noise
           format!(
             "debug,jd_=trace,api_gateway=trace,user_service=trace,sui_service=trace,\
-             sqlx=info,hyper=warn,tokio=warn,tokio::runtime::worker=off,h2=warn,tower=warn,reqwest=info,\
+             hyper=warn,tokio=warn,tokio::runtime::worker=off,h2=warn,tower=warn,reqwest=info,\
              rustls=warn,jsonrpsee=info,jsonrpsee_http_client=warn,fastcrypto=warn,\
              auth_service::infrastructure::signature_verifier=debug,\
              api_gateway::middleware::mw_request_context=warn,\

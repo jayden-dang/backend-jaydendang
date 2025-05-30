@@ -38,7 +38,6 @@ impl AuthService {
     Ok(nonce)
   }
 
-  /// Verify wallet signature and authenticate user
   pub async fn verify_signature(
     &self,
     address: &str,
