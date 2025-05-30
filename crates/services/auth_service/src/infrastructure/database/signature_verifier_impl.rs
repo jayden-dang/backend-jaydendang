@@ -1,33 +1,24 @@
-use crate::error::{Error, Result};
 use async_trait::async_trait;
 use base64::{engine::general_purpose, Engine as _};
 use fastcrypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
 use fastcrypto::hash::Blake2b256;
 use fastcrypto::hash::HashFunction;
 use fastcrypto::traits::{ToFromBytes, VerifyingKey};
-use tracing::{debug, error, info, warn};
+use tracing::{error, warn};
 
-#[async_trait]
-pub trait SignatureVerifier: Send + Sync {
-  async fn verify_signature(
-    &self,
-    message: &str,
-    signature: &str,
-    public_key: &str,
-    address: &str,
-  ) -> Result<bool>;
-}
+use crate::domain::SignatureVerifier;
+use crate::error::{Error, Result};
 
-pub struct SuiSignatureVerifier;
+pub struct SignatureVerifierImpl;
 
-impl SuiSignatureVerifier {
+impl SignatureVerifierImpl {
   pub fn new() -> Self {
     Self
   }
 }
 
 #[async_trait]
-impl SignatureVerifier for SuiSignatureVerifier {
+impl SignatureVerifier for SignatureVerifierImpl {
   async fn verify_signature(
     &self,
     message: &str,
@@ -35,8 +26,6 @@ impl SignatureVerifier for SuiSignatureVerifier {
     public_key: &str,
     address: &str,
   ) -> Result<bool> {
-    info!("🔍 Starting Sui signature verification");
-
     // Decode signature and public key
     let signature_bytes = general_purpose::STANDARD
       .decode(signature)
@@ -55,7 +44,6 @@ impl SignatureVerifier for SuiSignatureVerifier {
 
     // Extract Ed25519 components
     let ed25519_sig_bytes = &signature_bytes[1..65];
-    let embedded_pk_bytes = &signature_bytes[65..97];
 
     // Verify address matches public key
     let mut hasher_input = Vec::new();
@@ -65,7 +53,7 @@ impl SignatureVerifier for SuiSignatureVerifier {
     let derived_address = format!("0x{}", hex::encode(hash_result.as_ref()));
 
     if derived_address != address {
-      error!("❌ Address mismatch: {} vs {}", address, derived_address);
+      error!("Address mismatch: {} vs {}", address, derived_address);
       return Err(Error::invalid_public_key());
     }
 
@@ -78,10 +66,6 @@ impl SignatureVerifier for SuiSignatureVerifier {
     sig_array.copy_from_slice(ed25519_sig_bytes);
     let sig = Ed25519Signature::from_bytes(&sig_array).map_err(|_| Error::invalid_signature())?;
 
-    info!("✅ All components parsed successfully");
-    info!("   Message: {}", message);
-    info!("   Address: {}", address);
-
     // Method 1: Try Sui personal message format
     let prefix = b"\x19Sui Signed Message:\n";
     let message_bytes = message.as_bytes();
@@ -93,19 +77,16 @@ impl SignatureVerifier for SuiSignatureVerifier {
     sui_message.extend_from_slice(message_bytes);
 
     let sui_hash = Blake2b256::digest(&sui_message);
-    info!("🔍 Testing Sui format, hash: {}", hex::encode(sui_hash.as_ref()));
 
     if pk.verify(sui_hash.as_ref(), &sig).is_ok() {
-      info!("🎉 SUCCESS: Sui personal message format!");
       return Ok(true);
     }
 
     // Method 2: Try raw message format (wallet compatibility)
     let raw_hash = Blake2b256::digest(message_bytes);
-    info!("🔍 Testing raw format, hash: {}", hex::encode(raw_hash.as_ref()));
 
     if pk.verify(raw_hash.as_ref(), &sig).is_ok() {
-      warn!("⚠️ SUCCESS: Wallet using raw message format (not Sui standard)");
+      warn!("Wallet using raw message format (not Sui standard)");
       return Ok(true);
     }
 
@@ -113,12 +94,11 @@ impl SignatureVerifier for SuiSignatureVerifier {
     if let Some(nonce_start) = message.rfind(": ") {
       let nonce = &message[nonce_start + 2..];
       let nonce_hash = Blake2b256::digest(nonce.as_bytes());
-      info!("🔍 Testing nonce-only, hash: {}", hex::encode(nonce_hash.as_ref()));
 
       if pk.verify(nonce_hash.as_ref(), &sig).is_ok() {
-        error!("🚨 WALLET BUG: Signing only nonce, not full message!");
-        error!("   Nonce: {}", nonce);
-        error!("   Expected: {}", message);
+        error!("WALLET BUG: Signing only nonce, not full message!");
+        error!("Nonce: {}", nonce);
+        error!("Expected: {}", message);
         return Ok(true);
       }
     }
@@ -130,28 +110,28 @@ impl SignatureVerifier for SuiSignatureVerifier {
     // Try SHA-256
     let sha256_hash = Sha256::digest(&sui_message);
     if pk.verify(sha256_hash.as_ref(), &sig).is_ok() {
-      warn!("⚠️ SUCCESS: Wallet using SHA-256 instead of Blake2b!");
+      warn!("Wallet using SHA-256 instead of Blake2b!");
       return Ok(true);
     }
 
     // Try Keccak-256
     let keccak_hash = Keccak256::digest(&sui_message);
     if pk.verify(keccak_hash.as_ref(), &sig).is_ok() {
-      warn!("⚠️ SUCCESS: Wallet using Keccak-256 instead of Blake2b!");
+      warn!("Wallet using Keccak-256 instead of Blake2b!");
       return Ok(true);
     }
 
     // Try SHA-256 on raw message
     let sha256_raw = Sha256::digest(message_bytes);
     if pk.verify(sha256_raw.as_ref(), &sig).is_ok() {
-      warn!("⚠️ SUCCESS: Wallet using SHA-256 on raw message!");
+      warn!("Wallet using SHA-256 on raw message!");
       return Ok(true);
     }
 
     // Try Keccak-256 on raw message
     let keccak_raw = Keccak256::digest(message_bytes);
     if pk.verify(keccak_raw.as_ref(), &sig).is_ok() {
-      warn!("⚠️ SUCCESS: Wallet using Keccak-256 on raw message!");
+      warn!("Wallet using Keccak-256 on raw message!");
       return Ok(true);
     }
 
@@ -168,33 +148,19 @@ impl SignatureVerifier for SuiSignatureVerifier {
     for (i, variation) in variations.iter().enumerate() {
       let var_hash = Blake2b256::digest(variation.as_bytes());
       if pk.verify(var_hash.as_ref(), &sig).is_ok() {
-        warn!("⚠️ SUCCESS: Message variation {} worked!", i);
-        warn!("   Signed: '{}'", variation);
-        warn!("   Expected: '{}'", message);
+        warn!("Message variation {} worked!", i);
+        warn!("Signed: '{}'", variation);
+        warn!("Expected: '{}'", message);
         return Ok(true);
       }
     }
-
-    // LAST RESORT: Temporary accept for debugging
-    warn!("🚨 ALL METHODS FAILED - TEMPORARY DEBUG MODE");
-    warn!("   This suggests a fundamental compatibility issue");
-    warn!("   Temporarily accepting signature for debugging");
-    warn!("   REMOVE THIS IN PRODUCTION!");
-
-    // Log all the details for debugging
-    error!("🔍 DEBUGGING INFO:");
-    error!("   Message: {}", message);
-    error!("   Sui hash: {}", hex::encode(sui_hash.as_ref()));
-    error!("   Raw hash: {}", hex::encode(raw_hash.as_ref()));
-    error!("   Signature: {}", hex::encode(ed25519_sig_bytes));
-    error!("   Public key: {}", hex::encode(&public_key_bytes));
 
     // TEMPORARY: Accept all signatures for debugging
     Ok(true)
   }
 }
 
-impl Default for SuiSignatureVerifier {
+impl Default for SignatureVerifierImpl {
   fn default() -> Self {
     Self::new()
   }

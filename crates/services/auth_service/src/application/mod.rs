@@ -1,5 +1,3 @@
-pub mod auth_service;
 pub mod handlers;
-
-pub use auth_service::*;
+pub mod use_cases;
 pub use handlers::*;

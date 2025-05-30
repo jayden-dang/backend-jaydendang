@@ -75,6 +75,9 @@ pub enum Error {
 
   #[error("Failed to create Sui client: {0}")]
   CantCreateSuiClient(String),
+
+  #[error("RPC error: {0}")]
+  RpcError(String),
 }
 
 impl Error {

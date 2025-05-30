@@ -1,6 +1,6 @@
 use time::OffsetDateTime;
 use serde::{Deserialize, Serialize};
-use modql::field::{Fields, HasSeaFields};
+use modql::field::Fields;
 use modql::filter::{FilterNodes, OpValsString};
 use sqlx::FromRow;
 

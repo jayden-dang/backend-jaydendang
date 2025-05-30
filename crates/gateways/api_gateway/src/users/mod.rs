@@ -1,3 +1,5 @@
+pub mod user_rpc;
+
 use axum::{
   Router,
   routing::{get, post},

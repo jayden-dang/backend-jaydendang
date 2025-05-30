@@ -11,7 +11,7 @@ mod error;
 pub use error::{Error, Result};
 pub mod base;
 
-#[derive(Clone)]
+#[derive(Clone, rpc_router::RpcResource)]
 pub struct ModelManager {
   dbx: Dbx,
 }
@@ -40,6 +40,7 @@ pub struct AppState {
   pub mm: Arc<ModelManager>,
   pub redis: Arc<RedisClient>,
   pub sui_client: Arc<sui::sui_client::SuiClient>,
+  pub config: Arc<Config>,
   // TODO: S3 Service
   // TODO: Email Service
 }
@@ -47,9 +48,9 @@ pub struct AppState {
 impl AppState {
   pub async fn new() -> Result<Self> {
     let mm = Arc::new(ModelManager::new().await?);
-    let config = Config::from_env()?;
+    let config = Arc::new(Config::from_env()?);
 
-    let redis = Arc::new(RedisClient::open(config.redis.addr)?);
+    let redis = Arc::new(RedisClient::open(config.redis.addr.clone())?);
 
     info!("Initializing Sui client with environment: {}", config.sui.env);
     let sui_client = Arc::new(
@@ -58,7 +59,7 @@ impl AppState {
         .map_err(|ex| Error::CantCreateSuiClient(ex.to_string()))?,
     );
 
-    Ok(AppState { mm, redis, sui_client })
+    Ok(AppState { mm, redis, sui_client, config })
   }
 
   // Convenience methods

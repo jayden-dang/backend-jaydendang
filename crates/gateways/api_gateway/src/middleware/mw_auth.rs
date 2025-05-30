@@ -26,6 +26,11 @@ pub async fn mw_ctx_resolve(
 ) -> Result<Response> {
   let ctx_ext_result = ctx_resolve(app_state, &cookies).await;
 
+  // Add context to request extensions
+  if let Ok(ctx_w) = ctx_ext_result {
+    req.extensions_mut().insert(ctx_w.0);
+  }
+
   Ok(next.run(req).await)
 }
 

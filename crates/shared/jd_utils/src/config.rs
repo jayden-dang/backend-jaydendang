@@ -32,6 +32,8 @@ pub struct Config {
   pub postgres: Postgres,
   pub redis: Redis,
   pub sui: SuiConfig,
+  #[serde(rename = "auth_jwt_secret")]
+  pub auth_jwt_secret: String,
 }
 
 impl Config {

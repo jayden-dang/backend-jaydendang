@@ -7,8 +7,7 @@ pub mod domain;
 
 mod error;
 
-use error::Error;
-type Result<T> = std::result::Result<T, Error>;
+pub use error::{Error, Result};
 
 use jd_core::base::DMC;
 

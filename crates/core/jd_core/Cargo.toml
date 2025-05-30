@@ -30,11 +30,14 @@ tracing.workspace = true
 
 # -- Macros
 strum_macros.workspace = true
+paste.workspace = true
 
 # -- Blockchain
 sui-sdk.workspace = true
 
+# -- RPC
+rpc-router.workspace = true
+
 # -- Internal Dependencies
 jd_utils = { path = "../../shared/jd_utils" }
 jd_storage = { path = "../../infrastructure/jd_storage" }
-

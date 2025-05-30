@@ -1,7 +1,14 @@
 pub mod macros_utils;
+pub mod prelude;
+pub mod handlers;
+mod rpc_params;
+mod rpc_result;
+mod utils;
+
+pub use rpc_params::*;
+pub use rpc_result::*;
 
 use crate::{Result, error::Error};
-mod utils;
 use modql::{
   field::HasSeaFields,
   filter::{FilterGroups, ListOptions},

@@ -315,8 +315,13 @@ dependencies = [
  "jd_core",
  "jd_domain",
  "jd_utils",
+ "modql",
+ "paste",
  "redis",
  "reqwest",
+ "rpc-router",
+ "rpc-router-macros",
+ "sea-query",
  "serde",
  "serde_json",
  "serde_with",
@@ -3541,8 +3546,10 @@ dependencies = [
  "jd_storage",
  "jd_utils",
  "modql",
+ "paste",
  "redis",
  "regex",
+ "rpc-router",
  "sea-query",
  "sea-query-binder",
  "serde",
@@ -6250,6 +6257,29 @@ name = "route-recognizer"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "afab94fb28594581f62d981211a9a4d53cc8130bbcbbb89a0440d9b8e81a7746"
+
+[[package]]
+name = "rpc-router"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3e812cfab5cb3403a10bc4ae854579abd381359e3de4032edc3040350fbe06c3"
+dependencies = [
+ "futures",
+ "rpc-router-macros",
+ "serde",
+ "serde_json",
+ "serde_with",
+]
+
+[[package]]
+name = "rpc-router-macros"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b2222c322dfdca61c57a0d6ab1999a4785db4ba9dd8fc5db6f0339e6ec2028c0"
+dependencies = [
+ "quote",
+ "syn 2.0.101",
+]
 
 [[package]]
 name = "rsa"

@@ -4,6 +4,7 @@ use serde::Serialize;
 
 pub mod rest;
 pub mod rpc;
+pub mod bmc_macros;
 
 // -->>> Region:: START  --->>>  Constants
 const LIST_LIMIT_DEFAULT: i64 = 20;
