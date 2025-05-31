@@ -1,13 +1,13 @@
 use crate::users::user_rpc;
-use axum::Router;
 use axum::response::IntoResponse;
-use axum::{Json, extract::State, routing::post};
+use axum::Router;
+use axum::{extract::State, routing::post, Json};
 use jd_core::ctx::Ctx;
 use jd_core::{AppState, ModelManager};
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 
 /// Simple RPC handler that routes to the appropriate function
-pub async fn simple_rpc_handler(
+pub async fn rpc_handler(
   State(app_state): State<AppState>,
   Json(rpc_req): Json<Value>,
 ) -> impl IntoResponse {
@@ -49,5 +49,5 @@ pub async fn simple_rpc_handler(
 
 /// Build the Axum router for '/api/rpc'
 pub fn routes(_mm: ModelManager) -> Router<AppState> {
-  Router::new().route("/rpc", post(simple_rpc_handler))
+  Router::new().route("/rpc", post(rpc_handler))
 }

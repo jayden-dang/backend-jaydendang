@@ -77,6 +77,48 @@ impl Error {
     Self::new(&format!("Invalid request data: {}", field), "INVALID_REQUEST_DATA")
   }
 
+  // OAuth related errors
+  pub fn invalid_oauth_state() -> Self {
+    Self::new("Invalid OAuth state", "INVALID_OAUTH_STATE")
+  }
+
+  pub fn expired_oauth_state() -> Self {
+    Self::new("OAuth state has expired", "EXPIRED_OAUTH_STATE")
+  }
+
+  pub fn unsupported_oauth_provider() -> Self {
+    Self::new("Unsupported OAuth provider", "UNSUPPORTED_OAUTH_PROVIDER")
+  }
+
+  pub fn oauth_error(msg: String) -> Self {
+    Self::new(&format!("OAuth error: {}", msg), "OAUTH_ERROR")
+  }
+
+  // Authorization errors
+  pub fn insufficient_permissions() -> Self {
+    Self::new("Insufficient permissions", "INSUFFICIENT_PERMISSIONS")
+  }
+
+  pub fn user_not_found() -> Self {
+    Self::new("User not found", "USER_NOT_FOUND")
+  }
+
+  pub fn email_already_exists() -> Self {
+    Self::new("Email already exists", "EMAIL_ALREADY_EXISTS")
+  }
+
+  pub fn username_already_exists() -> Self {
+    Self::new("Username already exists", "USERNAME_ALREADY_EXISTS")
+  }
+
+  pub fn invalid_credentials() -> Self {
+    Self::new("Invalid credentials", "INVALID_CREDENTIALS")
+  }
+
+  pub fn account_disabled() -> Self {
+    Self::new("Account is disabled", "ACCOUNT_DISABLED")
+  }
+
   // Internal errors
   pub fn internal_error(msg: &str) -> Self {
     Self::new(&format!("Internal error: {}", msg), "INTERNAL_ERROR")
@@ -129,8 +171,15 @@ impl axum::response::IntoResponse for Error {
       "INVALID_TOKEN" | "TOKEN_EXPIRED" | "MISSING_AUTH_HEADER" | "INVALID_TOKEN_FORMAT" => {
         axum::http::StatusCode::UNAUTHORIZED
       }
+      "INVALID_CREDENTIALS" | "ACCOUNT_DISABLED" => axum::http::StatusCode::UNAUTHORIZED,
+      "INSUFFICIENT_PERMISSIONS" => axum::http::StatusCode::FORBIDDEN,
+      "USER_NOT_FOUND" => axum::http::StatusCode::NOT_FOUND,
+      "EMAIL_ALREADY_EXISTS" | "USERNAME_ALREADY_EXISTS" => axum::http::StatusCode::CONFLICT,
       "RATE_LIMIT_EXCEEDED" => axum::http::StatusCode::TOO_MANY_REQUESTS,
-      "INVALID_ADDRESS" | "INVALID_REQUEST_DATA" => axum::http::StatusCode::BAD_REQUEST,
+      "INVALID_ADDRESS" | "INVALID_REQUEST_DATA" | "INVALID_OAUTH_STATE" | "EXPIRED_OAUTH_STATE" | "UNSUPPORTED_OAUTH_PROVIDER" => {
+        axum::http::StatusCode::BAD_REQUEST
+      }
+      "OAUTH_ERROR" => axum::http::StatusCode::BAD_REQUEST,
       _ => axum::http::StatusCode::INTERNAL_SERVER_ERROR,
     };
 

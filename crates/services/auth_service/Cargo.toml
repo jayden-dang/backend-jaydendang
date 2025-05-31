@@ -53,6 +53,12 @@ sui-keys.workspace = true
 sui-types.workspace = true
 fastcrypto.workspace = true
 
+# -- HTTP Client
+reqwest.workspace = true
+
+# -- URL Encoding
+urlencoding.workspace = true
+
 # -- Internal Dependencies
 jd_domain = { path = "../../shared/jd_domain" }
 jd_contracts = { path = "../../shared/jd_contracts" }

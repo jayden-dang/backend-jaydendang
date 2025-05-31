@@ -34,6 +34,7 @@ async-trait.workspace = true
 
 # -- Time & Date
 chrono.workspace = true
+time.workspace = true
 
 # -- Logging
 tracing.workspace = true
@@ -44,3 +45,4 @@ jd_contracts = { path = "../../shared/jd_contracts" }
 jd_storage = { path = "../../infrastructure/jd_storage" }
 jd_core = { path = "../../core/jd_core" }
 jd_utils = { path = "../../shared/jd_utils" }
+auth_service = { path = "../auth_service" }

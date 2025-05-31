@@ -87,6 +87,7 @@ color-eyre = "0.6.4"
 # ============================================================================
 validator = { version = "0.20.0", features = ["derive"] }
 regex = "1.11.1"
+urlencoding = "2.1"
 
 # ============================================================================
 # UTILITY & MACROS
@@ -120,6 +121,7 @@ lazy_static = "1.4"
 # ============================================================================
 # CRYPTOGRAPHY & ENCODING
 # ============================================================================
+paste = "1.0.15"
 base64 = "0.22"
 hex = "0.4"
 blake2 = "0.10"
@@ -135,4 +137,3 @@ sui-sdk = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk" }
 sui-keys = { git = "https://github.com/mystenlabs/sui", package = "sui-keys" }
 sui-types = { git = "https://github.com/mystenlabs/sui", package = "sui-types" }
 fastcrypto = { git = "https://github.com/MystenLabs/fastcrypto", package = "fastcrypto", features = ["copy_key"] }
-paste = "1.0.15"
